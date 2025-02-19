@@ -1,4 +1,5 @@
 import { PriceHistory, PriceValidationResult, RollingAverageConfig, TokenPrice } from '../types';
+import { Decimal } from '../utils/decimal';
 
 export class PriceValidator {
     private priceHistories: Map<string, PriceHistory> = new Map();
@@ -31,8 +32,9 @@ export class PriceValidator {
     /**
      * Validate a new price against historical data
      */
-    public validatePrice(mint: string, newPrice: number, source: 'jupiter' | 'dexscreener'): PriceValidationResult {
+    public validatePrice(mint: string, newPrice: number | string, source: 'jupiter' | 'dexscreener'): PriceValidationResult {
         const history = this.priceHistories.get(mint);
+        const newPriceDecimal = new Decimal(newPrice);
         
         if (!history || history.prices.length < this.rollingAverageConfig.minDataPoints) {
             return {
@@ -49,39 +51,42 @@ export class PriceValidator {
         const latestOtherSourcePrice = this.getLatestPriceFromSource(history.prices, otherSource);
         
         if (latestOtherSourcePrice) {
-            const sourceDivergence = Math.abs((newPrice - latestOtherSourcePrice.price) / latestOtherSourcePrice.price);
+            const sourceDivergence = newPriceDecimal
+                .subtract(latestOtherSourcePrice.price)
+                .abs()
+                .divide(latestOtherSourcePrice.price);
             
-            if (sourceDivergence > this.rollingAverageConfig.maxDeviation) {
+            if (sourceDivergence.greaterThan(this.rollingAverageConfig.maxDeviation)) {
                 return {
                     isValid: false,
-                    confidence: 1 - sourceDivergence,
-                    reason: `Price sources diverge by ${(sourceDivergence * 100).toFixed(2)}%`,
+                    confidence: new Decimal(1).subtract(sourceDivergence).toNumber(),
+                    reason: `Price sources diverge by ${sourceDivergence.multiply(100).toString(2)}%`,
                     suggestedPrice: rollingAverage
                 };
             }
         }
 
         // Calculate deviation from rolling average
-        const deviation = (newPrice - rollingAverage) / rollingAverage;
-        const absDeviation = Math.abs(deviation);
+        const deviation = newPriceDecimal.subtract(rollingAverage).divide(rollingAverage);
+        const absDeviation = deviation.abs();
 
         // Asymmetric validation: allow more downside movement than upside
-        const maxAllowedDeviation = deviation > 0 
-            ? this.rollingAverageConfig.maxDeviation
-            : this.rollingAverageConfig.maxDeviation * 1.5;
+        const maxAllowedDeviation = deviation.isPositive()
+            ? new Decimal(this.rollingAverageConfig.maxDeviation)
+            : new Decimal(this.rollingAverageConfig.maxDeviation).multiply(1.5);
 
-        if (absDeviation > maxAllowedDeviation) {
+        if (absDeviation.greaterThan(maxAllowedDeviation)) {
             return {
                 isValid: false,
-                confidence: 1 - absDeviation,
-                reason: `Price deviation (${(absDeviation * 100).toFixed(2)}%) exceeds maximum allowed (${(maxAllowedDeviation * 100).toFixed(2)}%)`,
+                confidence: new Decimal(1).subtract(absDeviation).toNumber(),
+                reason: `Price deviation (${absDeviation.multiply(100).toString(2)}%) exceeds maximum allowed (${maxAllowedDeviation.multiply(100).toString(2)}%)`,
                 suggestedPrice: rollingAverage
             };
         }
 
         return {
             isValid: true,
-            confidence: 1 - absDeviation,
+            confidence: new Decimal(1).subtract(absDeviation).toNumber(),
             reason: 'Price within acceptable range'
         };
     }
@@ -89,10 +94,13 @@ export class PriceValidator {
     /**
      * Calculate rolling average from price history
      */
-    private calculateRollingAverage(prices: TokenPrice[]): number {
+    private calculateRollingAverage(prices: TokenPrice[]): Decimal {
         const relevantPrices = prices.slice(-this.rollingAverageConfig.windowSize);
-        const sum = relevantPrices.reduce((acc, curr) => acc + curr.price, 0);
-        return sum / relevantPrices.length;
+        const sum = relevantPrices.reduce(
+            (acc, curr) => acc.add(curr.price), 
+            Decimal.ZERO
+        );
+        return sum.divide(relevantPrices.length);
     }
 
     /**

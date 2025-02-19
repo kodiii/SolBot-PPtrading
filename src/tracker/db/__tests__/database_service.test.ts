@@ -3,6 +3,7 @@ import { ConnectionManager } from '../connection_manager';
 import { HoldingRecord, NewTokenRecord } from '../../../types';
 import { Database } from 'sqlite';
 import { EventEmitter } from 'events';
+import { Decimal } from '../../../utils/decimal';
 
 // Mock the ConnectionManager
 jest.mock('../connection_manager', () => ({
@@ -102,12 +103,12 @@ describe('DatabaseService', () => {
       Time: Date.now(),
       Token: 'token123',
       TokenName: 'Test Token',
-      Balance: 100,
-      SolPaid: 1,
-      SolFeePaid: 0.1,
-      SolPaidUSDC: 100,
-      SolFeePaidUSDC: 10,
-      PerTokenPaidUSDC: 1,
+      Balance: new Decimal('100'),
+      SolPaid: new Decimal('1'),
+      SolFeePaid: new Decimal('0.1'),
+      SolPaidUSDC: new Decimal('100'),
+      SolFeePaidUSDC: new Decimal('10'),
+      PerTokenPaidUSDC: new Decimal('1'),
       Slot: 1000,
       Program: 'test'
     };
@@ -166,12 +167,25 @@ describe('DatabaseService', () => {
 
     it('should get all holdings', async () => {
       const mockHoldings = [mockHolding];
-      allMock.mockResolvedValueOnce(mockHoldings);
+      allMock.mockResolvedValueOnce(mockHoldings.map(holding => ({
+        ...holding,
+        Balance: holding.Balance.toString(),
+        SolPaid: holding.SolPaid.toString(),
+        SolFeePaid: holding.SolFeePaid.toString(),
+        SolPaidUSDC: holding.SolPaidUSDC.toString(),
+        SolFeePaidUSDC: holding.SolFeePaidUSDC.toString(),
+        PerTokenPaidUSDC: holding.PerTokenPaidUSDC.toString()
+      })));
 
       const result = await dbService.getHoldings();
 
       expect(mockConnectionManager.executeWithRetry).toHaveBeenCalled();
-      expect(result).toEqual(mockHoldings);
+      expect(result[0].Balance.equals(mockHolding.Balance)).toBe(true);
+      expect(result[0].SolPaid.equals(mockHolding.SolPaid)).toBe(true);
+      expect(result[0].SolFeePaid.equals(mockHolding.SolFeePaid)).toBe(true);
+      expect(result[0].SolPaidUSDC.equals(mockHolding.SolPaidUSDC)).toBe(true);
+      expect(result[0].SolFeePaidUSDC.equals(mockHolding.SolFeePaidUSDC)).toBe(true);
+      expect(result[0].PerTokenPaidUSDC.equals(mockHolding.PerTokenPaidUSDC)).toBe(true);
     });
 
     it('should handle connection failures during query', async () => {
@@ -182,13 +196,24 @@ describe('DatabaseService', () => {
     });
 
     it('should handle concurrent operations', async () => {
-      const operations = Promise.all([
+      // Set up mock responses for getHoldings
+      allMock.mockResolvedValueOnce([{
+        ...mockHolding,
+        Balance: mockHolding.Balance.toString(),
+        SolPaid: mockHolding.SolPaid.toString(),
+        SolFeePaid: mockHolding.SolFeePaid.toString(),
+        SolPaidUSDC: mockHolding.SolPaidUSDC.toString(),
+        SolFeePaidUSDC: mockHolding.SolFeePaidUSDC.toString(),
+        PerTokenPaidUSDC: mockHolding.PerTokenPaidUSDC.toString()
+      }]);
+
+      const operations = [
         dbService.insertHolding(mockHolding),
         dbService.getHoldings(),
         dbService.removeHolding('token123')
-      ]);
+      ];
 
-      await expect(operations).resolves.not.toThrow();
+      await expect(Promise.all(operations)).resolves.toBeDefined();
     });
   });
 

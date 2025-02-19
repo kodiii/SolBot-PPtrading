@@ -1,5 +1,6 @@
 import { ConnectionManager } from './connection_manager';
 import { HoldingRecord, NewTokenRecord } from '../../types';
+import { Decimal } from '../../utils/decimal';
 
 export class DatabaseService {
   private static instance: DatabaseService;
@@ -24,19 +25,19 @@ export class DatabaseService {
 
   private async createTables(): Promise<void> {
     await this.connectionManager.executeWithRetry(async (db) => {
-      // Create holdings table with explicit constraints
+      // Create holdings table with explicit constraints, using TEXT for decimal values
       await db.exec(`
         CREATE TABLE IF NOT EXISTS holdings (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           Time INTEGER NOT NULL CHECK (Time > 0),
           Token TEXT NOT NULL CHECK (length(Token) > 0),
           TokenName TEXT NOT NULL,
-          Balance REAL NOT NULL CHECK (Balance >= 0),
-          SolPaid REAL NOT NULL CHECK (SolPaid >= 0),
-          SolFeePaid REAL NOT NULL CHECK (SolFeePaid >= 0),
-          SolPaidUSDC REAL NOT NULL CHECK (SolPaidUSDC >= 0),
-          SolFeePaidUSDC REAL NOT NULL CHECK (SolFeePaidUSDC >= 0),
-          PerTokenPaidUSDC REAL NOT NULL CHECK (PerTokenPaidUSDC >= 0),
+          Balance TEXT NOT NULL,
+          SolPaid TEXT NOT NULL,
+          SolFeePaid TEXT NOT NULL,
+          SolPaidUSDC TEXT NOT NULL,
+          SolFeePaidUSDC TEXT NOT NULL,
+          PerTokenPaidUSDC TEXT NOT NULL,
           Slot INTEGER NOT NULL CHECK (Slot > 0),
           Program TEXT NOT NULL CHECK (length(Program) > 0)
         )
@@ -71,7 +72,19 @@ export class DatabaseService {
       await db.run(
         `INSERT INTO holdings (Time, Token, TokenName, Balance, SolPaid, SolFeePaid, SolPaidUSDC, SolFeePaidUSDC, PerTokenPaidUSDC, Slot, Program)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [Time, Token, TokenName, Balance, SolPaid, SolFeePaid, SolPaidUSDC, SolFeePaidUSDC, PerTokenPaidUSDC, Slot, Program]
+        [
+          Time,
+          Token,
+          TokenName,
+          Balance.toString(),
+          SolPaid.toString(),
+          SolFeePaid.toString(),
+          SolPaidUSDC.toString(),
+          SolFeePaidUSDC.toString(),
+          PerTokenPaidUSDC.toString(),
+          Slot,
+          Program
+        ]
       );
     });
   }
@@ -83,6 +96,21 @@ export class DatabaseService {
 
     await this.connectionManager.executeWithRetry(async (db) => {
       await db.run('DELETE FROM holdings WHERE Token = ?', [tokenMint]);
+    });
+  }
+
+  public async getHoldings(): Promise<HoldingRecord[]> {
+    return this.connectionManager.executeWithRetry(async (db) => {
+      const rows = await db.all('SELECT * FROM holdings ORDER BY Time DESC');
+      return rows.map(row => ({
+        ...row,
+        Balance: new Decimal(row.Balance),
+        SolPaid: new Decimal(row.SolPaid),
+        SolFeePaid: new Decimal(row.SolFeePaid),
+        SolPaidUSDC: new Decimal(row.SolPaidUSDC),
+        SolFeePaidUSDC: new Decimal(row.SolFeePaidUSDC),
+        PerTokenPaidUSDC: new Decimal(row.PerTokenPaidUSDC)
+      }));
     });
   }
 
@@ -99,12 +127,6 @@ export class DatabaseService {
         'INSERT INTO tokens (time, name, mint, creator) VALUES (?, ?, ?, ?)',
         [time, name, mint, creator]
       );
-    });
-  }
-
-  public async getHoldings(): Promise<HoldingRecord[]> {
-    return this.connectionManager.executeWithRetry(async (db) => {
-      return db.all<HoldingRecord[]>('SELECT * FROM holdings ORDER BY Time DESC');
     });
   }
 

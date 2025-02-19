@@ -1,3 +1,5 @@
+import { Decimal } from './utils/decimal';
+
 export interface MintsDataReponse {
   tokenMint?: string;
   solMint?: string;
@@ -263,12 +265,12 @@ export interface HoldingRecord {
   Time: number;
   Token: string;
   TokenName: string;
-  Balance: number;
-  SolPaid: number;
-  SolFeePaid: number;
-  SolPaidUSDC: number;
-  SolFeePaidUSDC: number;
-  PerTokenPaidUSDC: number;
+  Balance: Decimal;
+  SolPaid: Decimal;
+  SolFeePaid: Decimal;
+  SolPaidUSDC: Decimal;
+  SolFeePaidUSDC: Decimal;
+  PerTokenPaidUSDC: Decimal;
   Slot: number;
   Program: string;
 }
@@ -345,7 +347,7 @@ export interface LastPriceDexReponse {
 
 // Price tracking interfaces
 export interface TokenPrice {
-  price: number;
+  price: Decimal;
   timestamp: number;
   source: 'jupiter' | 'dexscreener';
 }
@@ -360,7 +362,7 @@ export interface PriceValidationResult {
   isValid: boolean;
   reason?: string;
   confidence: number;
-  suggestedPrice?: number;
+  suggestedPrice?: Decimal;
 }
 
 export interface RollingAverageConfig {

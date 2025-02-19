@@ -15,6 +15,7 @@ import {
   NewTokenRecord,
   createSellTransactionResponse,
 } from "./types";
+import { Decimal } from "./utils/decimal";
 import { insertHolding, insertNewToken, removeHolding, selectTokenByMint, selectTokenByNameAndCreator } from "./tracker/db";
 
 // Load environment variables from the .env file
@@ -558,11 +559,14 @@ export async function fetchAndSaveSwapDetails(tx: string): Promise<boolean> {
     // Verify if we received the price response data
     if (!priceResponse.data.data[solMint]?.price) return false;
 
-    // Calculate estimated price paid in sol
-    const solUsdcPrice = priceResponse.data.data[solMint]?.price;
-    const solPaidUsdc = swapTransactionData.tokenInputs[0].tokenAmount * solUsdcPrice;
-    const solFeePaidUsdc = (swapTransactionData.fee / 1_000_000_000) * solUsdcPrice;
-    const perTokenUsdcPrice = solPaidUsdc / swapTransactionData.tokenOutputs[0].tokenAmount;
+    // Calculate estimated price paid in sol using Decimal for precision
+    const solUsdcPrice = new Decimal(priceResponse.data.data[solMint].price);
+    const solAmount = new Decimal(swapTransactionData.tokenInputs[0].tokenAmount);
+    const tokenAmount = new Decimal(swapTransactionData.tokenOutputs[0].tokenAmount);
+    const feeInSol = new Decimal(swapTransactionData.fee).divide('1000000000'); // Convert lamports to SOL
+    const solPaidUsdc = solAmount.multiply(solUsdcPrice);
+    const solFeePaidUsdc = feeInSol.multiply(solUsdcPrice);
+    const perTokenUsdcPrice = solPaidUsdc.divide(tokenAmount);
 
     // Get token meta data
     let tokenName = "N/A";
@@ -576,9 +580,9 @@ export async function fetchAndSaveSwapDetails(tx: string): Promise<boolean> {
       Time: swapTransactionData.timestamp,
       Token: swapTransactionData.tokenOutputs[0].mint,
       TokenName: tokenName,
-      Balance: swapTransactionData.tokenOutputs[0].tokenAmount,
-      SolPaid: swapTransactionData.tokenInputs[0].tokenAmount,
-      SolFeePaid: swapTransactionData.fee,
+      Balance: tokenAmount,
+      SolPaid: solAmount,
+      SolFeePaid: feeInSol,
       SolPaidUSDC: solPaidUsdc,
       SolFeePaidUSDC: solFeePaidUsdc,
       PerTokenPaidUSDC: perTokenUsdcPrice,
