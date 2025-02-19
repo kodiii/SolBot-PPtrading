@@ -1,20 +1,35 @@
 import BigNumber from 'bignumber.js';
 
-// Configure BigNumber settings for our use case
 BigNumber.config({
-  DECIMAL_PLACES: 9,  // Solana's native precision
-  ROUNDING_MODE: BigNumber.ROUND_HALF_UP,  // Standard rounding mode
-  EXPONENTIAL_AT: [-9, 20]  // Range for non-exponential string representation
+  EXPONENTIAL_AT: [-20, 20], // Prevent scientific notation for reasonable numbers
+  DECIMAL_PLACES: 20,        // Increase internal precision
+  ROUNDING_MODE: BigNumber.ROUND_HALF_UP,
+  FORMAT: {
+    prefix: '',
+    decimalSeparator: '.',
+    groupSeparator: '',
+    groupSize: 0,
+    secondaryGroupSize: 0,
+    fractionGroupSeparator: '',
+    fractionGroupSize: 0,
+    suffix: ''
+  }
 });
 
 export class Decimal {
   private value: BigNumber;
 
   constructor(value: string | number | BigNumber | Decimal) {
-    this.value = value instanceof Decimal ? value.getValue() : new BigNumber(value);
+    if (typeof value === 'string' && value.toLowerCase().includes('e')) {
+      const [base, exponent] = value.toLowerCase().split('e');
+      const exp = parseInt(exponent);
+      const baseNum = new BigNumber(base);
+      this.value = baseNum.multipliedBy(new BigNumber(10).pow(exp));
+    } else {
+      this.value = value instanceof Decimal ? value.getValue() : new BigNumber(value);
+    }
   }
 
-  // Basic arithmetic operations
   add(other: Decimal | string | number): Decimal {
     return new Decimal(this.value.plus(other instanceof Decimal ? other.value : other));
   }
@@ -35,7 +50,6 @@ export class Decimal {
     return new Decimal(this.value.dividedBy(divisor));
   }
 
-  // Comparison methods
   equals(other: Decimal | string | number): boolean {
     return this.value.isEqualTo(other instanceof Decimal ? other.value : other);
   }
@@ -48,19 +62,36 @@ export class Decimal {
     return this.value.isLessThan(other instanceof Decimal ? other.value : other);
   }
 
-  // Formatting and conversion
   toString(decimals?: number): string {
-    if (decimals !== undefined) {
-      return this.value.toFixed(decimals, BigNumber.ROUND_HALF_UP);
+    if (this.value.isZero()) {
+      return decimals !== undefined ? '0'.padEnd(decimals + 2, '0') : '0';
     }
-    return this.value.toString();
+
+    let str: string;
+    if (decimals !== undefined) {
+      str = this.value.toFixed(decimals, BigNumber.ROUND_HALF_UP);
+    } else {
+      // For very small or large numbers, ensure we maintain precision
+      if (this.value.abs().lt('0.000001') || this.value.abs().gt('1e20')) {
+        str = this.value.toFixed(20);
+      } else {
+        str = this.value.toFixed(9);
+      }
+
+      // Remove trailing zeros after decimal point
+      str = str.replace(/\.?0+$/, '');
+      if (str.includes('.')) {
+        str = str.replace(/0+$/, '');
+      }
+    }
+
+    return str;
   }
 
   toNumber(): number {
     return this.value.toNumber();
   }
 
-  // Utility methods
   abs(): Decimal {
     return new Decimal(this.value.abs());
   }
@@ -74,10 +105,9 @@ export class Decimal {
   }
 
   isPositive(): boolean {
-    return this.value.isPositive();
+    return this.value.isGreaterThan(0);
   }
 
-  // Solana-specific methods
   toLamports(): Decimal {
     return this.multiply(Decimal.LAMPORTS_PER_SOL);
   }
@@ -87,7 +117,6 @@ export class Decimal {
     return value.divide(Decimal.LAMPORTS_PER_SOL);
   }
 
-  // Static utility methods
   static max(...values: (Decimal | string | number)[]): Decimal {
     if (values.length === 0) {
       throw new Error('Cannot find maximum of empty array');
@@ -110,23 +139,20 @@ export class Decimal {
     }, new Decimal(values[0]));
   }
 
-  // Commonly used constants
   static ZERO = new Decimal(0);
   static ONE = new Decimal(1);
   static LAMPORTS_PER_SOL = new Decimal('1000000000');
 
-  // Allow access to underlying BigNumber value
   getValue(): BigNumber {
     return this.value;
   }
 }
 
-// Balance reconciliation helper
 export class BalanceReconciliation {
   static validateBalance(
     recorded: Decimal,
     actual: Decimal,
-    tolerance: Decimal = new Decimal('0.000000001') // 1 lamport tolerance
+    tolerance: Decimal = new Decimal('0.000000001')
   ): boolean {
     const diff = recorded.subtract(actual).abs();
     return diff.lessThan(tolerance) || diff.equals(tolerance);

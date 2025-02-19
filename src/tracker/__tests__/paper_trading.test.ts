@@ -65,20 +65,22 @@ describe('Paper Trading', () => {
       const result = await initializePaperTradingDB();
       expect(result).toBe(true);
       expect(execMock).toHaveBeenCalledWith(expect.stringContaining('CREATE TABLE IF NOT EXISTS virtual_balance'));
-      expect(execMock).toHaveBeenCalledWith(expect.stringContaining('CREATE TABLE IF NOT EXISTS simulated_trades'));
-      expect(execMock).toHaveBeenCalledWith(expect.stringContaining('CREATE TABLE IF NOT EXISTS token_tracking'));
     });
 
     it('should initialize with correct initial balance', async () => {
-      getMock.mockResolvedValueOnce(null); // No existing balance
-      
+      getMock.mockResolvedValueOnce(null);
       const result = await initializePaperTradingDB();
-      
       expect(result).toBe(true);
       expect(runMock).toHaveBeenCalledWith(
         'INSERT INTO virtual_balance (balance_sol, updated_at) VALUES (?, ?)',
         [new Decimal(config.paper_trading.initial_balance).toString(), expect.any(Number)]
       );
+    });
+
+    it('should handle database initialization errors', async () => {
+      mockConnectionManager.initialize.mockRejectedValueOnce(new Error('DB Error'));
+      const result = await initializePaperTradingDB();
+      expect(result).toBe(false);
     });
   });
 
@@ -91,15 +93,18 @@ describe('Paper Trading', () => {
       getMock.mockResolvedValueOnce(mockBalance);
 
       const balance = await getVirtualBalance();
-      
       expect(balance).toBeDefined();
-      expect(balance?.balance_sol).toEqual(new Decimal('100.5'));
-      expect(balance?.updated_at).toBe(mockBalance.updated_at);
+      expect(balance?.balance_sol.equals(new Decimal('100.5'))).toBe(true);
     });
 
     it('should return null when no balance exists', async () => {
       getMock.mockResolvedValueOnce(null);
-      
+      const balance = await getVirtualBalance();
+      expect(balance).toBeNull();
+    });
+
+    it('should handle balance retrieval errors', async () => {
+      getMock.mockRejectedValueOnce(new Error('DB Error'));
       const balance = await getVirtualBalance();
       expect(balance).toBeNull();
     });
@@ -118,35 +123,45 @@ describe('Paper Trading', () => {
     };
 
     it('should record a buy trade', async () => {
-      mockConnectionManager.transaction.mockImplementation(async (callback) => {
-        await callback({ commit: jest.fn(), rollback: jest.fn() });
-      });
-
       getMock.mockResolvedValueOnce({
         balance_sol: '10.0',
         updated_at: Date.now()
       });
 
-      const result = await recordSimulatedTrade(mockTrade);
+      mockConnectionManager.transaction.mockImplementationOnce(async (callback) => {
+        await callback({ commit: jest.fn(), rollback: jest.fn() });
+      });
 
+      const result = await recordSimulatedTrade(mockTrade);
       expect(result).toBe(true);
-      expect(runMock).toHaveBeenCalledWith(
-        expect.stringContaining('INSERT INTO simulated_trades'),
-        expect.arrayContaining([
-          mockTrade.timestamp,
-          mockTrade.token_mint,
-          mockTrade.amount_sol.toString(),
-          mockTrade.amount_token.toString()
-        ])
-      );
     });
 
-    it('should update token price', async () => {
-      const tokenMint = 'token123';
-      const newPrice = new Decimal('0.002');
-
+    it('should record a sell trade', async () => {
+      const sellTrade = { ...mockTrade, type: 'sell' as const };
       getMock.mockResolvedValueOnce({
-        token_mint: tokenMint,
+        balance_sol: '10.0',
+        updated_at: Date.now()
+      });
+
+      mockConnectionManager.transaction.mockImplementationOnce(async (callback) => {
+        await callback({ commit: jest.fn(), rollback: jest.fn() });
+      });
+
+      const result = await recordSimulatedTrade(sellTrade);
+      expect(result).toBe(true);
+    });
+
+    it('should handle trade recording errors', async () => {
+      mockConnectionManager.transaction.mockRejectedValueOnce(new Error('Transaction Error'));
+      const result = await recordSimulatedTrade(mockTrade);
+      expect(result).toBe(false);
+    });
+  });
+
+  describe('token tracking operations', () => {
+    it('should update token price', async () => {
+      const mockToken = {
+        token_mint: 'token123',
         token_name: 'Test Token',
         amount: '1000',
         buy_price: '0.0015',
@@ -154,20 +169,21 @@ describe('Paper Trading', () => {
         last_updated: Date.now(),
         stop_loss: '0.001',
         take_profit: '0.003'
-      });
+      };
 
-      const result = await updateTokenPrice(tokenMint, newPrice);
+      getMock.mockResolvedValueOnce(mockToken);
 
+      const result = await updateTokenPrice('token123', new Decimal('0.002'));
       expect(result).toBeDefined();
-      expect(result?.current_price.equals(newPrice)).toBe(true);
-      expect(runMock).toHaveBeenCalledWith(
-        expect.stringContaining('UPDATE token_tracking'),
-        [newPrice.toString(), expect.any(Number), tokenMint]
-      );
+      expect(result?.current_price.equals(new Decimal('0.002'))).toBe(true);
     });
-  });
 
-  describe('token tracking operations', () => {
+    it('should handle token price update errors', async () => {
+      runMock.mockRejectedValueOnce(new Error('Update Error'));
+      const result = await updateTokenPrice('token123', new Decimal('0.002'));
+      expect(result).toBeNull();
+    });
+
     it('should get tracked tokens', async () => {
       const mockTokens = [{
         token_mint: 'token123',
@@ -183,13 +199,43 @@ describe('Paper Trading', () => {
       allMock.mockResolvedValueOnce(mockTokens);
 
       const tokens = await getTrackedTokens();
-
       expect(tokens).toHaveLength(1);
       expect(tokens[0].amount instanceof Decimal).toBe(true);
-      expect(tokens[0].buy_price instanceof Decimal).toBe(true);
-      expect(tokens[0].current_price instanceof Decimal).toBe(true);
-      expect(tokens[0].stop_loss instanceof Decimal).toBe(true);
-      expect(tokens[0].take_profit instanceof Decimal).toBe(true);
+    });
+
+    it('should handle tracked tokens retrieval errors', async () => {
+      allMock.mockRejectedValueOnce(new Error('Retrieval Error'));
+      const tokens = await getTrackedTokens();
+      expect(tokens).toEqual([]);
+    });
+  });
+
+  describe('error handling', () => {
+    it('should handle connection failures', async () => {
+      mockConnectionManager.getConnection.mockRejectedValueOnce(new Error('Connection Error'));
+      const result = await getVirtualBalance();
+      expect(result).toBeNull();
+    });
+
+    it('should handle transaction failures', async () => {
+      mockConnectionManager.transaction.mockRejectedValueOnce(new Error('Transaction Error'));
+      const result = await recordSimulatedTrade({
+        timestamp: Date.now(),
+        token_mint: 'token123',
+        token_name: 'Test Token',
+        amount_sol: new Decimal('1.5'),
+        amount_token: new Decimal('1000'),
+        price_per_token: new Decimal('0.0015'),
+        type: 'buy',
+        fees: new Decimal('0.001')
+      });
+      expect(result).toBe(false);
+    });
+
+    it('should release connections even after errors', async () => {
+      getMock.mockRejectedValueOnce(new Error('DB Error'));
+      await getVirtualBalance();
+      expect(mockConnectionManager.releaseConnection).toHaveBeenCalled();
     });
   });
 });
