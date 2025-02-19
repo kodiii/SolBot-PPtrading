@@ -53,7 +53,7 @@ export class SimulationService {
           }
         }
       }
-    }, 60000); // Every minute
+    }, 1000); // Every minute
   }
 
   private async delay(ms: number): Promise<void> {
