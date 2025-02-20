@@ -1,12 +1,14 @@
 import axios from 'axios';
 import { config } from '../config';
-import { 
-  initializePaperTradingDB, 
-  recordSimulatedTrade, 
+import {
+  initializePaperTradingDB,
+  recordSimulatedTrade,
   getVirtualBalance,
   updateTokenPrice,
-  getTrackedTokens
+  getTrackedTokens,
+  TokenTracking
 } from '../tracker/paper_trading';
+import { Decimal } from '../utils/decimal';
 
 interface DexscreenerPairInfo {
   chainId: string;
@@ -58,7 +60,7 @@ type DexscreenerPriceResponse = DexscreenerPairInfo[];
 export class SimulationService {
   private static instance: SimulationService;
   private priceCheckInterval: NodeJS.Timeout | null = null;
-  private lastPrices: Map<string, number> = new Map();
+  private lastPrices: Map<string, Decimal> = new Map();
 
   private constructor() {
     // Initialize the paper trading database
@@ -99,7 +101,7 @@ export class SimulationService {
     return new Promise(resolve => setTimeout(resolve, ms));
   }
 
-  public async getTokenPrice(tokenMint: string, retryCount = 0): Promise<number | null> {
+  public async getTokenPrice(tokenMint: string, retryCount = 0): Promise<Decimal | null> {
     try {
       const attempt = retryCount + 1;
       if (config.paper_trading.verbose_log) {
@@ -119,8 +121,7 @@ export class SimulationService {
         // Find Raydium pair
         const raydiumPair = response.data.find(pair => pair.dexId === 'raydium');
         if (raydiumPair?.priceUsd) {
-          const price = parseFloat(raydiumPair.priceUsd);
-          return price;
+          return new Decimal(raydiumPair.priceUsd);
         }
         console.log('⚠️ No Raydium pair found');
       }
@@ -164,18 +165,10 @@ export class SimulationService {
       return null;
     }
   }
-
-  private async checkPriceTargets(token: {
-    token_mint: string;
-    token_name: string;
-    amount: number;
-    current_price: number;
-    stop_loss: number;
-    take_profit: number;
-  }): Promise<void> {
-    if (token.current_price <= token.stop_loss) {
+  private async checkPriceTargets(token: TokenTracking): Promise<void> {
+    if (token.current_price.lessThan(token.stop_loss) || token.current_price.equals(token.stop_loss)) {
       await this.executeSell(token, 'Stop Loss triggered');
-    } else if (token.current_price >= token.take_profit) {
+    } else if (token.current_price.greaterThan(token.take_profit) || token.current_price.equals(token.take_profit)) {
       await this.executeSell(token, 'Take Profit triggered');
     }
   }
@@ -183,7 +176,7 @@ export class SimulationService {
   public async executeBuy(
     tokenMint: string,
     tokenName: string,
-    currentPrice: number
+    currentPrice: Decimal
   ): Promise<boolean> {
     const balance = await getVirtualBalance();
     if (!balance) {
@@ -192,17 +185,15 @@ export class SimulationService {
     }
 
     // Use fixed amount from config
-    const amountLamports = BigInt(config.swap.amount);
-    const feesLamports = BigInt(config.swap.prio_fee_max_lamports);
-    const amountInSol = Number(amountLamports) / 1e9; // Convert from lamports to SOL
-    const fees = Number(feesLamports) / 1e9; // Convert from lamports to SOL
+    const amountInSol = new Decimal(config.swap.amount).divide(Decimal.LAMPORTS_PER_SOL);
+    const fees = new Decimal(config.swap.prio_fee_max_lamports).divide(Decimal.LAMPORTS_PER_SOL);
 
-    if (balance.balance_sol < (amountInSol + fees)) {
+    if (balance.balance_sol.lessThan(amountInSol.add(fees))) {
       console.log('❌ Insufficient virtual balance for trade');
       return false;
     }
 
-    const amountTokens = amountInSol / currentPrice;
+    const amountTokens = amountInSol.divide(currentPrice);
 
     const success = await recordSimulatedTrade({
       timestamp: Date.now(),
@@ -216,9 +207,9 @@ export class SimulationService {
     });
 
     if (success) {
-      console.log(`🎮 Paper Trade: Bought ${amountTokens.toFixed(2)} ${tokenName} tokens`);
-      console.log(`💰 Price per token: $${currentPrice}`);
-      console.log(`🏦 Total spent: ${amountInSol.toFixed(4)} SOL (+ ${fees} SOL fees)`);
+      console.log(`🎮 Paper Trade: Bought ${amountTokens.toString(2)} ${tokenName} tokens`);
+      console.log(`💰 Price per token: $${currentPrice.toString()}`);
+      console.log(`🏦 Total spent: ${amountInSol.toString(4)} SOL (+ ${fees.toString()} SOL fees)`);
       return true;
     }
 
@@ -226,17 +217,11 @@ export class SimulationService {
   }
 
   private async executeSell(
-    token: {
-      token_mint: string;
-      token_name: string;
-      amount: number;
-      current_price: number;
-    },
+    token: TokenTracking,
     reason: string
   ): Promise<boolean> {
-    const amountInSol = token.amount * token.current_price;
-    const feesLamports = BigInt(config.sell.prio_fee_max_lamports);
-    const fees = Number(feesLamports) / 1e9;
+    const amountInSol = token.amount.multiply(token.current_price);
+    const fees = new Decimal(config.sell.prio_fee_max_lamports).divide(Decimal.LAMPORTS_PER_SOL);
 
     const success = await recordSimulatedTrade({
       timestamp: Date.now(),
@@ -251,9 +236,9 @@ export class SimulationService {
 
     if (success) {
       console.log(`🎮 Paper Trade: ${reason}`);
-      console.log(`📈 Sold ${token.amount.toFixed(2)} ${token.token_name} tokens`);
-      console.log(`💰 Price per token: $${token.current_price}`);
-      console.log(`🏦 Total received: ${amountInSol.toFixed(4)} SOL (- ${fees} SOL fees)`);
+      console.log(`📈 Sold ${token.amount.toString(2)} ${token.token_name} tokens`);
+      console.log(`💰 Price per token: $${token.current_price.toString()}`);
+      console.log(`🏦 Total received: ${amountInSol.toString(4)} SOL (- ${fees.toString()} SOL fees)`);
       return true;
     }
 

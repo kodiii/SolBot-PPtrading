@@ -21,7 +21,7 @@ interface SimulatedTrade {
   fees: Decimal;
 }
 
-interface TokenTracking {
+export interface TokenTracking {
   token_mint: string;
   token_name: string;
   amount: Decimal;
