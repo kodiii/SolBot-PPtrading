@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { config } from '../config';
+import { config } from '../../config';
 import {
   initializePaperTradingDB,
   recordSimulatedTrade,
@@ -7,8 +7,8 @@ import {
   updateTokenPrice,
   getTrackedTokens,
   TokenTracking
-} from '../tracker/paper_trading';
-import { Decimal } from '../utils/decimal';
+} from '../paper_trading';
+import { Decimal } from '../../utils/decimal';
 
 interface DexscreenerPairInfo {
   chainId: string;
@@ -82,7 +82,7 @@ export class SimulationService {
   }
 
   private async startPriceTracking(): Promise<void> {
-    // Check prices every minute
+    // Check prices
     this.priceCheckInterval = setInterval(async () => {
       const tokens = await getTrackedTokens();
       for (const token of tokens) {

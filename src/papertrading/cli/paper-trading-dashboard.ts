@@ -1,10 +1,9 @@
-import * as sqlite3 from "sqlite3";
 import chalk from "chalk";
-import { ConnectionManager } from "../tracker/db/connection_manager";
-import { initializePaperTradingDB } from "../tracker/paper_trading";
-import { config } from "../config";
+import { ConnectionManager } from "../db/connection_manager";
+import { initializePaperTradingDB, getVirtualBalance } from "../paper_trading";
+import { config } from "../../config";
 
-const DB_PATH = "src/tracker/paper_trading.db";
+const DB_PATH = "src/papertrading/db/paper_trading.db";
 const TABLE_WIDTH = 150;
 const TOKEN_COL_WIDTH = 45;
 const NUM_COL_WIDTH = 15;
@@ -95,15 +94,11 @@ function drawTable(headers: string[], rows: string[][], title: string): void {
 }
 
 async function displayVirtualBalance(): Promise<void> {
-    const connectionManager = ConnectionManager.getInstance(DB_PATH);
     try {
-        const db = await connectionManager.getConnection();
-        const balance = await db.get('SELECT * FROM virtual_balance ORDER BY id DESC LIMIT 1');
-        connectionManager.releaseConnection(db);
-
+        const balance = await getVirtualBalance();
         if (balance) {
             const content = [
-                `${chalk.yellow('SOL Balance:')} ${chalk.green(balance.balance_sol.toFixed(4))} SOL`,
+                `${chalk.yellow('SOL Balance:')} ${chalk.green(balance.balance_sol.toString())} SOL`,
                 `${chalk.yellow('Last Updated:')} ${new Date(balance.updated_at).toLocaleString()}`
             ];
             drawBox('📊 Virtual Balance', content);
@@ -131,7 +126,7 @@ async function displayActivePositions(): Promise<void> {
                 'Take Profit'.padEnd(NUM_COL_WIDTH)
             ];
 
-            const rows = positions.map(pos => {
+            const rows = positions.map((pos: TokenPosition) => {
                 const pnlPercent = ((pos.current_price - pos.buy_price) / pos.buy_price) * 100;
                 const pnlColor = pnlPercent >= 0 ? chalk.green : chalk.red;
                 return [
@@ -194,7 +189,7 @@ async function displayRecentTrades(limit: number = 10): Promise<void> {
                 'Fees'.padEnd(NUM_COL_WIDTH)
             ];
 
-            const rows = trades.map(trade => [
+            const rows = trades.map((trade: SimulatedTrade) => [
                 new Date(trade.timestamp).toLocaleString().padEnd(TIME_COL_WIDTH),
                 (trade.type === 'buy' ? chalk.green : chalk.red)(trade.type.toUpperCase().padEnd(10)),
                 trade.token_mint.padEnd(TOKEN_COL_WIDTH),
@@ -239,7 +234,7 @@ async function calculateTradingStats(): Promise<TradingStats | null> {
         if (trades.length === 0) return null;
 
         const tokenTrades = new Map<string, SimulatedTrade[]>();
-        trades.forEach(trade => {
+        trades.forEach((trade: SimulatedTrade) => {
             if (!tokenTrades.has(trade.token_mint)) {
                 tokenTrades.set(trade.token_mint, []);
             }

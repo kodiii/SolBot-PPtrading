@@ -4,7 +4,7 @@
 import { Database, open } from 'sqlite';
 import { RunResult } from 'sqlite3';
 import sqlite3 from 'sqlite3';
-import { ConnectionManager } from '../connection_manager';
+import { ConnectionManager } from '../db/connection_manager';
 import { EventEmitter } from 'events';
 import { performance } from 'perf_hooks';
 

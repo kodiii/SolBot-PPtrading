@@ -1,5 +1,5 @@
-import { initializePaperTradingDB, getVirtualBalance, recordSimulatedTrade, updateTokenPrice, getTrackedTokens } from '../paper_trading';
-import { ConnectionManager } from '../db/connection_manager';
+import { initializePaperTradingDB, getVirtualBalance, recordSimulatedTrade, updateTokenPrice, getTrackedTokens } from '../../papertrading/paper_trading';
+import { ConnectionManager } from '../../papertrading/db/connection_manager';
 import { Database } from 'sqlite';
 import { EventEmitter } from 'events';
 import { Decimal } from '../../utils/decimal';

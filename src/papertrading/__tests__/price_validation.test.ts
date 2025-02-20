@@ -1,4 +1,4 @@
-import { PriceValidator } from '../price_validation';
+import { PriceValidator } from '../../papertrading/price_validation';
 import { RollingAverageConfig } from '../../types';
 import { Decimal } from '../../utils/decimal';
 

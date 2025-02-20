@@ -3,7 +3,7 @@ import { WebSocketRequest } from "./types"; // Typescript Types for type safety
 import { config } from "./config"; // Configuration parameters for our bot
 import { fetchTransactionDetails, createSwapTransaction, getRugCheckConfirmed, fetchAndSaveSwapDetails } from "./transactions";
 import { validateEnv } from "./utils/env-validator";
-import { SimulationService } from "./services";
+import { SimulationService } from "./papertrading/services";
 
 // Initialize simulation service if simulation mode is enabled
 const simulationService = config.rug_check.simulation_mode ? SimulationService.getInstance() : null;

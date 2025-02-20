@@ -1,7 +1,7 @@
 import { Database, open } from 'sqlite';
 import * as sqlite3 from 'sqlite3';
 
-const DB_PATH = "src/tracker/paper_trading.db";
+const DB_PATH = "src/papertrading/db/paper_trading.db";
 
 export interface DatabaseTransaction {
   commit(): Promise<void>;

@@ -1,9 +1,8 @@
-import * as sqlite3 from "sqlite3";
 import { ConnectionManager } from "./db/connection_manager";
 import { config } from "../config";
 import { Decimal } from "../utils/decimal";
 
-const DB_PATH = "src/tracker/paper_trading.db";
+const DB_PATH = "src/papertrading/db/paper_trading.db";
 
 interface VirtualBalance {
   balance_sol: Decimal;
@@ -81,8 +80,8 @@ export async function initializePaperTradingDB(): Promise<boolean> {
       // Get current balance
       const balance = await db.get('SELECT * FROM virtual_balance ORDER BY id DESC LIMIT 1');
       
-      // Initialize or update balance if it doesn't match config
-      if (!balance || new Decimal(balance.balance_sol).toString() !== new Decimal(config.paper_trading.initial_balance).toString()) {
+      // Initialize balance only if it doesn't exist
+      if (!balance) {
         await db.run(
           'INSERT INTO virtual_balance (balance_sol, updated_at) VALUES (?, ?)',
           [new Decimal(config.paper_trading.initial_balance).toString(), Date.now()]

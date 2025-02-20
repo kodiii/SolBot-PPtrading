@@ -6,8 +6,9 @@ import { open } from "sqlite";
 import { createTableHoldings } from "./db";
 import { createSellTransactionResponse, HoldingRecord, LastPriceDexReponse } from "../types";
 import { DateTime } from "luxon";
+import { Decimal } from "../utils/decimal";
 import { createSellTransaction } from "../transactions";
-import { PriceValidator } from "./price_validation";
+import { PriceValidator } from "../papertrading/price_validation";
 
 // Load environment variables from the .env file
 dotenv.config();
@@ -152,14 +153,14 @@ async function main() {
           const currentTime = Date.now();
           if (priceFromJupiter) {
             priceValidator.addPricePoint(token, {
-              price: priceFromJupiter,
+              price: new Decimal(priceFromJupiter),
               timestamp: currentTime,
               source: 'jupiter'
             });
           }
           if (priceFromDex) {
             priceValidator.addPricePoint(token, {
-              price: priceFromDex,
+              price: new Decimal(priceFromDex),
               timestamp: currentTime,
               source: 'dexscreener'
             });
@@ -200,17 +201,17 @@ async function main() {
             saveLogTo(actionsLogs, `⛔ No valid price available for ${tokenName}. Skipping update.`);
             return;
           }
-
-          // Calculate PnL and profit/loss
-          const unrealizedPnLUSDC = (tokenCurrentPrice - tokenPerTokenPaidUSDC) * tokenBalance;
-          const unrealizedPnLPercentage = (unrealizedPnLUSDC / (tokenPerTokenPaidUSDC * tokenBalance)) * 100;
-          const iconPnl = unrealizedPnLUSDC > 0 ? "🟢" : "🔴";
+          // Convert current price to Decimal and calculate PnL
+          const currentPriceDecimal = new Decimal(tokenCurrentPrice);
+          const unrealizedPnLUSDC = currentPriceDecimal.subtract(tokenPerTokenPaidUSDC).multiply(tokenBalance);
+          const unrealizedPnLPercentage = unrealizedPnLUSDC.divide(tokenPerTokenPaidUSDC.multiply(tokenBalance)).multiply(new Decimal(100));
+          const iconPnl = unrealizedPnLUSDC.isPositive() ? "🟢" : "🔴";
 
           // Check SL/TP
           if (config.sell.auto_sell && config.sell.auto_sell === true) {
-            const shouldSell = 
-              unrealizedPnLPercentage >= config.sell.take_profit_percent || 
-              unrealizedPnLPercentage <= -config.sell.stop_loss_percent;
+            const shouldSell =
+              unrealizedPnLPercentage.greaterThan(new Decimal(config.sell.take_profit_percent)) ||
+              unrealizedPnLPercentage.lessThan(new Decimal(-config.sell.stop_loss_percent));
 
             if (shouldSell) {
               try {
@@ -222,13 +223,13 @@ async function main() {
 
                 // Add success to log output
                 if (result.success) {
-                  const actionType = unrealizedPnLPercentage > 0 ? "Took profit" : "Triggered Stop Loss";
+                  const actionType = unrealizedPnLPercentage.greaterThan(Decimal.ZERO) ? "Took profit" : "Triggered Stop Loss";
                   saveLogTo(actionsLogs, `✅${iconPnl} ${hrTradeTime}: ${actionType} for ${tokenName}\nTx: ${result.tx}`);
                 } else {
-                  saveLogTo(actionsLogs, `⚠️ ERROR when ${unrealizedPnLPercentage > 0 ? 'taking profit' : 'triggering Stop Loss'} for ${tokenName}: ${result.msg}`);
+                  saveLogTo(actionsLogs, `⚠️ ERROR when ${unrealizedPnLPercentage.greaterThan(Decimal.ZERO) ? 'taking profit' : 'triggering Stop Loss'} for ${tokenName}: ${result.msg}`);
                 }
               } catch (error) {
-                saveLogTo(actionsLogs, `⚠️ ERROR when ${unrealizedPnLPercentage > 0 ? 'taking profit' : 'triggering Stop Loss'} for ${tokenName}: ${error instanceof Error ? error.message : String(error)}`);
+                saveLogTo(actionsLogs, `⚠️ ERROR when ${unrealizedPnLPercentage.greaterThan(Decimal.ZERO) ? 'taking profit' : 'triggering Stop Loss'} for ${tokenName}: ${error instanceof Error ? error.message : String(error)}`);
               }
             }
           }
@@ -236,9 +237,9 @@ async function main() {
           // Get the current price
           saveLogTo(
             holdingLogs,
-            `${hrTradeTime}: Buy $${holding.SolPaidUSDC.toFixed(2)} | ${iconPnl} Unrealized PnL: $${unrealizedPnLUSDC.toFixed(
+            `${hrTradeTime}: Buy $${holding.SolPaidUSDC.toString(2)} | ${iconPnl} Unrealized PnL: $${unrealizedPnLUSDC.toString(
               2
-            )} (${unrealizedPnLPercentage.toFixed(2)}%) | ${tokenBalance} ${tokenName}`
+            )} (${unrealizedPnLPercentage.toString(2)}%) | ${tokenBalance} ${tokenName}`
           );
         })
       );
