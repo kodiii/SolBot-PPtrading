@@ -63,20 +63,20 @@ export const config = {
     allow_rugged: false,
     // Critical
     allow_mutable: true,
-    block_returning_token_names: true,
+    block_returning_token_names: false,
     block_returning_token_creators: false,
     block_symbols: ["XXX"],
     block_names: ["XXX"],
     only_contain_string: false, // Enable/disable string containment filter
     contain_string: ["AI", "GPT", "AGENT"], // Strings to match in token names (case insensitive)
     allow_insider_topholders: false, // Allow inseder accounts to be part of the topholders
-    max_alowed_pct_topholders: 35, // Max allowed percentage an individual topholder might hold
-    max_alowed_pct_all_topholders: 35, // Max allowed totalpercentage all topholders in total might hold related to supply
+    max_alowed_pct_topholders: 50, // Max allowed percentage an individual topholder might hold
+    max_alowed_pct_all_topholders: 50, // Max allowed totalpercentage all topholders in total might hold related to supply
     exclude_lp_from_topholders: true, // If true, Liquidity Pools will not be seen as top holders
     // Warning
     min_total_markets: 0,
     min_total_lp_providers: 0,
-    min_total_market_Liquidity: 10000,
+    min_total_market_Liquidity: 5000,
     // Misc
     ignore_pump_fun: false,
     max_score: 15000, // Set to 0 to ignore

@@ -166,10 +166,18 @@ export class SimulationService {
     }
   }
   private async checkPriceTargets(token: TokenTracking): Promise<void> {
-    if (token.current_price.lessThan(token.stop_loss) || token.current_price.equals(token.stop_loss)) {
-      await this.executeSell(token, 'Stop Loss triggered');
-    } else if (token.current_price.greaterThan(token.take_profit) || token.current_price.equals(token.take_profit)) {
-      await this.executeSell(token, 'Take Profit triggered');
+    // Calculate current price change percentage from buy price
+    const priceChangePercent = token.current_price.subtract(token.buy_price).divide(token.buy_price).multiply(new Decimal(100));
+    const stopLossThreshold = new Decimal(-config.sell.stop_loss_percent);
+    const takeProfitThreshold = new Decimal(config.sell.take_profit_percent);
+
+    // Stop loss triggered if price drops by configured percentage or more
+    if (priceChangePercent.lessThan(stopLossThreshold) || priceChangePercent.equals(stopLossThreshold)) {
+      await this.executeSell(token, `Stop Loss triggered at ${priceChangePercent.toString(2)}% change`);
+    }
+    // Take profit triggered if price increases by configured percentage or more
+    else if (priceChangePercent.greaterThan(takeProfitThreshold) || priceChangePercent.equals(takeProfitThreshold)) {
+      await this.executeSell(token, `Take Profit triggered at ${priceChangePercent.toString(2)}% change`);
     }
   }
 
