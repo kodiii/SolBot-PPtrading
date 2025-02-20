@@ -4,8 +4,9 @@
 **/
 export const config = {
   paper_trading: {
+    verbose_log: false, // Enable/disable detailed DexScreener response logging
     initial_balance: 5, // Initial paper trading balance in SOL
-    dashboard_refresh: 1500, // Update dashboard every 5 seconds
+    dashboard_refresh: 1000, // Update dashboard every 5 seconds
     price_check: {
       max_retries: 15, // Maximum number of retries for price fetching
       initial_delay: 3000, // Start with 1 second delay
