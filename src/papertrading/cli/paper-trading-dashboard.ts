@@ -6,7 +6,7 @@ import { config } from "../../config";
 const DB_PATH = "src/papertrading/db/paper_trading.db";
 const TABLE_WIDTH = 150;
 const TOKEN_COL_WIDTH = 45;
-const NUM_COL_WIDTH = 15;
+const NUM_COL_WIDTH = 20;
 const TIME_COL_WIDTH = 25;
 
 interface TokenPosition {
@@ -131,12 +131,12 @@ async function displayActivePositions(): Promise<void> {
                 const pnlColor = pnlPercent >= 0 ? chalk.green : chalk.red;
                 return [
                     pos.token_mint.padEnd(TOKEN_COL_WIDTH),
-                    pos.amount.toFixed(4).padEnd(NUM_COL_WIDTH),
-                    pos.buy_price.toFixed(4).padEnd(NUM_COL_WIDTH),
-                    pos.current_price.toFixed(4).padEnd(NUM_COL_WIDTH),
+                    pos.amount.toFixed(8).padEnd(NUM_COL_WIDTH),
+                    pos.buy_price.toFixed(8).padEnd(NUM_COL_WIDTH),
+                    pos.current_price.toFixed(8).padEnd(NUM_COL_WIDTH),
                     pnlColor(pnlPercent.toFixed(2) + '%'.padEnd(NUM_COL_WIDTH - 3)),
-                    pos.stop_loss.toFixed(4).padEnd(NUM_COL_WIDTH),
-                    pos.take_profit.toFixed(4).padEnd(NUM_COL_WIDTH)
+                    pos.stop_loss.toFixed(8).padEnd(NUM_COL_WIDTH),
+                    pos.take_profit.toFixed(8).padEnd(NUM_COL_WIDTH)
                 ];
             });
 
@@ -153,17 +153,17 @@ async function displayTradingStats(stats: TradingStats): Promise<void> {
     const content = [
         `${chalk.yellow('Total Trades:')} ${stats.totalTrades}`,
         `${chalk.yellow('Win Rate:')} ${stats.winRate >= 50 ? chalk.green(stats.winRate.toFixed(1)) : chalk.red(stats.winRate.toFixed(1))}%`,
-        `${chalk.yellow('Total P/L:')} ${stats.totalProfitLoss >= 0 ? chalk.green(stats.totalProfitLoss.toFixed(4)) : chalk.red(stats.totalProfitLoss.toFixed(4))} SOL`,
-        `${chalk.yellow('Avg P/L per Trade:')} ${stats.avgProfitPerTrade >= 0 ? chalk.green(stats.avgProfitPerTrade.toFixed(4)) : chalk.red(stats.avgProfitPerTrade.toFixed(4))} SOL`,
+        `${chalk.yellow('Total P/L:')} ${stats.totalProfitLoss >= 0 ? chalk.green(stats.totalProfitLoss.toFixed(8)) : chalk.red(stats.totalProfitLoss.toFixed(8))} SOL`,
+        `${chalk.yellow('Avg P/L per Trade:')} ${stats.avgProfitPerTrade >= 0 ? chalk.green(stats.avgProfitPerTrade.toFixed(8)) : chalk.red(stats.avgProfitPerTrade.toFixed(8))} SOL`,
     ];
 
     if (stats.bestTrade.profit !== -Infinity) {
         const bestTradeColor = stats.bestTrade.profit >= 0 ? chalk.green : chalk.red;
-        content.push(`${chalk.yellow('Best Trade:')} ${stats.bestTrade.token} (${bestTradeColor(stats.bestTrade.profit.toFixed(4))} SOL)`);
+        content.push(`${chalk.yellow('Best Trade:')} ${stats.bestTrade.token} (${bestTradeColor(stats.bestTrade.profit.toFixed(8))} SOL)`);
     }
     if (stats.worstTrade.profit !== Infinity) {
         const worstTradeColor = stats.worstTrade.profit >= 0 ? chalk.green : chalk.red;
-        content.push(`${chalk.yellow('Worst Trade:')} ${stats.worstTrade.token} (${worstTradeColor(stats.worstTrade.profit.toFixed(4))} SOL)`);
+        content.push(`${chalk.yellow('Worst Trade:')} ${stats.worstTrade.token} (${worstTradeColor(stats.worstTrade.profit.toFixed(8))} SOL)`);
     }
 
     drawBox('📈 Trading Statistics', content);
@@ -193,9 +193,9 @@ async function displayRecentTrades(limit: number = 10): Promise<void> {
                 new Date(trade.timestamp).toLocaleString().padEnd(TIME_COL_WIDTH),
                 (trade.type === 'buy' ? chalk.green : chalk.red)(trade.type.toUpperCase().padEnd(10)),
                 trade.token_mint.padEnd(TOKEN_COL_WIDTH),
-                trade.amount_sol.toFixed(4).padEnd(NUM_COL_WIDTH),
-                trade.price_per_token.toFixed(4).padEnd(NUM_COL_WIDTH),
-                trade.fees.toFixed(4).padEnd(NUM_COL_WIDTH)
+                trade.amount_sol.toFixed(8).padEnd(NUM_COL_WIDTH),
+                trade.price_per_token.toFixed(8).padEnd(NUM_COL_WIDTH),
+                trade.fees.toFixed(8).padEnd(NUM_COL_WIDTH)
             ]);
 
             drawTable(headers, rows, '📈 Recent Trades');
