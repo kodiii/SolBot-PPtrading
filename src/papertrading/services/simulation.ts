@@ -61,8 +61,11 @@ export class SimulationService {
   private static instance: SimulationService;
   private priceCheckInterval: NodeJS.Timeout | null = null;
   private lastPrices: Map<string, Decimal> = new Map();
+  private solUsdPrice: Decimal | null = null;
 
   private constructor() {
+    this.updateSolPrice(); // Initial SOL price fetch
+    setInterval(() => this.updateSolPrice(), 60000); // Update SOL price every minute
     // Initialize the paper trading database
     initializePaperTradingDB().then((success) => {
       if (success) {
@@ -251,6 +254,28 @@ export class SimulationService {
     }
 
     return false;
+  }
+
+  private async updateSolPrice(): Promise<void> {
+    try {
+      const response = await axios.get<DexscreenerPriceResponse>(
+        `https://api.dexscreener.com/token-pairs/v1/solana/${config.liquidity_pool.wsol_pc_mint}`,
+        { timeout: config.tx.get_timeout }
+      );
+
+      if (response.data && response.data.length > 0) {
+        const raydiumPair = response.data.find(pair => pair.dexId === 'raydium');
+        if (raydiumPair?.priceUsd) {
+          this.solUsdPrice = new Decimal(raydiumPair.priceUsd);
+        }
+      }
+    } catch (error) {
+      console.error('❌ Error fetching SOL price:', error);
+    }
+  }
+
+  public getSolUsdPrice(): Decimal | null {
+    return this.solUsdPrice;
   }
 
   public cleanup(): void {

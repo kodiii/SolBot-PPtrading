@@ -2,6 +2,7 @@ import chalk from "chalk";
 import { ConnectionManager } from "../db/connection_manager";
 import { initializePaperTradingDB, getVirtualBalance } from "../paper_trading";
 import { config } from "../../config";
+import { SimulationService } from "../services";
 
 const DB_PATH = "src/papertrading/db/paper_trading.db";
 const TABLE_WIDTH = 150;
@@ -96,9 +97,14 @@ function drawTable(headers: string[], rows: string[][], title: string): void {
 async function displayVirtualBalance(): Promise<void> {
     try {
         const balance = await getVirtualBalance();
+        const simulationService = SimulationService.getInstance();
+        const solUsdPrice = simulationService.getSolUsdPrice();
+
         if (balance) {
             const content = [
-                `${chalk.yellow('SOL Balance:')} ${chalk.green(balance.balance_sol.toString())} SOL`,
+                `${chalk.yellow('SOL Balance:')} ${chalk.green(balance.balance_sol.toString())} ${
+                    solUsdPrice ? ` (USD $${balance.balance_sol.multiply(solUsdPrice).toString()})` : ''
+                }`,
                 `${chalk.yellow('Last Updated:')} ${new Date(balance.updated_at).toLocaleString()}`
             ];
             drawBox('📊 Virtual Balance', content);
@@ -132,8 +138,8 @@ async function displayActivePositions(): Promise<void> {
                 return [
                     pos.token_mint.padEnd(TOKEN_COL_WIDTH),
                     pos.amount.toFixed(8).padEnd(NUM_COL_WIDTH),
-                    pos.buy_price.toFixed(8).padEnd(NUM_COL_WIDTH),
-                    pos.current_price.toFixed(8).padEnd(NUM_COL_WIDTH),
+                    `$${pos.buy_price.toString()}`.padEnd(NUM_COL_WIDTH),
+                    `$${pos.current_price.toString()}`.padEnd(NUM_COL_WIDTH),
                     pnlColor(pnlPercent.toFixed(2) + '%'.padEnd(NUM_COL_WIDTH - 3)),
                     pos.stop_loss.toFixed(8).padEnd(NUM_COL_WIDTH),
                     pos.take_profit.toFixed(8).padEnd(NUM_COL_WIDTH)
@@ -194,7 +200,7 @@ async function displayRecentTrades(limit: number = 10): Promise<void> {
                 (trade.type === 'buy' ? chalk.green : chalk.red)(trade.type.toUpperCase().padEnd(10)),
                 trade.token_mint.padEnd(TOKEN_COL_WIDTH),
                 trade.amount_sol.toFixed(8).padEnd(NUM_COL_WIDTH),
-                trade.price_per_token.toFixed(8).padEnd(NUM_COL_WIDTH),
+                `$${trade.price_per_token.toString()}`.padEnd(NUM_COL_WIDTH),
                 trade.fees.toFixed(8).padEnd(NUM_COL_WIDTH)
             ]);
 
