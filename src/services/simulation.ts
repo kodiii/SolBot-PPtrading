@@ -8,18 +8,57 @@ import {
   getTrackedTokens
 } from '../tracker/paper_trading';
 
-interface DexscreenerPriceResponse {
-  pairs: Array<{
-    priceUsd: string;
-    liquidity?: {
-      usd: number;
-    };
-  }> | null;
+interface DexscreenerPairInfo {
+  chainId: string;
+  dexId: string;
+  url: string;
+  pairAddress: string;
+  baseToken: {
+    address: string;
+    name: string;
+    symbol: string;
+  };
+  quoteToken: {
+    address: string;
+    name: string;
+    symbol: string;
+  };
+  priceNative: string;
+  priceUsd: string;
+  txns: {
+    m5: { buys: number; sells: number; };
+    h1: { buys: number; sells: number; };
+    h6: { buys: number; sells: number; };
+    h24: { buys: number; sells: number; };
+  };
+  volume: {
+    h24: number;
+    h6: number;
+    h1: number;
+    m5: number;
+  };
+  priceChange: {
+    m5: number;
+    h1: number;
+    h6: number;
+    h24: number;
+  };
+  liquidity: {
+    usd: number;
+    base: number;
+    quote: number;
+  };
+  fdv: number;
+  marketCap: number;
+  pairCreatedAt: number;
 }
+
+type DexscreenerPriceResponse = DexscreenerPairInfo[];
 
 export class SimulationService {
   private static instance: SimulationService;
   private priceCheckInterval: NodeJS.Timeout | null = null;
+  private lastPrices: Map<string, number> = new Map();
 
   private constructor() {
     // Initialize the paper trading database
@@ -63,19 +102,27 @@ export class SimulationService {
   public async getTokenPrice(tokenMint: string, retryCount = 0): Promise<number | null> {
     try {
       const attempt = retryCount + 1;
-      console.log(`🔍 Fetching price for token: ${tokenMint}${attempt > 1 ? ` (Attempt ${attempt}/${config.paper_trading.price_check.max_retries})` : ''}`);
+      if (config.paper_trading.verbose_log) {
+        console.log(`🔍 Fetching price for token: ${tokenMint}${attempt > 1 ? ` (Attempt ${attempt}/${config.paper_trading.price_check.max_retries})` : ''}`);
+      }
       
       const response = await axios.get<DexscreenerPriceResponse>(
-        `https://api.dexscreener.com/latest/dex/tokens/${tokenMint}`,
+        `https://api.dexscreener.com/token-pairs/v1/solana/${tokenMint}`,
         { timeout: config.tx.get_timeout }
       );
 
-      console.log(`📊 DexScreener response:`, JSON.stringify(response.data, null, 2));
+      if (config.paper_trading.verbose_log) {
+        console.log(`📊 DexScreener response:`, JSON.stringify(response.data, null, 2));
+      }
 
-      if (response.data.pairs && response.data.pairs.length > 0 && response.data.pairs[0].priceUsd) {
-        const price = parseFloat(response.data.pairs[0].priceUsd);
-        console.log(`💰 Found price: $${price}`);
-        return price;
+      if (response.data && response.data.length > 0) {
+        // Find Raydium pair
+        const raydiumPair = response.data.find(pair => pair.dexId === 'raydium');
+        if (raydiumPair?.priceUsd) {
+          const price = parseFloat(raydiumPair.priceUsd);
+          return price;
+        }
+        console.log('⚠️ No Raydium pair found');
       }
 
       // If we haven't exceeded max retries and response indicates no pairs yet

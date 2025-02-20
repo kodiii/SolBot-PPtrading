@@ -4,12 +4,13 @@
 **/
 export const config = {
   paper_trading: {
-    initial_balance: 3, // Initial paper trading balance in SOL
-    dashboard_refresh: 1500, // Update dashboard every 5 seconds
+    verbose_log: false, // Enable/disable detailed DexScreener response logging
+    initial_balance: 5, // Initial paper trading balance in SOL
+    dashboard_refresh: 1000, // Update dashboard every 5 seconds
     price_check: {
       max_retries: 15, // Maximum number of retries for price fetching
-      initial_delay: 1000, // Start with 1 second delay
-      max_delay: 15000, // Maximum delay between retries (5 seconds)
+      initial_delay: 3000, // Start with 1 second delay
+      max_delay: 5000, // Maximum delay between retries (5 seconds)
     }
   },
   // Paper trading price validation
@@ -36,7 +37,7 @@ export const config = {
     verbose_log: false,
     prio_fee_max_lamports: 10000000, // 0.01 SOL
     prio_level: "medium", // If you want to land transaction fast, set this to use `veryHigh`. You will pay on average higher priority fee.
-    amount: "100000000", //0.01 SOL
+    amount: "1000000000", //0.01 SOL
     slippageBps: "200", // 2%
     db_name_tracker_holdings: "src/tracker/holdings.db", // Sqlite Database location
     token_not_tradable_400_error_retries: 5, // How many times should the bot try to get a quote if the token is not tradable yet
@@ -48,8 +49,8 @@ export const config = {
     prio_level: "medium", // If you want to land transaction fast, set this to use `veryHigh`. You will pay on average higher priority fee.
     slippageBps: "200", // 2%
     auto_sell: true, // If set to true, stop loss and take profit triggers automatically when set.
-    stop_loss_percent: 10,
-    take_profit_percent: 25,
+    stop_loss_percent: 30,
+    take_profit_percent: 26,
     track_public_wallet: "", // If set an additional log line will be shown with a link to track your wallet
   },
   rug_check: {
@@ -63,31 +64,29 @@ export const config = {
     // Critical
     allow_mutable: true,
     block_returning_token_names: true,
-    block_returning_token_creators: true,
+    block_returning_token_creators: false,
     block_symbols: ["XXX"],
     block_names: ["XXX"],
     only_contain_string: false, // Enable/disable string containment filter
     contain_string: ["AI", "GPT", "AGENT"], // Strings to match in token names (case insensitive)
     allow_insider_topholders: false, // Allow inseder accounts to be part of the topholders
-    max_alowed_pct_topholders: 50, // Max allowed percentage an individual topholder might hold
-    max_alowed_pct_all_topholders: 50, // Max allowed totalpercentage all topholders in total might hold related to supply
+    max_alowed_pct_topholders: 35, // Max allowed percentage an individual topholder might hold
+    max_alowed_pct_all_topholders: 35, // Max allowed totalpercentage all topholders in total might hold related to supply
     exclude_lp_from_topholders: true, // If true, Liquidity Pools will not be seen as top holders
     // Warning
     min_total_markets: 0,
     min_total_lp_providers: 0,
-    min_total_market_Liquidity: 5000,
+    min_total_market_Liquidity: 10000,
     // Misc
     ignore_pump_fun: false,
-    max_score: 20000, // Set to 0 to ignore
+    max_score: 15000, // Set to 0 to ignore
     legacy_not_allowed: [
-      //"Low Liquidity",
       "Freeze Authority still enabled",
       "Single holder ownership",
+      "Copycat token",
       //"High holder concentration",
-      "Freeze Authority still enabled",
       //"Large Amount of LP Unlocked",
       //"Low Liquidity",
-      "Copycat token",
       //"Low amount of LP Providers",
     ],
   },
