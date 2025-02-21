@@ -18,7 +18,8 @@ export const config = {
   paper_trading: {
     verbose_log: false, // Enable/disable detailed DexScreener response logging
     initial_balance: 5, // Initial paper trading balance in SOL
-    dashboard_refresh: 1000, // Update dashboard every 5 seconds
+    dashboard_refresh: 5000, // Update dashboard every 5 seconds
+    max_open_positions: 5, // Maximum number of positions that can be open simultaneously
     price_check: {
       max_retries: 15, // Maximum number of retries for price fetching
       initial_delay: 3000, // Start with 1 second delay
@@ -40,6 +41,7 @@ export const config = {
     amount: "1000000000", //0.01 SOL
     slippageBps: "200", // 2%
     db_name_tracker_holdings: "src/tracker/holdings.db", // Sqlite Database location
+    max_open_positions: 5, // Maximum number of positions that can be open simultaneously
     token_not_tradable_400_error_retries: 5, // How many times should the bot try to get a quote if the token is not tradable yet
     token_not_tradable_400_error_delay: 2000, // How many seconds should the bot wait before retrying to get a quote again
   },

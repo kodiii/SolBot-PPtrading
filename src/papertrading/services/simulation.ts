@@ -6,6 +6,7 @@ import {
   getVirtualBalance,
   updateTokenPrice,
   getTrackedTokens,
+  getOpenPositionsCount,
   TokenTracking
 } from '../paper_trading';
 import { Decimal } from '../../utils/decimal';
@@ -195,6 +196,13 @@ export class SimulationService {
     tokenName: string,
     currentPrice: Decimal
   ): Promise<boolean> {
+    // Check positions limit
+    const openPositions = await getOpenPositionsCount();
+    if (openPositions >= config.paper_trading.max_open_positions) {
+      console.log(`❌ Maximum open positions limit (${config.paper_trading.max_open_positions}) reached`);
+      return false;
+    }
+
     const balance = await getVirtualBalance();
     if (!balance) {
       console.log('❌ Could not get virtual balance');

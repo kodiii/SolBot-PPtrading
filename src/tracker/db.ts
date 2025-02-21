@@ -12,68 +12,66 @@ export async function createTableHoldings(database: any): Promise<boolean> {
       Time INTEGER NOT NULL,
       Token TEXT NOT NULL,
       TokenName TEXT NOT NULL,
-      Balance REAL NOT NULL,
-      SolPaid REAL NOT NULL,
-      SolFeePaid REAL NOT NULL,
-      SolPaidUSDC REAL NOT NULL,
-      SolFeePaidUSDC REAL NOT NULL,
-      PerTokenPaidUSDC REAL NOT NULL,
+      Balance TEXT NOT NULL,
+      SolPaid TEXT NOT NULL,
+      SolFeePaid TEXT NOT NULL,
+      SolPaidUSDC TEXT NOT NULL,
+      SolFeePaidUSDC TEXT NOT NULL,
+      PerTokenPaidUSDC TEXT NOT NULL,
       Slot INTEGER NOT NULL,
       Program TEXT NOT NULL
     );
   `);
     return true;
   } catch (error: any) {
+    console.error('Error creating holdings table:', error);
     return false;
   }
 }
 
-export async function insertHolding(holding: HoldingRecord) {
-  const db = await open({
+async function getDb() {
+  return await open({
     filename: config.swap.db_name_tracker_holdings,
-    driver: sqlite3.Database,
+    driver: sqlite3.Database
   });
+}
 
-  // Create Table if not exists
-  const holdingsTableExist = await createTableHoldings(db);
-  if (!holdingsTableExist) {
-    await db.close();
-  }
+export async function insertHolding(holding: HoldingRecord) {
+  const db = await getDb();
 
-  // Proceed with adding holding
-  if (holdingsTableExist) {
+  try {
+    // Create Table if not exists
+    const holdingsTableExist = await createTableHoldings(db);
+    if (!holdingsTableExist) {
+      throw new Error('Failed to create holdings table');
+    }
+
     const { Time, Token, TokenName, Balance, SolPaid, SolFeePaid, SolPaidUSDC, SolFeePaidUSDC, PerTokenPaidUSDC, Slot, Program } = holding;
     await db.run(
-      `
-    INSERT INTO holdings (Time, Token, TokenName, Balance, SolPaid, SolFeePaid, SolPaidUSDC, SolFeePaidUSDC, PerTokenPaidUSDC, Slot, Program)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
-  `,
-      [Time, Token, TokenName, Balance, SolPaid, SolFeePaid, SolPaidUSDC, SolFeePaidUSDC, PerTokenPaidUSDC, Slot, Program]
+      `INSERT INTO holdings (Time, Token, TokenName, Balance, SolPaid, SolFeePaid, SolPaidUSDC, SolFeePaidUSDC, PerTokenPaidUSDC, Slot, Program)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
+      [Time, Token, TokenName, Balance.toString(), 
+       SolPaid.toString(), SolFeePaid.toString(), SolPaidUSDC.toString(),
+       SolFeePaidUSDC.toString(), PerTokenPaidUSDC.toString(), Slot, Program]
     );
-
+  } finally {
     await db.close();
   }
 }
 
 export async function removeHolding(tokenMint: string) {
-  const db = await open({
-    filename: config.swap.db_name_tracker_holdings,
-    driver: sqlite3.Database,
-  });
+  const db = await getDb();
 
-  // Proceed with deleting the holding
-  await db.run(
-    `
-    DELETE FROM holdings
-    WHERE Token = ?;
-    `,
-    [tokenMint]
-  );
-
-  await db.close();
+  try {
+    await db.run(
+      `DELETE FROM holdings WHERE Token = ?;`,
+      [tokenMint]
+    );
+  } finally {
+    await db.close();
+  }
 }
 
-// New token duplicates tracker
 export async function createTableNewTokens(database: any): Promise<boolean> {
   try {
     await database.exec(`
@@ -87,125 +85,98 @@ export async function createTableNewTokens(database: any): Promise<boolean> {
   `);
     return true;
   } catch (error: any) {
+    console.error('Error creating tokens table:', error);
     return false;
   }
 }
 
 export async function insertNewToken(newToken: NewTokenRecord) {
-  const db = await open({
-    filename: config.swap.db_name_tracker_holdings,
-    driver: sqlite3.Database,
-  });
+  const db = await getDb();
 
-  // Create Table if not exists
-  const newTokensTableExist = await createTableNewTokens(db);
-  if (!newTokensTableExist) {
-    await db.close();
-  }
+  try {
+    const newTokensTableExist = await createTableNewTokens(db);
+    if (!newTokensTableExist) {
+      throw new Error('Failed to create tokens table');
+    }
 
-  // Proceed with adding holding
-  if (newTokensTableExist) {
     const { time, name, mint, creator } = newToken;
-
     await db.run(
-      `
-    INSERT INTO tokens (time, name, mint, creator)
-    VALUES (?, ?, ?, ?);
-  `,
+      `INSERT INTO tokens (time, name, mint, creator) VALUES (?, ?, ?, ?);`,
       [time, name, mint, creator]
     );
-
+  } finally {
     await db.close();
   }
 }
 
 export async function selectTokenByNameAndCreator(name: string, creator: string): Promise<NewTokenRecord[]> {
-  // Open the database
-  const db = await open({
-    filename: config.swap.db_name_tracker_holdings,
-    driver: sqlite3.Database,
-  });
+  const db = await getDb();
 
-  // Create Table if not exists
-  const newTokensTableExist = await createTableNewTokens(db);
-  if (!newTokensTableExist) {
+  try {
+    const newTokensTableExist = await createTableNewTokens(db);
+    if (!newTokensTableExist) {
+      throw new Error('Failed to create tokens table');
+    }
+
+    return await db.all(
+      `SELECT * FROM tokens WHERE name = ? OR creator = ?;`,
+      [name, creator]
+    );
+  } finally {
     await db.close();
-    return [];
   }
-
-  // Query the database for matching tokens
-  const tokens = await db.all(
-    `
-    SELECT * 
-    FROM tokens
-    WHERE name = ? OR creator = ?;
-  `,
-    [name, creator]
-  );
-
-  // Close the database
-  await db.close();
-
-  // Return the results
-  return tokens;
 }
 
 export async function selectTokenByMint(mint: string): Promise<NewTokenRecord[]> {
-  // Open the database
-  const db = await open({
-    filename: config.swap.db_name_tracker_holdings,
-    driver: sqlite3.Database,
-  });
+  const db = await getDb();
 
-  // Create Table if not exists
-  const newTokensTableExist = await createTableNewTokens(db);
-  if (!newTokensTableExist) {
+  try {
+    const newTokensTableExist = await createTableNewTokens(db);
+    if (!newTokensTableExist) {
+      throw new Error('Failed to create tokens table');
+    }
+
+    return await db.all(
+      `SELECT * FROM tokens WHERE mint = ?;`,
+      [mint]
+    );
+  } finally {
     await db.close();
-    return [];
   }
+}
 
-  // Query the database for matching tokens
-  const tokens = await db.all(
-    `
-    SELECT * 
-    FROM tokens
-    WHERE mint = ?;
-  `,
-    [mint]
-  );
+export async function getOpenPositionsCount(): Promise<number> {
+  const db = await getDb();
 
-  // Close the database
-  await db.close();
+  try {
+    const holdingsTableExist = await createTableHoldings(db);
+    if (!holdingsTableExist) {
+      throw new Error('Failed to create holdings table');
+    }
 
-  // Return the results
-  return tokens;
+    const result = await db.get('SELECT COUNT(*) as count FROM holdings');
+    return result ? result.count : 0;
+  } catch (error) {
+    console.error('Error getting open positions count:', error);
+    return 0;
+  } finally {
+    if (db) {
+      await db.close();
+    }
+  }
 }
 
 export async function selectAllTokens(): Promise<NewTokenRecord[]> {
-  // Open the database
-  const db = await open({
-    filename: config.swap.db_name_tracker_holdings,
-    driver: sqlite3.Database,
-  });
+  const db = await getDb();
 
-  // Create Table if not exists
-  const newTokensTableExist = await createTableNewTokens(db);
-  if (!newTokensTableExist) {
+  try {
+    const newTokensTableExist = await createTableNewTokens(db);
+    if (!newTokensTableExist) {
+      throw new Error('Failed to create tokens table');
+    }
+
+    return await db.all('SELECT * FROM tokens');
+  } finally {
     await db.close();
-    return [];
   }
-
-  // Query the database for matching tokens
-  const tokens = await db.all(
-    `
-    SELECT * 
-    FROM tokens;
-  `
-  );
-
-  // Close the database
-  await db.close();
-
-  // Return the results
-  return tokens;
 }

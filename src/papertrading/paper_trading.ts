@@ -228,6 +228,22 @@ export async function updateTokenPrice(tokenMint: string, currentPrice: Decimal)
   }
 }
 
+export async function getOpenPositionsCount(): Promise<number> {
+  const connectionManager = ConnectionManager.getInstance(DB_PATH);
+  try {
+    const db = await connectionManager.getConnection();
+    try {
+      const result = await db.get('SELECT COUNT(*) as count FROM token_tracking');
+      return result ? result.count : 0;
+    } finally {
+      connectionManager.releaseConnection(db);
+    }
+  } catch (error) {
+    console.error('Error getting open positions count:', error);
+    return 0;
+  }
+}
+
 export async function getTrackedTokens(): Promise<TokenTracking[]> {
   const connectionManager = ConnectionManager.getInstance(DB_PATH);
   try {

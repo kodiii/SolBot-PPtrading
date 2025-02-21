@@ -1,4 +1,4 @@
-import { initializePaperTradingDB, getVirtualBalance, recordSimulatedTrade, updateTokenPrice, getTrackedTokens } from '../../papertrading/paper_trading';
+import { initializePaperTradingDB, getVirtualBalance, recordSimulatedTrade, updateTokenPrice, getTrackedTokens, getOpenPositionsCount } from '../../papertrading/paper_trading';
 import { ConnectionManager } from '../../papertrading/db/connection_manager';
 import { Database } from 'sqlite';
 import { EventEmitter } from 'events';
@@ -155,6 +155,26 @@ describe('Paper Trading', () => {
       mockConnectionManager.transaction.mockRejectedValueOnce(new Error('Transaction Error'));
       const result = await recordSimulatedTrade(mockTrade);
       expect(result).toBe(false);
+    });
+  });
+
+  describe('position counting operations', () => {
+    it('should get open positions count', async () => {
+      getMock.mockResolvedValueOnce({ count: 3 });
+      const count = await getOpenPositionsCount();
+      expect(count).toBe(3);
+    });
+
+    it('should return 0 when no positions exist', async () => {
+      getMock.mockResolvedValueOnce({ count: 0 });
+      const count = await getOpenPositionsCount();
+      expect(count).toBe(0);
+    });
+
+    it('should handle errors when getting positions count', async () => {
+      getMock.mockRejectedValueOnce(new Error('DB Error'));
+      const count = await getOpenPositionsCount();
+      expect(count).toBe(0);
     });
   });
 

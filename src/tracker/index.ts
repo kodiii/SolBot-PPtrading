@@ -3,7 +3,10 @@ import axios from "axios";
 import * as sqlite3 from "sqlite3";
 import dotenv from "dotenv";
 import { open } from "sqlite";
-import { createTableHoldings } from "./db";
+import { createTableHoldings, getOpenPositionsCount } from "./db";
+
+export { getOpenPositionsCount };
+
 import { createSellTransactionResponse, HoldingRecord, LastPriceDexReponse } from "../types";
 import { DateTime } from "luxon";
 import { Decimal } from "../utils/decimal";

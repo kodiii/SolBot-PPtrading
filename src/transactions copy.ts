@@ -16,7 +16,8 @@ import {
   createSellTransactionResponse,
 } from "./types";
 import { Decimal } from "./utils/decimal";
-import { getOpenPositionsCount, insertHolding, insertNewToken, removeHolding, selectTokenByMint, selectTokenByNameAndCreator } from "./tracker/db";
+import { insertHolding, insertNewToken, removeHolding, selectTokenByMint, selectTokenByNameAndCreator } from "./tracker/db";
+
 // Load environment variables from the .env file
 dotenv.config();
 
@@ -135,13 +136,6 @@ export async function fetchTransactionDetails(signature: string): Promise<MintsD
 }
 
 export async function createSwapTransaction(solMint: string, tokenMint: string): Promise<string | null> {
-  // Check open positions limit
-  const openPositions = await getOpenPositionsCount();
-  if (openPositions >= config.swap.max_open_positions) {
-    console.log(`❌ Maximum open positions limit (${config.swap.max_open_positions}) reached`);
-    return null;
-  }
-
   const quoteUrl = process.env.JUP_HTTPS_QUOTE_URI || "";
   const swapUrl = process.env.JUP_HTTPS_SWAP_URI || "";
   const rpcUrl = process.env.HELIUS_HTTPS_URI || "";
