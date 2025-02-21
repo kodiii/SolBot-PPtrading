@@ -246,33 +246,40 @@ export class SimulationService {
    * @returns Success status of the buy operation
    */
   public async executeBuy(
-    tokenMint: string,
-    tokenName: string,
-    currentPrice: Decimal
-  ): Promise<boolean> {
-    // Check positions limit
-    const openPositions = await getOpenPositionsCount();
-    if (openPositions >= config.paper_trading.max_open_positions) {
-      console.log(`❌ Maximum open positions limit (${config.paper_trading.max_open_positions}) reached`);
-      return false;
-    }
+  tokenMint: string,
+  tokenName: string,
+  currentPrice: Decimal
+): Promise<boolean> {
+  // Check positions limit
+  const openPositions = await getOpenPositionsCount();
+  if (openPositions >= config.paper_trading.max_open_positions) {
+    console.log(`❌ Maximum open positions limit (${config.paper_trading.max_open_positions}) reached`);
+    return false;
+  }
 
-    const balance = await getVirtualBalance();
-    if (!balance) {
-      console.log('❌ Could not get virtual balance');
-      return false;
-    }
+  const balance = await getVirtualBalance();
+  if (!balance) {
+    console.log('❌ Could not get virtual balance');
+    return false;
+  }
 
-    // Use fixed amount from config
-    const amountInSol = new Decimal(config.swap.amount).divide(Decimal.LAMPORTS_PER_SOL);
-    const fees = new Decimal(config.swap.prio_fee_max_lamports).divide(Decimal.LAMPORTS_PER_SOL);
+  // Use fixed amount from config
+  const amountInSol = new Decimal(config.swap.amount).divide(Decimal.LAMPORTS_PER_SOL);
+  const fees = new Decimal(config.swap.prio_fee_max_lamports).divide(Decimal.LAMPORTS_PER_SOL);
 
-    if (balance.balance_sol.lessThan(amountInSol.add(fees))) {
-      console.log('❌ Insufficient virtual balance for trade');
-      return false;
-    }
+  if (balance.balance_sol.lessThan(amountInSol.add(fees))) {
+    console.log('❌ Insufficient virtual balance for trade');
+    return false;
+  }
 
-    const amountTokens = amountInSol.divide(currentPrice);
+  // Apply slippage to simulate real market conditions
+  const slippageBps = new Decimal(config.swap.slippageBps);
+  const maxSlippage = slippageBps.divide(10000); // Convert basis points to decimal (200 -> 0.02)
+  const randomSlippage = maxSlippage.multiply(new Decimal(Math.random())); // Random slippage between 0 and max
+  const priceWithSlippage = currentPrice.multiply(Decimal.ONE.add(randomSlippage));
+
+  // Calculate token amount with slippage-adjusted price
+  const amountTokens = amountInSol.divide(priceWithSlippage);
 
     const success = await recordSimulatedTrade({
       timestamp: Date.now(),
@@ -280,14 +287,16 @@ export class SimulationService {
       token_name: tokenName,
       amount_sol: amountInSol,
       amount_token: amountTokens,
-      price_per_token: currentPrice,
+      price_per_token: priceWithSlippage, // Store slippage-adjusted price
       type: 'buy',
       fees: fees
     });
 
     if (success) {
+      console.log(`🎯 Simulated slippage: ${randomSlippage.multiply(100).toString(4)}%`);
       console.log(`🎮 Paper Trade: Bought ${amountTokens.toString(2)} ${tokenName} tokens`);
-      console.log(`💰 Price per token: $${currentPrice.toString()}`);
+      console.log(`💰 Original price: $${currentPrice.toString()}`);
+      console.log(`💰 Price with slippage: $${priceWithSlippage.toString()}`);
       console.log(`🏦 Total spent: ${amountInSol.toString(4)} SOL (+ ${fees.toString()} SOL fees)`);
       return true;
     }
@@ -305,16 +314,24 @@ export class SimulationService {
     token: TokenTracking,
     reason: string
   ): Promise<boolean> {
-    const amountInSol = token.amount.multiply(token.current_price);
+    // Apply slippage to simulate real market conditions
+    const slippageBps = new Decimal(config.sell.slippageBps);
+    const maxSlippage = slippageBps.divide(10000); // Convert basis points to decimal (200 -> 0.02)
+    const randomSlippage = maxSlippage.multiply(new Decimal(Math.random())); // Random slippage between 0 and max
+    const priceWithSlippage = token.current_price.multiply(Decimal.ONE.subtract(randomSlippage));
+
+    const amountInSol = token.amount.multiply(priceWithSlippage);
     const fees = new Decimal(config.sell.prio_fee_max_lamports).divide(Decimal.LAMPORTS_PER_SOL);
 
+    console.log(`🎯 Simulated slippage: ${randomSlippage.multiply(100).toString(4)}%`);
+    
     const success = await recordSimulatedTrade({
       timestamp: Date.now(),
       token_mint: token.token_mint,
       token_name: token.token_name,
       amount_sol: amountInSol,
       amount_token: token.amount,
-      price_per_token: token.current_price,
+      price_per_token: priceWithSlippage, // Store slippage-adjusted price
       type: 'sell',
       fees: fees
     });
@@ -322,7 +339,8 @@ export class SimulationService {
     if (success) {
       console.log(`🎮 Paper Trade: ${reason}`);
       console.log(`📈 Sold ${token.amount.toString(2)} ${token.token_name} tokens`);
-      console.log(`💰 Price per token: $${token.current_price.toString()}`);
+      console.log(`💰 Original price: $${token.current_price.toString()}`);
+      console.log(`💰 Price with slippage: $${priceWithSlippage.toString()}`);
       console.log(`🏦 Total received: ${amountInSol.toString(4)} SOL (- ${fees.toString()} SOL fees)`);
       return true;
     }
