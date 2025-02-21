@@ -1,4 +1,6 @@
 import chalk from "chalk";
+import dotenv from "dotenv";
+dotenv.config(); // Load environment variables
 import { ConnectionManager } from "../db/connection_manager";
 import { initializePaperTradingDB, getVirtualBalance } from "../paper_trading";
 import { config } from "../../config";
@@ -14,33 +16,33 @@ const TIME_COL_WIDTH = 25;
 interface TokenPosition {
     token_mint: string;
     token_name: string;
-    amount: number;
-    buy_price: number;
-    current_price: number;
+    amount: Decimal;
+    buy_price: Decimal;
+    current_price: Decimal;
     last_updated: number;
-    stop_loss: number;
-    take_profit: number;
+    stop_loss: Decimal;
+    take_profit: Decimal;
 }
 
 interface SimulatedTrade {
     timestamp: number;
     token_mint: string;
     token_name: string;
-    amount_sol: number;
-    amount_token: number;
-    price_per_token: number;
+    amount_sol: Decimal;
+    amount_token: Decimal;
+    price_per_token: Decimal;
     type: 'buy' | 'sell';
-    fees: number;
+    fees: Decimal;
 }
 
 interface TradingStats {
     totalTrades: number;
     profitableTrades: number;
-    totalProfitLoss: number;
-    winRate: number;
-    avgProfitPerTrade: number;
-    bestTrade: { token: string; profit: number };
-    worstTrade: { token: string; profit: number };
+    totalProfitLoss: Decimal;
+    winRate: Decimal;
+    avgProfitPerTrade: Decimal;
+    bestTrade: { token: string; profit: Decimal };
+    worstTrade: { token: string; profit: Decimal };
 }
 
 const BOX = {
@@ -120,7 +122,14 @@ async function displayActivePositions(): Promise<void> {
     const connectionManager = ConnectionManager.getInstance(DB_PATH);
     try {
         const db = await connectionManager.getConnection();
-        const positions = await db.all('SELECT * FROM token_tracking');
+        const positions = (await db.all('SELECT * FROM token_tracking')).map(pos => ({
+            ...pos,
+            amount: new Decimal(pos.amount),
+            buy_price: new Decimal(pos.buy_price),
+            current_price: new Decimal(pos.current_price),
+            stop_loss: new Decimal(pos.stop_loss),
+            take_profit: new Decimal(pos.take_profit)
+        }));
         connectionManager.releaseConnection(db);
 
         if (positions.length > 0) {
@@ -135,16 +144,16 @@ async function displayActivePositions(): Promise<void> {
             ];
 
             const rows = positions.map((pos: TokenPosition) => {
-                const pnlPercent = ((pos.current_price - pos.buy_price) / pos.buy_price) * 100;
-                const pnlColor = pnlPercent >= 0 ? chalk.green : chalk.red;
+                const pnlPercent = pos.current_price.subtract(pos.buy_price).divide(pos.buy_price).multiply(new Decimal(100));
+                const pnlColor = pnlPercent.isPositive() || pnlPercent.isZero() ? chalk.green : chalk.red;
                 return [
                     pos.token_mint.padEnd(TOKEN_COL_WIDTH),
-                    pos.amount.toFixed(8).padEnd(NUM_COL_WIDTH),
-                    `$${pos.buy_price.toFixed(8)}`.padEnd(NUM_COL_WIDTH),
-                    `$${pos.current_price.toFixed(8)}`.padEnd(NUM_COL_WIDTH),
-                    pnlColor(pnlPercent.toFixed(2) + '%'.padEnd(NUM_COL_WIDTH - 3)),
-                    pos.stop_loss.toFixed(8).padEnd(NUM_COL_WIDTH),
-                    pos.take_profit.toFixed(8).padEnd(NUM_COL_WIDTH)
+                    pos.amount.toString(8).padEnd(NUM_COL_WIDTH),
+                    `$${pos.buy_price.toString(8)}`.padEnd(NUM_COL_WIDTH),
+                    `$${pos.current_price.toString(8)}`.padEnd(NUM_COL_WIDTH),
+                    pnlColor(pnlPercent.toString(2) + '%'.padEnd(NUM_COL_WIDTH - 3)),
+                    pos.stop_loss.toString(8).padEnd(NUM_COL_WIDTH),
+                    pos.take_profit.toString(8).padEnd(NUM_COL_WIDTH)
                 ];
             });
 
@@ -160,18 +169,18 @@ async function displayActivePositions(): Promise<void> {
 async function displayTradingStats(stats: TradingStats): Promise<void> {
     const content = [
         `${chalk.yellow('Total Trades:')} ${stats.totalTrades}`,
-        `${chalk.yellow('Win Rate:')} ${stats.winRate >= 50 ? chalk.green(stats.winRate.toFixed(1)) : chalk.red(stats.winRate.toFixed(1))}%`,
-        `${chalk.yellow('Total P/L:')} ${stats.totalProfitLoss >= 0 ? chalk.green(stats.totalProfitLoss.toFixed(8)) : chalk.red(stats.totalProfitLoss.toFixed(8))} SOL`,
-        `${chalk.yellow('Avg P/L per Trade:')} ${stats.avgProfitPerTrade >= 0 ? chalk.green(stats.avgProfitPerTrade.toFixed(8)) : chalk.red(stats.avgProfitPerTrade.toFixed(8))} SOL`,
+        `${chalk.yellow('Win Rate:')} ${stats.winRate.greaterThan(50) || stats.winRate.equals(50) ? chalk.green(stats.winRate.toString(1)) : chalk.red(stats.winRate.toString(1))}%`,
+        `${chalk.yellow('Total P/L:')} ${stats.totalProfitLoss.isPositive() || stats.totalProfitLoss.isZero() ? chalk.green(stats.totalProfitLoss.toString()) : chalk.red(stats.totalProfitLoss.toString())} SOL`,
+        `${chalk.yellow('Avg P/L per Trade:')} ${stats.avgProfitPerTrade.isPositive() || stats.avgProfitPerTrade.isZero() ? chalk.green(stats.avgProfitPerTrade.toString()) : chalk.red(stats.avgProfitPerTrade.toString())} SOL`,
     ];
 
-    if (stats.bestTrade.profit !== -Infinity) {
-        const bestTradeColor = stats.bestTrade.profit >= 0 ? chalk.green : chalk.red;
-        content.push(`${chalk.yellow('Best Trade:')} ${stats.bestTrade.token} (${bestTradeColor(stats.bestTrade.profit.toFixed(8))} SOL)`);
+    if (!stats.bestTrade.profit.equals(new Decimal(-Infinity))) {
+        const bestTradeColor = stats.bestTrade.profit.isPositive() || stats.bestTrade.profit.isZero() ? chalk.green : chalk.red;
+        content.push(`${chalk.yellow('Best Trade:')} ${stats.bestTrade.token} (${bestTradeColor(stats.bestTrade.profit.toString(8))} SOL)`);
     }
-    if (stats.worstTrade.profit !== Infinity) {
-        const worstTradeColor = stats.worstTrade.profit >= 0 ? chalk.green : chalk.red;
-        content.push(`${chalk.yellow('Worst Trade:')} ${stats.worstTrade.token} (${worstTradeColor(stats.worstTrade.profit.toFixed(8))} SOL)`);
+    if (!stats.worstTrade.profit.equals(new Decimal(Infinity))) {
+        const worstTradeColor = stats.worstTrade.profit.isPositive() || stats.worstTrade.profit.isZero() ? chalk.green : chalk.red;
+        content.push(`${chalk.yellow('Worst Trade:')} ${stats.worstTrade.token} (${worstTradeColor(stats.worstTrade.profit.toString(8))} SOL)`);
     }
 
     drawBox('📈 Trading Statistics', content);
@@ -181,10 +190,16 @@ async function displayRecentTrades(limit: number = 20): Promise<void> {
     const connectionManager = ConnectionManager.getInstance(DB_PATH);
     try {
         const db = await connectionManager.getConnection();
-        const trades = await db.all(
+        const trades = (await db.all(
             'SELECT * FROM simulated_trades ORDER BY timestamp DESC LIMIT ?',
             [limit]
-        );
+        )).map(trade => ({
+            ...trade,
+            amount_sol: new Decimal(trade.amount_sol),
+            amount_token: new Decimal(trade.amount_token),
+            price_per_token: new Decimal(trade.price_per_token),
+            fees: new Decimal(trade.fees)
+        }));
         connectionManager.releaseConnection(db);
 
         if (trades.length > 0) {
@@ -201,9 +216,9 @@ async function displayRecentTrades(limit: number = 20): Promise<void> {
                 new Date(trade.timestamp).toLocaleString().padEnd(TIME_COL_WIDTH),
                 (trade.type === 'buy' ? chalk.green : chalk.red)(trade.type.toUpperCase().padEnd(10)),
                 trade.token_mint.padEnd(TOKEN_COL_WIDTH),
-                trade.amount_sol.toFixed(8).padEnd(NUM_COL_WIDTH),
-                `$${trade.price_per_token.toFixed(8)}`.padEnd(NUM_COL_WIDTH),
-                trade.fees.toFixed(8).padEnd(NUM_COL_WIDTH)
+                trade.amount_sol.toString(8).padEnd(NUM_COL_WIDTH),
+                `$${trade.price_per_token.toString(8)}`.padEnd(NUM_COL_WIDTH),
+                trade.fees.toString(8).padEnd(NUM_COL_WIDTH)
             ]);
 
             drawTable(headers, rows, '📈 Recent Trades');
@@ -236,7 +251,13 @@ async function calculateTradingStats(): Promise<TradingStats | null> {
     const connectionManager = ConnectionManager.getInstance(DB_PATH);
     try {
         const db = await connectionManager.getConnection();
-        const trades = await db.all('SELECT * FROM simulated_trades');
+        const trades = (await db.all('SELECT * FROM simulated_trades')).map(trade => ({
+            ...trade,
+            amount_sol: new Decimal(trade.amount_sol),
+            amount_token: new Decimal(trade.amount_token),
+            price_per_token: new Decimal(trade.price_per_token),
+            fees: new Decimal(trade.fees)
+        }));
         connectionManager.releaseConnection(db);
 
         if (trades.length === 0) return null;
@@ -249,46 +270,55 @@ async function calculateTradingStats(): Promise<TradingStats | null> {
             tokenTrades.get(trade.token_mint)?.push(trade);
         });
 
-        let totalProfitLoss = 0;
+        let totalProfitLoss = Decimal.ZERO;
         let profitableTrades = 0;
-        let bestTrade = { token: '', profit: -Infinity };
-        let worstTrade = { token: '', profit: Infinity };
+        let bestTrade = { token: '', profit: new Decimal(-Infinity) };
+        let worstTrade = { token: '', profit: new Decimal(Infinity) };
 
         tokenTrades.forEach((trades, tokenMint) => {
-            let buyTotal = 0;
-            let sellTotal = 0;
-            let buyFees = 0;
-            let sellFees = 0;
+            let buyTotal = Decimal.ZERO;
+            let sellTotal = Decimal.ZERO;
+            let buyFees = Decimal.ZERO;
+            let sellFees = Decimal.ZERO;
 
             trades.forEach(trade => {
                 if (trade.type === 'buy') {
-                    buyTotal += trade.amount_sol;
-                    buyFees += trade.fees;
+                    buyTotal = buyTotal.add(trade.amount_sol);
+                    buyFees = buyFees.add(trade.fees);
                 } else {
-                    sellTotal += trade.amount_sol;
-                    sellFees += trade.fees;
+                    sellTotal = sellTotal.add(trade.amount_sol);
+                    sellFees = sellFees.add(trade.fees);
                 }
             });
 
-            const profit = sellTotal - buyTotal - (buyFees + sellFees);
-            if (profit > 0) profitableTrades++;
+            const totalFees = buyFees.add(sellFees);
+            const profit = sellTotal.subtract(buyTotal).subtract(totalFees);
+            if (profit.isPositive()) profitableTrades++;
 
-            if (profit > bestTrade.profit) {
+            if (profit.greaterThan(bestTrade.profit)) {
                 bestTrade = { token: trades[0].token_mint, profit };
             }
-            if (profit < worstTrade.profit && trades.some(t => t.type === 'sell')) {
+            if (profit.lessThan(worstTrade.profit) && trades.some(t => t.type === 'sell')) {
                 worstTrade = { token: trades[0].token_mint, profit };
             }
 
-            totalProfitLoss += profit;
+            totalProfitLoss = totalProfitLoss.add(profit);
         });
+
+        const winRate = new Decimal(profitableTrades)
+            .divide(tokenTrades.size)
+            .multiply(100);
+
+        const avgProfitPerTrade = tokenTrades.size > 0
+            ? totalProfitLoss.divide(tokenTrades.size)
+            : Decimal.ZERO;
 
         return {
             totalTrades: tokenTrades.size,
             profitableTrades,
             totalProfitLoss,
-            winRate: (profitableTrades / tokenTrades.size) * 100,
-            avgProfitPerTrade: totalProfitLoss / tokenTrades.size,
+            winRate,
+            avgProfitPerTrade,
             bestTrade,
             worstTrade
         };

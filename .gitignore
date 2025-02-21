@@ -43,3 +43,6 @@ paper_trading.db
 !README.md
 !Instructions.md
 ideas.txt
+
+# Test Files
+**/__tests__/
