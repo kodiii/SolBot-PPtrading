@@ -93,7 +93,7 @@ describe('Tracker DB Operations', () => {
          testHolding2.SolFeePaidUSDC.toString(), testHolding2.PerTokenPaidUSDC.toString(), testHolding2.Slot, testHolding2.Program]
       );
 
-      const count = await getOpenPositionsCount();
+      const count = await getOpenPositionsCount(testDb);
       expect(count).toBe(2);
     });
 
@@ -123,12 +123,12 @@ describe('Tracker DB Operations', () => {
          testHolding.SolFeePaidUSDC.toString(), testHolding.PerTokenPaidUSDC.toString(), testHolding.Slot, testHolding.Program]
       );
       
-      let count = await getOpenPositionsCount();
+      let count = await getOpenPositionsCount(testDb);
       expect(count).toBe(1);
 
       await testDb.run('DELETE FROM holdings WHERE Token = ?', ['token1']);
       
-      count = await getOpenPositionsCount();
+      count = await getOpenPositionsCount(testDb);
       expect(count).toBe(0);
     });
 

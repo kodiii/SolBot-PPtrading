@@ -145,8 +145,8 @@ export async function selectTokenByMint(mint: string): Promise<NewTokenRecord[]>
   }
 }
 
-export async function getOpenPositionsCount(): Promise<number> {
-  const db = await getDb();
+export async function getOpenPositionsCount(testDb?: any): Promise<number> {
+  const db = testDb || await getDb();
 
   try {
     const holdingsTableExist = await createTableHoldings(db);
@@ -155,12 +155,12 @@ export async function getOpenPositionsCount(): Promise<number> {
     }
 
     const result = await db.get('SELECT COUNT(*) as count FROM holdings');
-    return result ? result.count : 0;
+    return result ? Number(result.count) : 0;
   } catch (error) {
     console.error('Error getting open positions count:', error);
     return 0;
   } finally {
-    if (db) {
+    if (!testDb && db) {
       await db.close();
     }
   }
