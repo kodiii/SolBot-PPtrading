@@ -3,6 +3,18 @@
  *  ...
 **/
 export const config = {
+  liquidity_pool: {
+    radiyum_program_id: "675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8",
+    wsol_pc_mint: "So11111111111111111111111111111111111111112",
+  },
+  tx: {
+    fetch_tx_max_retries: 5,
+    fetch_tx_initial_delay: 1000, // Initial delay before fetching LP creation transaction details (3 seconds)
+    swap_tx_initial_delay: 500, // Initial delay before first buy (1 second)
+    get_timeout: 10000, // Timeout for API requests
+    concurrent_transactions: 1, // Number of simultaneous transactions
+    retry_delay: 500, // Delay between retries (0.5 seconds)
+  },
   paper_trading: {
     verbose_log: false, // Enable/disable detailed DexScreener response logging
     initial_balance: 5, // Initial paper trading balance in SOL
@@ -20,18 +32,6 @@ export const config = {
     max_deviation: 0.05, // Maximum 5% deviation from rolling average
     min_data_points: 6, // Minimum number of price points needed for validation
     fallback_to_single_source: true, // If true, will still execute trades with only one price source
-  },
-  liquidity_pool: {
-    radiyum_program_id: "675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8",
-    wsol_pc_mint: "So11111111111111111111111111111111111111112",
-  },
-  tx: {
-    fetch_tx_max_retries: 5,
-    fetch_tx_initial_delay: 1000, // Initial delay before fetching LP creation transaction details (3 seconds)
-    swap_tx_initial_delay: 500, // Initial delay before first buy (1 second)
-    get_timeout: 10000, // Timeout for API requests
-    concurrent_transactions: 1, // Number of simultaneous transactions
-    retry_delay: 500, // Delay between retries (0.5 seconds)
   },
   swap: {
     verbose_log: false,

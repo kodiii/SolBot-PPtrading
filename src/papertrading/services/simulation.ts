@@ -62,10 +62,16 @@ export class SimulationService {
   private priceCheckInterval: NodeJS.Timeout | null = null;
   private lastPrices: Map<string, Decimal> = new Map();
   private solUsdPrice: Decimal | null = null;
+  private coinDeskUri: string;
 
   private constructor() {
+    this.coinDeskUri = process.env.COINDESK_HTTPS_URI || "";
     this.updateSolPrice(); // Initial SOL price fetch
     setInterval(() => this.updateSolPrice(), 60000); // Update SOL price every minute
+
+    if (!this.coinDeskUri) {
+      console.error('❌ COINDESK_HTTPS_URI not configured in environment');
+    }
     // Initialize the paper trading database
     initializePaperTradingDB().then((success) => {
       if (success) {
@@ -97,7 +103,7 @@ export class SimulationService {
           }
         }
       }
-    }, 1000); // Every second
+    }, 5000); // Every second
   }
 
   private async delay(ms: number): Promise<void> {
@@ -123,8 +129,8 @@ export class SimulationService {
       if (response.data && response.data.length > 0) {
         // Find Raydium pair
         const raydiumPair = response.data.find(pair => pair.dexId === 'raydium');
-        if (raydiumPair?.priceUsd) {
-          return new Decimal(raydiumPair.priceUsd);
+        if (raydiumPair?.priceNative) {
+          return new Decimal(raydiumPair.priceNative);
         }
         console.log('⚠️ No Raydium pair found');
       }
@@ -258,19 +264,36 @@ export class SimulationService {
 
   private async updateSolPrice(): Promise<void> {
     try {
-      const response = await axios.get<DexscreenerPriceResponse>(
-        `https://api.dexscreener.com/token-pairs/v1/solana/${config.liquidity_pool.wsol_pc_mint}`,
+      if (!this.coinDeskUri) {
+        console.error('❌ Cannot fetch SOL price: COINDESK_HTTPS_URI not configured');
+        return;
+      }
+
+      const response = await axios.get(
+        this.coinDeskUri,
         { timeout: config.tx.get_timeout }
       );
 
-      if (response.data && response.data.length > 0) {
-        const raydiumPair = response.data.find(pair => pair.dexId === 'raydium');
-        if (raydiumPair?.priceUsd) {
-          this.solUsdPrice = new Decimal(raydiumPair.priceUsd);
+      if (response.data?.Data?.['SOL-USD']?.VALUE) {
+        const solPrice = response.data.Data['SOL-USD'].VALUE;
+        this.solUsdPrice = new Decimal(solPrice);
+        if (config.paper_trading.verbose_log) {
+          console.log(`💰 Updated SOL price: $${this.solUsdPrice.toString()}`);
         }
+      } else {
+        console.error('❌ Invalid price data format from Coindesk:', response.data);
       }
     } catch (error) {
-      console.error('❌ Error fetching SOL price:', error);
+      if (axios.isAxiosError(error)) {
+        console.error('❌ Coindesk API Error:', {
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          data: error.response?.data,
+          message: error.message
+        });
+      } else {
+        console.error('❌ Error fetching SOL price:', error);
+      }
     }
   }
 

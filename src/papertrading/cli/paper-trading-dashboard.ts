@@ -3,6 +3,7 @@ import { ConnectionManager } from "../db/connection_manager";
 import { initializePaperTradingDB, getVirtualBalance } from "../paper_trading";
 import { config } from "../../config";
 import { SimulationService } from "../services";
+import { Decimal } from "../../utils/decimal";
 
 const DB_PATH = "src/papertrading/db/paper_trading.db";
 const TABLE_WIDTH = 150;
@@ -103,7 +104,8 @@ async function displayVirtualBalance(): Promise<void> {
         if (balance) {
             const content = [
                 `${chalk.yellow('SOL Balance:')} ${chalk.green(balance.balance_sol.toString())} ${
-                    solUsdPrice ? ` (USD $${balance.balance_sol.multiply(solUsdPrice).toString()})` : ''
+                    solUsdPrice ?
+                    ` (≈ $${balance.balance_sol.multiply(solUsdPrice).toString(2)} USD)` : ''
                 }`,
                 `${chalk.yellow('Last Updated:')} ${new Date(balance.updated_at).toLocaleString()}`
             ];
