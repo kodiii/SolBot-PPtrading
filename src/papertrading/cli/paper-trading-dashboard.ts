@@ -140,8 +140,8 @@ async function displayActivePositions(): Promise<void> {
                 return [
                     pos.token_mint.padEnd(TOKEN_COL_WIDTH),
                     pos.amount.toFixed(8).padEnd(NUM_COL_WIDTH),
-                    `$${pos.buy_price.toString()}`.padEnd(NUM_COL_WIDTH),
-                    `$${pos.current_price.toString()}`.padEnd(NUM_COL_WIDTH),
+                    `$${pos.buy_price.toFixed(8)}`.padEnd(NUM_COL_WIDTH),
+                    `$${pos.current_price.toFixed(8)}`.padEnd(NUM_COL_WIDTH),
                     pnlColor(pnlPercent.toFixed(2) + '%'.padEnd(NUM_COL_WIDTH - 3)),
                     pos.stop_loss.toFixed(8).padEnd(NUM_COL_WIDTH),
                     pos.take_profit.toFixed(8).padEnd(NUM_COL_WIDTH)
@@ -202,7 +202,7 @@ async function displayRecentTrades(limit: number = 20): Promise<void> {
                 (trade.type === 'buy' ? chalk.green : chalk.red)(trade.type.toUpperCase().padEnd(10)),
                 trade.token_mint.padEnd(TOKEN_COL_WIDTH),
                 trade.amount_sol.toFixed(8).padEnd(NUM_COL_WIDTH),
-                `$${trade.price_per_token.toString()}`.padEnd(NUM_COL_WIDTH),
+                `$${trade.price_per_token.toFixed(8)}`.padEnd(NUM_COL_WIDTH),
                 trade.fees.toFixed(8).padEnd(NUM_COL_WIDTH)
             ]);
 
