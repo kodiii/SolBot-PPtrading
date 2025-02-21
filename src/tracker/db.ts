@@ -1,9 +1,24 @@
+/**
+ * Database operations module for tracking token holdings and new token listings
+ * Provides functionality for managing SQLite database operations including:
+ * - Holdings table: Tracks token positions, balances, and transaction details
+ * - Tokens table: Stores information about new token listings
+ */
+
 import * as sqlite3 from "sqlite3";
 import { open } from "sqlite";
 import { config } from "./../config";
 import { HoldingRecord, NewTokenRecord } from "../types";
 
-// Tracker
+/**
+ * Creates the holdings table if it doesn't exist
+ * Table stores token position details including:
+ * - Transaction time and slot
+ * - Token identifiers and balance
+ * - SOL costs and USDC equivalent values
+ * @param database SQLite database instance
+ * @returns true if table created/exists, false on error
+ */
 export async function createTableHoldings(database: any): Promise<boolean> {
   try {
     await database.exec(`
@@ -29,6 +44,10 @@ export async function createTableHoldings(database: any): Promise<boolean> {
   }
 }
 
+/**
+ * Gets a database connection instance
+ * @returns Promise resolving to SQLite database connection
+ */
 async function getDb() {
   return await open({
     filename: config.swap.db_name_tracker_holdings,
@@ -36,6 +55,12 @@ async function getDb() {
   });
 }
 
+/**
+ * Inserts a new holding record into the database
+ * Automatically creates the holdings table if it doesn't exist
+ * @param holding The holding record to insert
+ * @throws Error if table creation fails
+ */
 export async function insertHolding(holding: HoldingRecord) {
   const db = await getDb();
 
@@ -59,6 +84,10 @@ export async function insertHolding(holding: HoldingRecord) {
   }
 }
 
+/**
+ * Removes a holding record by token mint address
+ * @param tokenMint The token mint address to remove
+ */
 export async function removeHolding(tokenMint: string) {
   const db = await getDb();
 
@@ -72,6 +101,15 @@ export async function removeHolding(tokenMint: string) {
   }
 }
 
+/**
+ * Creates the tokens table if it doesn't exist
+ * Table stores information about new token listings including:
+ * - Listing time
+ * - Token name and mint address
+ * - Creator address
+ * @param database SQLite database instance
+ * @returns true if table created/exists, false on error
+ */
 export async function createTableNewTokens(database: any): Promise<boolean> {
   try {
     await database.exec(`
@@ -90,6 +128,12 @@ export async function createTableNewTokens(database: any): Promise<boolean> {
   }
 }
 
+/**
+ * Inserts a new token record into the database
+ * Automatically creates the tokens table if it doesn't exist
+ * @param newToken The token record to insert
+ * @throws Error if table creation fails
+ */
 export async function insertNewToken(newToken: NewTokenRecord) {
   const db = await getDb();
 
@@ -109,6 +153,13 @@ export async function insertNewToken(newToken: NewTokenRecord) {
   }
 }
 
+/**
+ * Searches for tokens by name or creator address
+ * @param name Token name to search for
+ * @param creator Creator address to search for
+ * @returns Array of matching token records
+ * @throws Error if table creation fails
+ */
 export async function selectTokenByNameAndCreator(name: string, creator: string): Promise<NewTokenRecord[]> {
   const db = await getDb();
 
@@ -127,6 +178,12 @@ export async function selectTokenByNameAndCreator(name: string, creator: string)
   }
 }
 
+/**
+ * Searches for a token by mint address
+ * @param mint Token mint address to search for
+ * @returns Array of matching token records
+ * @throws Error if table creation fails
+ */
 export async function selectTokenByMint(mint: string): Promise<NewTokenRecord[]> {
   const db = await getDb();
 
@@ -145,6 +202,11 @@ export async function selectTokenByMint(mint: string): Promise<NewTokenRecord[]>
   }
 }
 
+/**
+ * Gets the count of open positions in the holdings table
+ * @param testDb Optional test database instance for unit testing
+ * @returns Number of open positions, 0 if error or no positions
+ */
 export async function getOpenPositionsCount(testDb?: any): Promise<number> {
   const db = testDb || await getDb();
 
@@ -166,6 +228,11 @@ export async function getOpenPositionsCount(testDb?: any): Promise<number> {
   }
 }
 
+/**
+ * Retrieves all token records from the database
+ * @returns Array of all token records
+ * @throws Error if table creation fails
+ */
 export async function selectAllTokens(): Promise<NewTokenRecord[]> {
   const db = await getDb();
 

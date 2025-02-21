@@ -1,18 +1,36 @@
-import WebSocket from "ws"; // Node.js websocket library
-import { WebSocketRequest } from "./types"; // Typescript Types for type safety
-import { config } from "./config"; // Configuration parameters for our bot
+/**
+ * Solana Token Monitoring and Trading System
+ * 
+ * This system monitors the Solana blockchain for new token pool creations on Raydium DEX,
+ * performs security checks (rug pull prevention), and executes trades based on configured
+ * parameters. It supports both paper trading (simulation) and real trading modes.
+ *
+ * Key Features:
+ * - Real-time monitoring of Raydium liquidity pool creations
+ * - Automated rug pull detection and security validation
+ * - Configurable paper trading simulation
+ * - Concurrent transaction management
+ * - Automatic reconnection handling
+ */
+
+import WebSocket from "ws"; // WebSocket client for Solana RPC connection
+import { WebSocketRequest } from "./types"; // Type definitions for WebSocket messages
+import { config } from "./config"; // System configuration and trading parameters
 import { fetchTransactionDetails, createSwapTransaction, getRugCheckConfirmed, fetchAndSaveSwapDetails } from "./transactions";
 import { validateEnv } from "./utils/env-validator";
 import { SimulationService } from "./papertrading/services";
 
-// Initialize simulation service if simulation mode is enabled
+// Initialize paper trading simulation service if enabled in config
 const simulationService = config.rug_check.simulation_mode ? SimulationService.getInstance() : null;
 
-// Regional Variables
-let activeTransactions = 0;
-const MAX_CONCURRENT = config.tx.concurrent_transactions;
+// Transaction concurrency management
+let activeTransactions = 0; // Counter for currently processing transactions
+const MAX_CONCURRENT = config.tx.concurrent_transactions; // Maximum allowed concurrent transactions
 
-// Function used to open our websocket connection
+/**
+ * Sends a subscription request to the WebSocket to monitor Raydium program logs
+ * @param ws - WebSocket connection instance
+ */
 function sendSubscribeRequest(ws: WebSocket): void {
   const request: WebSocketRequest = {
     jsonrpc: "2.0",
@@ -30,7 +48,11 @@ function sendSubscribeRequest(ws: WebSocket): void {
   ws.send(JSON.stringify(request));
 }
 
-// Function used to handle the transaction once a new pool creation is found
+/**
+ * Processes a new liquidity pool creation transaction
+ * Includes rug check validation, paper trading simulation, and swap execution
+ * @param signature - Transaction signature to process
+ */
 async function processTransaction(signature: string): Promise<void> {
   // Output logs
   console.log("=============================================");
@@ -110,8 +132,14 @@ async function processTransaction(signature: string): Promise<void> {
   }
 }
 
-// Websocket Handler for listening to the Solana logSubscribe method
 let init = false;
+/**
+ * Main WebSocket handler that manages the connection lifecycle
+ * - Establishes connection to Solana network
+ * - Handles message processing
+ * - Implements automatic reconnection
+ * - Manages concurrent transaction limits
+ */
 async function websocketHandler(): Promise<void> {
   // Load environment variables from the .env file
   const env = validateEnv();

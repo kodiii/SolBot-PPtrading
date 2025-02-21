@@ -2,6 +2,18 @@ import { ConnectionManager } from './connection_manager';
 import { HoldingRecord, NewTokenRecord } from '../../types';
 import { Decimal } from '../../utils/decimal';
 
+/**
+ * DatabaseService provides a singleton interface for managing SQLite database operations
+ * in the paper trading system. It handles token and holding records with transaction support
+ * and connection pooling.
+ *
+ * Key features:
+ * - Singleton pattern for centralized database access
+ * - Connection pooling via ConnectionManager
+ * - Transaction support for data integrity
+ * - Automatic retry mechanism for failed operations
+ * - Type-safe database operations with HoldingRecord and NewTokenRecord
+ */
 export class DatabaseService {
   private static instance: DatabaseService;
   private connectionManager: ConnectionManager;
@@ -11,6 +23,10 @@ export class DatabaseService {
     this.connectionManager = connectionManager || ConnectionManager.getInstance();
   }
 
+  /**
+   * Gets or creates the singleton instance of DatabaseService
+   * @returns The singleton DatabaseService instance
+   */
   public static getInstance(): DatabaseService {
     if (!DatabaseService.instance) {
       DatabaseService.instance = new DatabaseService();
@@ -18,11 +34,22 @@ export class DatabaseService {
     return DatabaseService.instance;
   }
 
+  /**
+   * Initializes the database service by setting up connection pool and creating tables
+   * @throws Error if database initialization fails
+   */
   public async initialize(): Promise<void> {
     await this.connectionManager.initialize();
     await this.createTables();
   }
 
+  /**
+   * Creates database tables and indices if they don't exist
+   * - holdings: Stores token holding records with decimal values as TEXT
+   * - tokens: Stores token metadata with unique mint addresses
+   * - Adds indices for optimizing common queries
+   * @private
+   */
   private async createTables(): Promise<void> {
     await this.connectionManager.executeWithRetry(async (db) => {
       // Create holdings table with explicit constraints, using TEXT for decimal values
@@ -64,6 +91,11 @@ export class DatabaseService {
     });
   }
 
+  /**
+   * Inserts a new holding record into the database with transaction support
+   * @param holding The holding record to insert
+   * @throws Error if transaction fails or invalid data
+   */
   public async insertHolding(holding: HoldingRecord): Promise<void> {
     await this.connectionManager.transaction(async () => {
       const db = await this.connectionManager.getConnection();
@@ -89,6 +121,11 @@ export class DatabaseService {
     });
   }
 
+  /**
+   * Removes a holding record by token mint address
+   * @param tokenMint The token mint address to remove
+   * @throws Error if tokenMint is invalid or empty
+   */
   public async removeHolding(tokenMint: string): Promise<void> {
     if (!tokenMint?.trim()) {
       throw new Error('Invalid token mint');
@@ -99,6 +136,11 @@ export class DatabaseService {
     });
   }
 
+  /**
+   * Retrieves all holding records ordered by time descending
+   * Converts TEXT decimal values back to Decimal objects
+   * @returns Array of holding records with proper decimal values
+   */
   public async getHoldings(): Promise<HoldingRecord[]> {
     return this.connectionManager.executeWithRetry(async (db) => {
       const rows = await db.all('SELECT * FROM holdings ORDER BY Time DESC');
@@ -114,6 +156,11 @@ export class DatabaseService {
     });
   }
 
+  /**
+   * Inserts a new token record with validation
+   * @param token The token record to insert
+   * @throws Error if token data is invalid or incomplete
+   */
   public async insertNewToken(token: NewTokenRecord): Promise<void> {
     const { time, name, mint, creator } = token;
     
@@ -130,6 +177,12 @@ export class DatabaseService {
     });
   }
 
+  /**
+   * Finds token records by mint address
+   * @param mint The mint address to search for
+   * @returns Array of matching token records
+   * @throws Error if mint address is invalid or empty
+   */
   public async findTokenByMint(mint: string): Promise<NewTokenRecord[]> {
     if (!mint?.trim()) {
       throw new Error('Invalid mint address');
@@ -140,6 +193,13 @@ export class DatabaseService {
     });
   }
 
+  /**
+   * Finds token records by name or creator
+   * @param name The token name to search for
+   * @param creator The creator address to search for
+   * @returns Array of matching token records
+   * @throws Error if name or creator is invalid
+   */
   public async findTokenByNameAndCreator(name: string, creator: string): Promise<NewTokenRecord[]> {
     if (!name?.trim() || !creator?.trim()) {
       throw new Error('Invalid name or creator');
@@ -153,9 +213,14 @@ export class DatabaseService {
     });
   }
 
+  /**
+   * Closes all database connections
+   * Should be called during application shutdown
+   */
   public async close(): Promise<void> {
     await this.connectionManager.closeAll();
   }
 }
 
+// Export singleton instance for global use
 export const db = DatabaseService.getInstance();

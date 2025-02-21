@@ -1,14 +1,46 @@
+/**
+ * Paper Trading System for Solana Tokens
+ * 
+ * This module implements a paper trading system that simulates trading of Solana tokens
+ * without using real funds. It maintains virtual balances, tracks positions, and records
+ * simulated trades in a SQLite database.
+ * 
+ * Key features:
+ * - Virtual balance management in SOL
+ * - Trade simulation (buy/sell) with fee tracking
+ * - Position tracking with stop-loss and take-profit targets
+ * - Historical trade recording
+ */
+
 import { ConnectionManager } from "./db/connection_manager";
 import { config } from "../config";
 import { Decimal } from "../utils/decimal";
 
 const DB_PATH = "src/papertrading/db/paper_trading.db";
 
+/**
+ * Represents the virtual balance in the paper trading system
+ * @interface VirtualBalance
+ * @property {Decimal} balance_sol - Current balance in SOL
+ * @property {number} updated_at - Timestamp of last balance update
+ */
 interface VirtualBalance {
   balance_sol: Decimal;
   updated_at: number;
 }
 
+/**
+ * Represents a simulated trade in the paper trading system
+ * @interface SimulatedTrade
+ * @property {number} timestamp - When the trade was executed
+ * @property {string} token_mint - Token's mint address
+ * @property {string} token_name - Human-readable token name
+ * @property {Decimal} amount_sol - Trade amount in SOL
+ * @property {Decimal} amount_token - Amount of tokens traded
+ * @property {Decimal} price_per_token - Execution price per token
+ * @property {'buy' | 'sell'} type - Trade direction
+ * @property {Decimal} fees - Transaction fees in SOL
+ */
 interface SimulatedTrade {
   timestamp: number;
   token_mint: string;
@@ -20,6 +52,18 @@ interface SimulatedTrade {
   fees: Decimal;
 }
 
+/**
+ * Represents a tracked token position with risk management parameters
+ * @interface TokenTracking
+ * @property {string} token_mint - Token's mint address
+ * @property {string} token_name - Human-readable token name
+ * @property {Decimal} amount - Current position size
+ * @property {Decimal} buy_price - Average entry price
+ * @property {Decimal} current_price - Latest market price
+ * @property {number} last_updated - Timestamp of last price update
+ * @property {Decimal} stop_loss - Stop loss price level
+ * @property {Decimal} take_profit - Take profit price level
+ */
 export interface TokenTracking {
   token_mint: string;
   token_name: string;
@@ -31,6 +75,15 @@ export interface TokenTracking {
   take_profit: Decimal;
 }
 
+/**
+ * Initializes the paper trading database by creating necessary tables and setting initial balance
+ * Creates three tables:
+ * - virtual_balance: Tracks the virtual SOL balance
+ * - simulated_trades: Records all buy/sell transactions
+ * - token_tracking: Manages active positions with risk parameters
+ * 
+ * @returns {Promise<boolean>} True if initialization succeeds, false otherwise
+ */
 export async function initializePaperTradingDB(): Promise<boolean> {
   const connectionManager = ConnectionManager.getInstance(DB_PATH);
   try {
@@ -99,6 +152,12 @@ export async function initializePaperTradingDB(): Promise<boolean> {
   }
 }
 
+/**
+ * Retrieves the current virtual balance from the database
+ * Returns the most recent balance record with SOL amount and timestamp
+ * 
+ * @returns {Promise<VirtualBalance | null>} Current balance or null if not found/error
+ */
 export async function getVirtualBalance(): Promise<VirtualBalance | null> {
   const connectionManager = ConnectionManager.getInstance(DB_PATH);
   try {
@@ -118,6 +177,24 @@ export async function getVirtualBalance(): Promise<VirtualBalance | null> {
   }
 }
 
+/**
+ * Records a simulated trade and updates related data atomically
+ * Performs the following operations in a single transaction:
+ * 1. Inserts the trade record
+ * 2. Updates virtual balance
+ * 3. Updates token tracking for position management
+ * 
+ * For buy trades:
+ * - Deducts trade amount + fees from virtual balance
+ * - Creates/updates token position with stop-loss and take-profit
+ * 
+ * For sell trades:
+ * - Adds trade amount - fees to virtual balance
+ * - Removes token from tracking (closes position)
+ * 
+ * @param {SimulatedTrade} trade - Trade details to record
+ * @returns {Promise<boolean>} True if recording succeeds, false otherwise
+ */
 export async function recordSimulatedTrade(trade: SimulatedTrade): Promise<boolean> {
   const connectionManager = ConnectionManager.getInstance(DB_PATH);
   try {
@@ -194,6 +271,14 @@ export async function recordSimulatedTrade(trade: SimulatedTrade): Promise<boole
   }
 }
 
+/**
+ * Updates the current price of a tracked token
+ * Used for monitoring positions and triggering stop-loss/take-profit orders
+ * 
+ * @param {string} tokenMint - Token's mint address
+ * @param {Decimal} currentPrice - Latest price to update
+ * @returns {Promise<TokenTracking | null>} Updated token data or null if not found/error
+ */
 export async function updateTokenPrice(tokenMint: string, currentPrice: Decimal): Promise<TokenTracking | null> {
   const connectionManager = ConnectionManager.getInstance(DB_PATH);
   try {
@@ -228,6 +313,12 @@ export async function updateTokenPrice(tokenMint: string, currentPrice: Decimal)
   }
 }
 
+/**
+ * Gets the count of currently open positions
+ * Used for position limit management
+ * 
+ * @returns {Promise<number>} Number of open positions, 0 if none or error
+ */
 export async function getOpenPositionsCount(): Promise<number> {
   const connectionManager = ConnectionManager.getInstance(DB_PATH);
   try {
@@ -244,6 +335,12 @@ export async function getOpenPositionsCount(): Promise<number> {
   }
 }
 
+/**
+ * Retrieves all currently tracked tokens with their positions and risk parameters
+ * Used for monitoring active positions and price updates
+ * 
+ * @returns {Promise<TokenTracking[]>} Array of tracked tokens, empty if none or error
+ */
 export async function getTrackedTokens(): Promise<TokenTracking[]> {
   const connectionManager = ConnectionManager.getInstance(DB_PATH);
   try {

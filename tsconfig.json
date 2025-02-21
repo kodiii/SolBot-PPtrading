@@ -1,14 +1,15 @@
+/* TypeScript Compiler Configuration */
 {
   "compilerOptions": {
-    "target": "ES2020",
-    "module": "CommonJS",
-    "outDir": "./dist",
-    "rootDir": "./src",
-    "strict": true,
-    "esModuleInterop": true,
-    "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true
+    "target": "ES2020",                       /* Set the JavaScript language version for emitted JavaScript and include compatible library declarations */
+    "module": "CommonJS",                     /* Specify what module code is generated. CommonJS is compatible with Node.js */
+    "outDir": "./dist",                       /* Specify an output folder for all emitted files */
+    "rootDir": "./src",                       /* Specify the root folder within your source files */
+    "strict": true,                           /* Enable all strict type-checking options */
+    "esModuleInterop": true,                  /* Emit additional JavaScript to ease support for importing CommonJS modules */
+    "skipLibCheck": true,                     /* Skip type checking of declaration files */
+    "forceConsistentCasingInFileNames": true  /* Ensure that casing is correct in imports */
   },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules"]
+  "include": ["src/**/*"],                    /* Specify a list of glob patterns that match files to be included in compilation */
+  "exclude": ["node_modules"]                 /* Specify a list of glob patterns that match files to be excluded from compilation */
 }

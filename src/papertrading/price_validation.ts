@@ -1,6 +1,22 @@
 import { PriceHistory, PriceValidationResult, RollingAverageConfig, TokenPrice } from '../types';
 import { Decimal } from '../utils/decimal';
 
+/**
+ * PriceValidator provides a robust system for validating cryptocurrency token prices
+ * by comparing them against historical data and cross-validating between different price sources.
+ * 
+ * Features:
+ * - Maintains a rolling window of historical prices for each token
+ * - Cross-validates prices between Jupiter and Dexscreener sources
+ * - Implements asymmetric validation thresholds (more tolerant of price drops)
+ * - Provides confidence scores for price validations
+ * 
+ * Configuration:
+ * - windowSize: Number of historical price points to maintain
+ * - maxDeviation: Maximum allowed price deviation (as a decimal, e.g., 0.05 = 5%)
+ * - minDataPoints: Minimum required data points for validation
+*/
+
 export class PriceValidator {
     private priceHistories: Map<string, PriceHistory> = new Map();
     private readonly rollingAverageConfig: RollingAverageConfig;
@@ -10,7 +26,11 @@ export class PriceValidator {
     }
 
     /**
-     * Add a new price point to the history
+     * Adds a new price point to the token's price history.
+     * Maintains a sliding window of recent prices, keeping only the latest [windowSize] entries.
+     * 
+     * @param mint - The token's mint address
+     * @param price - Price data including the price value, timestamp, and source
      */
     public addPricePoint(mint: string, price: TokenPrice): void {
         const history = this.priceHistories.get(mint) || {
@@ -30,7 +50,21 @@ export class PriceValidator {
     }
 
     /**
-     * Validate a new price against historical data
+     * Validates a new price against historical data using multiple validation strategies:
+     * 1. Cross-source validation: Compares prices between Jupiter and Dexscreener
+     * 2. Rolling average validation: Compares against historical average with asymmetric thresholds
+     * 
+     * The validation is asymmetric, allowing larger downside movements (1.5x threshold)
+     * compared to upside movements to account for typical crypto market behavior.
+     * 
+     * @param mint - The token's mint address
+     * @param newPrice - The price to validate
+     * @param source - The price source ('jupiter' or 'dexscreener')
+     * @returns Validation result including:
+     *          - isValid: Whether the price is considered valid
+     *          - confidence: Confidence score (0-1)
+     *          - reason: Explanation of the validation result
+     *          - suggestedPrice: Alternative price suggestion if validation fails
      */
     public validatePrice(mint: string, newPrice: number | string, source: 'jupiter' | 'dexscreener'): PriceValidationResult {
         const history = this.priceHistories.get(mint);
@@ -92,7 +126,11 @@ export class PriceValidator {
     }
 
     /**
-     * Calculate rolling average from price history
+     * Calculates the rolling average from recent price history.
+     * Uses the most recent [windowSize] prices to compute a simple arithmetic mean.
+     * 
+     * @param prices - Array of historical price points
+     * @returns The calculated rolling average as a Decimal
      */
     private calculateRollingAverage(prices: TokenPrice[]): Decimal {
         const relevantPrices = prices.slice(-this.rollingAverageConfig.windowSize);
@@ -104,7 +142,12 @@ export class PriceValidator {
     }
 
     /**
-     * Get the latest price from a specific source
+     * Retrieves the most recent price from a specific source (Jupiter or Dexscreener).
+     * Used for cross-validation between different price sources.
+     * 
+     * @param prices - Array of historical price points
+     * @param source - The price source to filter by
+     * @returns The most recent matching price entry or null if none found
      */
     private getLatestPriceFromSource(prices: TokenPrice[], source: 'jupiter' | 'dexscreener'): TokenPrice | null {
         for (let i = prices.length - 1; i >= 0; i--) {
@@ -116,14 +159,21 @@ export class PriceValidator {
     }
 
     /**
-     * Clear price history for a token
+     * Clears all price history for a specific token.
+     * Useful when resetting the validation state or cleaning up stale data.
+     * 
+     * @param mint - The token's mint address
      */
     public clearHistory(mint: string): void {
         this.priceHistories.delete(mint);
     }
 
     /**
-     * Get current price history for a token
+     * Retrieves the current price history for a token.
+     * Includes all stored price points within the rolling window.
+     * 
+     * @param mint - The token's mint address
+     * @returns The token's price history or undefined if no history exists
      */
     public getHistory(mint: string): PriceHistory | undefined {
         return this.priceHistories.get(mint);

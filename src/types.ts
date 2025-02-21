@@ -1,345 +1,389 @@
 import { Decimal } from './utils/decimal';
 
+/** 
+ * Response interface for token mint addresses
+ * @interface MintsDataReponse
+ */
 export interface MintsDataReponse {
-  tokenMint?: string;
-  solMint?: string;
+  tokenMint?: string;  // The mint address of the token
+  solMint?: string;    // The mint address of SOL
 }
 
+/**
+ * Generic quote response interface
+ * @interface QuoteResponse
+ */
 export interface QuoteResponse {
   data: unknown;
 }
 
+/**
+ * Detailed quote response with swap transaction details
+ * @interface SerializedQuoteResponse
+ */
 export interface SerializedQuoteResponse {
-  swapTransaction: string;
-  lastValidBlockHeight: number;
-  prioritizationFeeLamports: number;
-  computeUnitLimit: number;
+  swapTransaction: string;           // The serialized swap transaction
+  lastValidBlockHeight: number;      // The last valid block height for this quote
+  prioritizationFeeLamports: number; // Priority fee in lamports
+  computeUnitLimit: number;          // Compute unit limit for the transaction
   prioritizationType: {
     computeBudget: Record<string, unknown>;
   };
   simulationSlot: number;
   dynamicSlippageReport: {
-    slippageBps: number;
-    otherAmount: number;
-    simulatedIncurredSlippageBps: number;
-    amplificationRatio: string;
-    categoryName: string;
-    heuristicMaxSlippageBps: number;
+    slippageBps: number;                    // Slippage in basis points
+    otherAmount: number;                    // Amount of the other token
+    simulatedIncurredSlippageBps: number;   // Actual slippage incurred in simulation
+    amplificationRatio: string;             // Ratio of price amplification
+    categoryName: string;                   // Category of the swap
+    heuristicMaxSlippageBps: number;       // Maximum allowed slippage
   };
-  simulationError: string | null;
+  simulationError: string | null;           // Any errors during simulation
 }
 
+/**
+ * Extended response interface for token rug pull analysis
+ * @interface RugResponseExtended
+ */
 export interface RugResponseExtended {
-  mint: string;
-  tokenProgram: string;
-  creator: string;
+  mint: string;              // Token mint address
+  tokenProgram: string;      // Token program ID
+  creator: string;           // Token creator address
   token: {
-    mintAuthority: string | null;
-    supply: number;
-    decimals: number;
-    isInitialized: boolean;
-    freezeAuthority: string | null;
+    mintAuthority: string | null;    // Authority to mint new tokens
+    supply: number;                  // Total token supply
+    decimals: number;                // Token decimals
+    isInitialized: boolean;          // Token initialization status
+    freezeAuthority: string | null;  // Authority to freeze token accounts
   };
   token_extensions: unknown | null;
   tokenMeta: {
-    name: string;
-    symbol: string;
-    uri: string;
-    mutable: boolean;
-    updateAuthority: string;
+    name: string;            // Token name
+    symbol: string;          // Token symbol
+    uri: string;             // Metadata URI
+    mutable: boolean;        // Whether metadata is mutable
+    updateAuthority: string; // Authority to update metadata
   };
   topHolders: {
-    address: string;
-    amount: number;
-    decimals: number;
-    pct: number;
-    uiAmount: number;
-    uiAmountString: string;
-    owner: string;
-    insider: boolean;
+    address: string;         // Holder's address
+    amount: number;          // Token amount
+    decimals: number;        // Token decimals
+    pct: number;            // Percentage of total supply
+    uiAmount: number;       // Human-readable amount
+    uiAmountString: string; // Formatted amount string
+    owner: string;          // Owner's address
+    insider: boolean;       // Whether holder is an insider
   }[];
-  freezeAuthority: string | null;
-  mintAuthority: string | null;
+  freezeAuthority: string | null;    // Authority to freeze token accounts
+  mintAuthority: string | null;      // Authority to mint new tokens
   risks: {
-    name: string;
-    value: string;
-    description: string;
-    score: number;
-    level: string;
+    name: string;           // Risk factor name
+    value: string;          // Risk value
+    description: string;    // Risk description
+    score: number;          // Risk score
+    level: string;          // Risk level
   }[];
-  score: number;
+  score: number;            // Overall risk score
   fileMeta: {
-    description: string;
-    name: string;
-    symbol: string;
-    image: string;
+    description: string;    // Token description
+    name: string;           // Token name
+    symbol: string;         // Token symbol
+    image: string;          // Token image URL
   };
-  lockerOwners: Record<string, unknown>;
-  lockers: Record<string, unknown>;
-  lpLockers: unknown | null;
+  lockerOwners: Record<string, unknown>;  // Token locker owners
+  lockers: Record<string, unknown>;       // Token lockers
+  lpLockers: unknown | null;              // Liquidity pool lockers
   markets: {
-    pubkey: string;
-    marketType: string;
-    mintA: string;
-    mintB: string;
-    mintLP: string;
-    liquidityA: string;
-    liquidityB: string;
+    pubkey: string;         // Market public key
+    marketType: string;      // Type of market
+    mintA: string;          // First token mint
+    mintB: string;          // Second token mint
+    mintLP: string;         // LP token mint
+    liquidityA: string;     // First token liquidity
+    liquidityB: string;     // Second token liquidity
   }[];
-  totalMarketLiquidity: number;
-  totalLPProviders: number;
-  rugged: boolean;
+  totalMarketLiquidity: number;  // Total liquidity across all markets
+  totalLPProviders: number;      // Total number of LP providers
+  rugged: boolean;               // Whether token is considered rugged
 }
 
+/**
+ * WebSocket request interface
+ * @interface WebSocketRequest
+ */
 export interface WebSocketRequest {
-  jsonrpc: string;
-  id: number;
-  method: string;
-  params: unknown[];
+  jsonrpc: string;    // JSON-RPC version
+  id: number;         // Request ID
+  method: string;     // Method name
+  params: unknown[];  // Method parameters
 }
 
+/**
+ * Detailed transaction response interface
+ * @interface TransactionDetailsResponse
+ */
 interface TransactionDetailsResponse {
-  description: string;
-  type: string;
-  source: string;
-  fee: number;
-  feePayer: string;
-  signature: string;
-  slot: number;
-  timestamp: number;
+  description: string;    // Transaction description
+  type: string;          // Transaction type
+  source: string;        // Transaction source
+  fee: number;           // Transaction fee
+  feePayer: string;      // Fee payer address
+  signature: string;     // Transaction signature
+  slot: number;          // Slot number
+  timestamp: number;     // Transaction timestamp
   tokenTransfers: {
-    fromTokenAccount: string;
-    toTokenAccount: string;
-    fromUserAccount: string;
-    toUserAccount: string;
-    tokenAmount: number | string;
-    mint: string;
-    tokenStandard: string;
+    fromTokenAccount: string;   // Source token account
+    toTokenAccount: string;     // Destination token account
+    fromUserAccount: string;    // Source user account
+    toUserAccount: string;      // Destination user account
+    tokenAmount: number | string; // Transfer amount
+    mint: string;               // Token mint
+    tokenStandard: string;      // Token standard
   }[];
   nativeTransfers: {
-    fromUserAccount: string;
-    toUserAccount: string;
-    amount: number;
+    fromUserAccount: string;    // Source account
+    toUserAccount: string;      // Destination account
+    amount: number;             // Transfer amount
   }[];
   accountData: {
-    account: string;
-    nativeBalanceChange: number;
+    account: string;            // Account address
+    nativeBalanceChange: number; // Change in native balance
     tokenBalanceChanges: {
-      userAccount: string;
-      tokenAccount: string;
+      userAccount: string;      // User account
+      tokenAccount: string;     // Token account
       rawTokenAmount: {
-        tokenAmount: string;
-        decimals: number;
+        tokenAmount: string;    // Raw token amount
+        decimals: number;       // Token decimals
       };
-      mint: string;
+      mint: string;            // Token mint
     }[];
   }[];
-  transactionError: string | null;
+  transactionError: string | null;  // Transaction error if any
   instructions: {
-    accounts: string[];
-    data: string;
-    programId: string;
+    accounts: string[];         // Instruction accounts
+    data: string;              // Instruction data
+    programId: string;         // Program ID
     innerInstructions: {
-      accounts: string[];
-      data: string;
-      programId: string;
+      accounts: string[];      // Inner instruction accounts
+      data: string;           // Inner instruction data
+      programId: string;      // Inner instruction program ID
     }[];
   }[];
   events: {
     swap: {
       nativeInput: {
-        account: string;
-        amount: string;
+        account: string;      // Input account
+        amount: string;       // Input amount
       } | null;
       nativeOutput: {
-        account: string;
-        amount: string;
+        account: string;      // Output account
+        amount: string;       // Output amount
       } | null;
       tokenInputs: {
-        userAccount: string;
-        tokenAccount: string;
+        userAccount: string;   // User account
+        tokenAccount: string;  // Token account
         rawTokenAmount: {
-          tokenAmount: string;
-          decimals: number;
+          tokenAmount: string; // Raw token amount
+          decimals: number;    // Token decimals
         };
-        mint: string;
+        mint: string;         // Token mint
       }[];
       tokenOutputs: {
-        userAccount: string;
-        tokenAccount: string;
+        userAccount: string;   // User account
+        tokenAccount: string;  // Token account
         rawTokenAmount: {
-          tokenAmount: string;
-          decimals: number;
+          tokenAmount: string; // Raw token amount
+          decimals: number;    // Token decimals
         };
-        mint: string;
+        mint: string;         // Token mint
       }[];
       nativeFees: {
-        account: string;
-        amount: string;
+        account: string;      // Fee account
+        amount: string;       // Fee amount
       }[];
       tokenFees: {
-        userAccount: string;
-        tokenAccount: string;
+        userAccount: string;   // User account
+        tokenAccount: string;  // Token account
         rawTokenAmount: {
-          tokenAmount: string;
-          decimals: number;
+          tokenAmount: string; // Raw token amount
+          decimals: number;    // Token decimals
         };
-        mint: string;
+        mint: string;         // Token mint
       }[];
       innerSwaps: {
         tokenInputs: {
-          fromTokenAccount: string;
-          toTokenAccount: string;
-          fromUserAccount: string;
-          toUserAccount: string;
-          tokenAmount: number;
-          mint: string;
-          tokenStandard: string;
+          fromTokenAccount: string;  // Source token account
+          toTokenAccount: string;    // Destination token account
+          fromUserAccount: string;   // Source user account
+          toUserAccount: string;     // Destination user account
+          tokenAmount: number;       // Transfer amount
+          mint: string;             // Token mint
+          tokenStandard: string;    // Token standard
         }[];
         tokenOutputs: {
-          fromTokenAccount: string;
-          toTokenAccount: string;
-          fromUserAccount: string;
-          toUserAccount: string;
-          tokenAmount: number;
-          mint: string;
-          tokenStandard: string;
+          fromTokenAccount: string;  // Source token account
+          toTokenAccount: string;    // Destination token account
+          fromUserAccount: string;   // Source user account
+          toUserAccount: string;     // Destination user account
+          tokenAmount: number;       // Transfer amount
+          mint: string;             // Token mint
+          tokenStandard: string;    // Token standard
         }[];
         tokenFees: {
-          userAccount: string;
-          tokenAccount: string;
+          userAccount: string;      // User account
+          tokenAccount: string;     // Token account
           rawTokenAmount: {
-            tokenAmount: string;
-            decimals: number;
+            tokenAmount: string;    // Raw token amount
+            decimals: number;       // Token decimals
           };
-          mint: string;
+          mint: string;            // Token mint
         }[];
         nativeFees: {
-          account: string;
-          amount: string;
+          account: string;         // Fee account
+          amount: string;          // Fee amount
         }[];
         programInfo: {
-          source: string;
-          account: string;
-          programName: string;
-          instructionName: string;
+          source: string;          // Program source
+          account: string;         // Program account
+          programName: string;     // Program name
+          instructionName: string; // Instruction name
         };
       }[];
     };
   };
 }
 
+/**
+ * Swap event details response interface
+ * @interface SwapEventDetailsResponse
+ */
 export interface SwapEventDetailsResponse {
   programInfo: {
-    source: string;
-    account: string;
-    programName: string;
-    instructionName: string;
+    source: string;          // Program source
+    account: string;         // Program account
+    programName: string;     // Program name
+    instructionName: string; // Instruction name
   };
   tokenInputs: Array<{
-    fromTokenAccount: string;
-    toTokenAccount: string;
-    fromUserAccount: string;
-    toUserAccount: string;
-    tokenAmount: number;
-    mint: string;
-    tokenStandard: string;
+    fromTokenAccount: string;  // Source token account
+    toTokenAccount: string;    // Destination token account
+    fromUserAccount: string;   // Source user account
+    toUserAccount: string;     // Destination user account
+    tokenAmount: number;       // Transfer amount
+    mint: string;             // Token mint
+    tokenStandard: string;    // Token standard
   }>;
   tokenOutputs: Array<{
-    fromTokenAccount: string;
-    toTokenAccount: string;
-    fromUserAccount: string;
-    toUserAccount: string;
-    tokenAmount: number;
-    mint: string;
-    tokenStandard: string;
+    fromTokenAccount: string;  // Source token account
+    toTokenAccount: string;    // Destination token account
+    fromUserAccount: string;   // Source user account
+    toUserAccount: string;     // Destination user account
+    tokenAmount: number;       // Transfer amount
+    mint: string;             // Token mint
+    tokenStandard: string;    // Token standard
   }>;
-  fee: number;
-  slot: number;
-  timestamp: number;
-  description: string;
+  fee: number;           // Transaction fee
+  slot: number;          // Slot number
+  timestamp: number;     // Transaction timestamp
+  description: string;   // Transaction description
 }
 
+/**
+ * Record of token holdings
+ * @interface HoldingRecord
+ */
 export interface HoldingRecord {
-  id?: number; // Optional because it's added by the database
-  Time: number;
-  Token: string;
-  TokenName: string;
-  Balance: Decimal;
-  SolPaid: Decimal;
-  SolFeePaid: Decimal;
-  SolPaidUSDC: Decimal;
-  SolFeePaidUSDC: Decimal;
-  PerTokenPaidUSDC: Decimal;
-  Slot: number;
-  Program: string;
+  id?: number;              // Database ID (optional)
+  Time: number;             // Timestamp
+  Token: string;            // Token mint address
+  TokenName: string;        // Token name
+  Balance: Decimal;         // Token balance
+  SolPaid: Decimal;        // Amount of SOL paid
+  SolFeePaid: Decimal;     // Transaction fees paid in SOL
+  SolPaidUSDC: Decimal;    // SOL paid in USDC equivalent
+  SolFeePaidUSDC: Decimal; // Fees paid in USDC equivalent
+  PerTokenPaidUSDC: Decimal; // Price per token in USDC
+  Slot: number;            // Slot number
+  Program: string;         // Program ID
 }
 
+/**
+ * Record of new token creation
+ * @interface NewTokenRecord
+ */
 export interface NewTokenRecord {
-  id?: number; // Optional because it's added by the database
-  time: number;
-  name: string;
-  mint: string;
-  creator: string;
+  id?: number;      // Database ID (optional)
+  time: number;     // Creation timestamp
+  name: string;     // Token name
+  mint: string;     // Token mint address
+  creator: string;  // Creator's address
 }
 
+/**
+ * Response for sell transaction creation
+ * @interface createSellTransactionResponse
+ */
 export interface createSellTransactionResponse {
-  success: boolean;
-  msg: string | null;
-  tx: string | null;
+  success: boolean;     // Transaction creation success
+  msg: string | null;   // Status message
+  tx: string | null;    // Transaction signature
 }
 
+/**
+ * DEX price response interface
+ * @interface LastPriceDexReponse
+ */
 export interface LastPriceDexReponse {
-  schemaVersion: string;
+  schemaVersion: string;  // Schema version
   pairs: {
-    chainId: string;
-    dexId: string;
-    url: string;
-    pairAddress: string;
-    labels?: string[];
+    chainId: string;     // Chain ID
+    dexId: string;       // DEX identifier
+    url: string;         // DEX URL
+    pairAddress: string; // Trading pair address
+    labels?: string[];   // Pair labels
     baseToken: {
-      address: string;
-      name: string;
-      symbol: string;
+      address: string;   // Token address
+      name: string;      // Token name
+      symbol: string;    // Token symbol
     };
     quoteToken: {
-      address: string;
-      name: string;
-      symbol: string;
+      address: string;   // Quote token address
+      name: string;      // Quote token name
+      symbol: string;    // Quote token symbol
     };
-    priceNative: string;
-    priceUsd: string;
+    priceNative: string; // Price in native token
+    priceUsd: string;    // Price in USD
     txns: {
-      m5: { buys: number; sells: number };
-      h1: { buys: number; sells: number };
-      h6: { buys: number; sells: number };
-      h24: { buys: number; sells: number };
+      m5: { buys: number; sells: number };   // 5-minute transactions
+      h1: { buys: number; sells: number };   // 1-hour transactions
+      h6: { buys: number; sells: number };   // 6-hour transactions
+      h24: { buys: number; sells: number };  // 24-hour transactions
     };
     volume: {
-      h24: number;
-      h6: number;
-      h1: number;
-      m5: number;
+      h24: number;      // 24-hour volume
+      h6: number;       // 6-hour volume
+      h1: number;       // 1-hour volume
+      m5: number;       // 5-minute volume
     };
     priceChange: {
-      m5: number;
-      h1: number;
-      h6: number;
-      h24: number;
+      m5: number;       // 5-minute price change
+      h1: number;       // 1-hour price change
+      h6: number;       // 6-hour price change
+      h24: number;      // 24-hour price change
     };
     liquidity: {
-      usd: number;
-      base: number;
-      quote: number;
+      usd: number;      // Liquidity in USD
+      base: number;     // Base token liquidity
+      quote: number;    // Quote token liquidity
     };
-    fdv: number;
-    marketCap: number;
-    pairCreatedAt: number;
+    fdv: number;        // Fully diluted valuation
+    marketCap: number;  // Market capitalization
+    pairCreatedAt: number; // Pair creation timestamp
     info: {
-      imageUrl: string;
-      header: string;
-      openGraph: string;
-      websites?: { label: string; url: string }[];
+      imageUrl: string;   // Token image URL
+      header: string;     // Token header
+      openGraph: string;  // Open graph data
+      websites?: { label: string; url: string }[]; // Official websites
       socials: { type: string; url: string }[];
     };
   }[];

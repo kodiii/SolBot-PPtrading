@@ -1,3 +1,11 @@
+/**
+ * @file simulation.ts
+ * @description Paper Trading Simulation Service for Solana tokens
+ * This service provides functionality for simulating trades, tracking prices,
+ * and executing automated trading strategies in a paper trading environment.
+ * It uses DexScreener API for real-time price data and CoinDesk for SOL/USD prices.
+ */
+
 import axios from 'axios';
 import { config } from '../../config';
 import {
@@ -11,6 +19,11 @@ import {
 } from '../paper_trading';
 import { Decimal } from '../../utils/decimal';
 
+/**
+ * Interface representing the structure of a trading pair from DexScreener API
+ * Contains detailed information about the trading pair including price, volume,
+ * and liquidity metrics
+ */
 interface DexscreenerPairInfo {
   chainId: string;
   dexId: string;
@@ -56,8 +69,13 @@ interface DexscreenerPairInfo {
   pairCreatedAt: number;
 }
 
+/** Array type for DexScreener API response */
 type DexscreenerPriceResponse = DexscreenerPairInfo[];
 
+/**
+ * SimulationService class implements paper trading functionality
+ * Uses Singleton pattern to ensure only one instance manages the simulation
+ */
 export class SimulationService {
   private static instance: SimulationService;
   private priceCheckInterval: NodeJS.Timeout | null = null;
@@ -65,6 +83,10 @@ export class SimulationService {
   private solUsdPrice: Decimal | null = null;
   private coinDeskUri: string;
 
+  /**
+   * Private constructor initializes the service
+   * Sets up SOL price tracking and initializes paper trading database
+   */
   private constructor() {
     this.coinDeskUri = process.env.COINDESK_HTTPS_URI || "";
     this.updateSolPrice(); // Initial SOL price fetch
@@ -84,6 +106,10 @@ export class SimulationService {
     });
   }
 
+  /**
+   * Gets the singleton instance of SimulationService
+   * @returns The singleton instance
+   */
   public static getInstance(): SimulationService {
     if (!SimulationService.instance) {
       SimulationService.instance = new SimulationService();
@@ -91,8 +117,11 @@ export class SimulationService {
     return SimulationService.instance;
   }
 
+  /**
+   * Starts tracking prices for all tracked tokens
+   * Polls prices every 5 seconds and triggers price target checks
+   */
   private async startPriceTracking(): Promise<void> {
-    // Check prices
     this.priceCheckInterval = setInterval(async () => {
       const tokens = await getTrackedTokens();
       for (const token of tokens) {
@@ -104,13 +133,24 @@ export class SimulationService {
           }
         }
       }
-    }, 5000); // Every second
+    }, 5000); // Every 5 seconds
   }
 
+  /**
+   * Utility method to create a delay
+   * @param ms Delay duration in milliseconds
+   */
   private async delay(ms: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, ms));
   }
 
+  /**
+   * Fetches current token price from DexScreener
+   * Implements retry logic for failed requests
+   * @param tokenMint Token mint address
+   * @param retryCount Current retry attempt number
+   * @returns Current token price or null if unavailable
+   */
   public async getTokenPrice(tokenMint: string, retryCount = 0): Promise<Decimal | null> {
     try {
       const attempt = retryCount + 1;
@@ -175,6 +215,12 @@ export class SimulationService {
       return null;
     }
   }
+
+  /**
+   * Checks if price targets (stop loss/take profit) have been reached
+   * Executes sell orders when targets are hit
+   * @param token Token tracking information
+   */
   private async checkPriceTargets(token: TokenTracking): Promise<void> {
     // Calculate current price change percentage from buy price
     const priceChangePercent = token.current_price.subtract(token.buy_price).divide(token.buy_price).multiply(new Decimal(100));
@@ -191,6 +237,14 @@ export class SimulationService {
     }
   }
 
+  /**
+   * Executes a simulated buy order
+   * Checks position limits and available balance before executing
+   * @param tokenMint Token mint address
+   * @param tokenName Token name
+   * @param currentPrice Current token price
+   * @returns Success status of the buy operation
+   */
   public async executeBuy(
     tokenMint: string,
     tokenName: string,
@@ -241,6 +295,12 @@ export class SimulationService {
     return false;
   }
 
+  /**
+   * Executes a simulated sell order
+   * @param token Token tracking information
+   * @param reason Reason for the sell (e.g., "Stop Loss triggered")
+   * @returns Success status of the sell operation
+   */
   private async executeSell(
     token: TokenTracking,
     reason: string
@@ -270,6 +330,10 @@ export class SimulationService {
     return false;
   }
 
+  /**
+   * Updates the current SOL/USD price from CoinDesk
+   * Price is updated every minute and used for USD value calculations
+   */
   private async updateSolPrice(): Promise<void> {
     try {
       if (!this.coinDeskUri) {

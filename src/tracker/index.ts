@@ -1,3 +1,18 @@
+/**
+ * Token Price Tracking and Portfolio Management System
+ * 
+ * This module implements a real-time token price tracking and portfolio management system
+ * that monitors token holdings, calculates unrealized PnL, and executes automated
+ * trading strategies based on configurable take-profit and stop-loss levels.
+ * 
+ * Key Features:
+ * - Multi-source price aggregation (Jupiter and DexScreener)
+ * - Price validation with configurable parameters
+ * - Automated take-profit and stop-loss execution
+ * - Real-time portfolio value tracking
+ * - SQLite-based position tracking
+ */
+
 import { config } from "./../config";
 import axios from "axios";
 import * as sqlite3 from "sqlite3";
@@ -16,16 +31,20 @@ import { PriceValidator } from "../papertrading/price_validation";
 // Load environment variables from the .env file
 dotenv.config();
 
-// Create Action Log constant
+// Action logs store system events and trading actions
 const actionsLogs: string[] = [];
 
-// Initialize price validator
+// Initialize price validator with configuration parameters
 const priceValidator = new PriceValidator({
   windowSize: config.price_validation.window_size,
   maxDeviation: config.price_validation.max_deviation,
   minDataPoints: config.price_validation.min_data_points
 });
 
+/**
+ * Interface defining the structure of Jupiter Aggregator price data
+ * Contains nested price information including the last swap price
+ */
 interface JupiterPriceData {
   data: Record<string, {
     extraInfo: {
@@ -36,6 +55,14 @@ interface JupiterPriceData {
   }>;
 }
 
+/**
+ * Main tracking loop that monitors token holdings and executes trading strategies
+ * - Fetches current prices from multiple sources
+ * - Validates prices using configured thresholds
+ * - Calculates unrealized PnL
+ * - Executes automated take-profit/stop-loss orders
+ * - Updates tracking display
+ */
 async function main() {
   const priceUrl = process.env.JUP_HTTPS_PRICE_URI || "";
   const dexPriceUrl = process.env.DEX_HTTPS_LATEST_TOKENS || "";
@@ -272,6 +299,7 @@ async function main() {
   setTimeout(main, 5000); // Call main again after 5 seconds
 }
 
+// Start the main tracking loop with error handling
 main().catch((err) => {
   console.error(err);
 });
