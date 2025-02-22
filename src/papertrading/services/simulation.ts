@@ -131,6 +131,28 @@ export class SimulationService {
       for (const token of tokens) {
         const priceData = await this.getTokenPrice(token.token_mint);
         if (priceData && priceData.price) {
+          // Log market metrics for monitoring
+          if (config.paper_trading.verbose_log && priceData.dexData) {
+            console.log(`📊 Market Data for ${token.token_name}:`);
+            console.log(`   Volume (5m): $${priceData.dexData.volume_m5.toLocaleString()}`);
+            console.log(`   Market Cap: $${priceData.dexData.marketCap.toLocaleString()}`);
+          }
+
+          // Store market data in database
+          await this.db.run(
+            `UPDATE token_tracking 
+             SET volume_m5 = ?,
+                 market_cap = ?,
+                 liquidity_usd = ?
+             WHERE token_mint = ?`,
+            [
+              priceData.dexData?.volume_m5 || 0,
+              priceData.dexData?.marketCap || 0,
+              priceData.dexData?.liquidity_usd || 0,
+              token.token_mint
+            ]
+          );
+
           const updatedToken = await updateTokenPrice(token.token_mint, priceData.price);
           if (updatedToken) {
             await this.checkPriceTargets(updatedToken);

@@ -47,6 +47,8 @@ interface TokenPosition {
     take_profit: Decimal;
     position_size_sol: Decimal;
     dex_data?: DexScreenerData;
+    volume_m5?: number;
+    market_cap?: number;
 }
 
 /**
@@ -166,6 +168,8 @@ async function displayActivePositions(): Promise<void> {
             const headers = [
                 'Token Name'.padEnd(TOKEN_COL_WIDTH),
                 'Address'.padEnd(ADDRESS_COL_WIDTH),
+                'Volume 5m'.padEnd(NUM_COL_WIDTH),
+                'Market Cap'.padEnd(NUM_COL_WIDTH),
                 'Position Size/Sol'.padEnd(NUM_COL_WIDTH),
                 'Buy Price'.padEnd(NUM_COL_WIDTH),
                 'Current Price'.padEnd(NUM_COL_WIDTH),
@@ -178,11 +182,13 @@ async function displayActivePositions(): Promise<void> {
                 const pnlPercent = pos.current_price.subtract(pos.buy_price)
                     .divide(pos.buy_price)
                     .multiply(new Decimal(100));
-                const pnlColor = pnlPercent.isPositive() || pnlPercent.isZero() ? chalk.green : chalk.red;
+                const pnlColor = pnlPercent.isPositive() ? chalk.green : chalk.red;
                 
                 return [
                     pos.token_name.padEnd(TOKEN_COL_WIDTH),
                     pos.token_mint.padEnd(ADDRESS_COL_WIDTH),
+                    (pos.volume_m5 || '0').toString().padEnd(NUM_COL_WIDTH),
+                    (pos.market_cap || '0').toString().padEnd(NUM_COL_WIDTH),
                     pos.position_size_sol.toString(4).padEnd(NUM_COL_WIDTH),
                     `$${pos.buy_price.toString(4)}`.padEnd(NUM_COL_WIDTH),
                     `$${pos.current_price.toString(4)}`.padEnd(NUM_COL_WIDTH),
@@ -317,12 +323,16 @@ async function calculateTradingStats(): Promise<TradingStats | null> {
             amount_sol: new Decimal(trade.amount_sol),
             amount_token: new Decimal(trade.amount_token),
             price_per_token: new Decimal(trade.price_per_token),
-            fees: new Decimal(trade.fees)
+            fees: new Decimal(trade.fees),
+            sell_price: trade.sell_price ? new Decimal(trade.sell_price) : undefined,
+            sell_fees: trade.sell_fees ? new Decimal(trade.sell_fees) : undefined,
+            pnl: trade.pnl ? new Decimal(trade.pnl) : undefined
         }));
         connectionManager.releaseConnection(db);
 
         if (trades.length === 0) return null;
 
+        // Group trades by token mint
         const tokenTrades = new Map<string, SimulatedTrade[]>();
         trades.forEach((trade: SimulatedTrade) => {
             if (!tokenTrades.has(trade.token_mint)) {
@@ -333,49 +343,47 @@ async function calculateTradingStats(): Promise<TradingStats | null> {
 
         let totalProfitLoss = Decimal.ZERO;
         let profitableTrades = 0;
+        let completedTrades = 0;
         let bestTrade = { token: '', profit: new Decimal(-Infinity) };
         let worstTrade = { token: '', profit: new Decimal(Infinity) };
 
         tokenTrades.forEach((trades, tokenMint) => {
-            let buyTotal = Decimal.ZERO;
-            let sellTotal = Decimal.ZERO;
-            let buyFees = Decimal.ZERO;
-            let sellFees = Decimal.ZERO;
+            // Find completed trades (buy trades with sell_price)
+            const completedBuyTrades = trades.filter(t => 
+                t.type === 'buy' && t.sell_price !== undefined && t.pnl !== undefined
+            );
 
-            trades.forEach(trade => {
-                if (trade.type === 'buy') {
-                    buyTotal = buyTotal.add(trade.amount_sol);
-                    buyFees = buyFees.add(trade.fees);
-                } else {
-                    sellTotal = sellTotal.add(trade.amount_sol);
-                    sellFees = sellFees.add(trade.fees);
+            if (completedBuyTrades.length === 0) return;
+
+            completedTrades += completedBuyTrades.length;
+            
+            completedBuyTrades.forEach(trade => {
+                const profit = trade.pnl!; // We know pnl exists from the filter
+                totalProfitLoss = totalProfitLoss.add(profit);
+
+                if (profit.isPositive()) {
+                    profitableTrades++;
+                }
+
+                if (profit.greaterThan(bestTrade.profit)) {
+                    bestTrade = { token: trade.token_name, profit };
+                }
+                if (profit.lessThan(worstTrade.profit)) {
+                    worstTrade = { token: trade.token_name, profit };
                 }
             });
-
-            const totalFees = buyFees.add(sellFees);
-            const profit = sellTotal.subtract(buyTotal).subtract(totalFees);
-            if (profit.isPositive()) profitableTrades++;
-
-            if (profit.greaterThan(bestTrade.profit)) {
-                bestTrade = { token: trades[0].token_mint, profit };
-            }
-            if (profit.lessThan(worstTrade.profit) && trades.some(t => t.type === 'sell')) {
-                worstTrade = { token: trades[0].token_mint, profit };
-            }
-
-            totalProfitLoss = totalProfitLoss.add(profit);
         });
 
-        const winRate = new Decimal(profitableTrades)
-            .divide(tokenTrades.size)
-            .multiply(100);
+        const winRate = completedTrades > 0
+            ? new Decimal(profitableTrades).divide(completedTrades).multiply(100)
+            : new Decimal(0);
 
-        const avgProfitPerTrade = tokenTrades.size > 0
-            ? totalProfitLoss.divide(tokenTrades.size)
+        const avgProfitPerTrade = completedTrades > 0
+            ? totalProfitLoss.divide(completedTrades)
             : Decimal.ZERO;
 
         return {
-            totalTrades: tokenTrades.size,
+            totalTrades: completedTrades,
             profitableTrades,
             totalProfitLoss,
             winRate,

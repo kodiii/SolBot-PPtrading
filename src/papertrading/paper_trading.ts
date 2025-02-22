@@ -81,6 +81,10 @@ export interface TokenTracking {
   last_updated: number;
   stop_loss: Decimal;
   take_profit: Decimal;
+  volume_m5?: number;
+  market_cap?: number;
+  liquidity_usd?: number;
+  position_size_sol?: Decimal;
 }
 
 /**
@@ -143,9 +147,27 @@ export async function initializePaperTradingDB(): Promise<boolean> {
           current_price TEXT NOT NULL,
           last_updated INTEGER NOT NULL,
           stop_loss TEXT NOT NULL,
-          take_profit TEXT NOT NULL
+          take_profit TEXT NOT NULL,
+          volume_m5 REAL DEFAULT 0,
+          market_cap REAL DEFAULT 0,
+          liquidity_usd REAL DEFAULT 0,
+          position_size_sol TEXT DEFAULT '0'
         );
       `);
+
+      // Safely add volume_m5 and market_cap columns if they don't exist
+      const columns = ['volume_m5', 'market_cap', 'liquidity_usd', 'position_size_sol'];
+      for (const column of columns) {
+        try {
+          await db.exec(`ALTER TABLE token_tracking ADD COLUMN ${column} TEXT DEFAULT '0'`);
+        } catch (error) {
+          // Ignore error if column already exists
+          if (error instanceof Error && !error.message.includes('duplicate column name')) {
+            console.error(`Error adding column ${column}:`, error);
+            throw error; // Re-throw if it's a different error
+          }
+        }
+      }
 
       // Get current balance
       const balance = await db.get('SELECT * FROM virtual_balance ORDER BY id DESC LIMIT 1');
@@ -232,7 +254,7 @@ export async function recordSimulatedTrade(trade: SimulatedTrade): Promise<boole
               trade.price_per_token.toString(),
               trade.fees.toString(),
               trade.timestamp,
-              trade.amount_sol.subtract(trade.fees).toString(),
+              trade.amount_sol.subtract(trade.fees).subtract(trade.amount_sol.multiply(trade.slippage || new Decimal(0))).toString(),
               trade.dex_data?.liquidity_usd || 0,
               trade.token_mint
             ]
