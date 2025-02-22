@@ -27,9 +27,9 @@ export const config = {
     dashboard_refresh: 5000, // Dashboard update interval (ms)
     max_open_positions: 5, // Maximum number of concurrent trading positions
     price_check: {
-      max_retries: 15, // Maximum attempts to fetch token price
+      max_retries: 15, // Maximum attempts to fetch token price from dex
       initial_delay: 3000, // Initial delay between price check attempts (ms)
-      max_delay: 5000, // Maximum delay between retries (ms)
+      max_delay: 5000, // Maximum delay between retries (ms) from dex
     }
   },
 
