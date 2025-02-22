@@ -63,8 +63,8 @@ export const config = {
     prio_level: "medium", // Sell transaction priority level
     slippageBps: "200", // Maximum allowed slippage for sells (2%)
     auto_sell: true, // Enable/disable automated sell triggers
-    stop_loss_percent: 30, // Stop loss trigger percentage
-    take_profit_percent: 20, // Take profit trigger percentage
+    stop_loss_percent: 10, // Stop loss trigger percentage
+    take_profit_percent: 50, // Take profit trigger percentage
     track_public_wallet: "", // Public wallet tracking address (optional)
   },
 
@@ -80,8 +80,8 @@ export const config = {
     allow_rugged: false, // Allow previously rugged tokens
     
     // Critical security parameters
-    allow_mutable: true, // Allow tokens with mutable metadata
-    block_returning_token_names: false, // Block tokens with previously seen names
+    allow_mutable: false, // Allow tokens with mutable metadata
+    block_returning_token_names: true, // Block tokens with previously seen names
     block_returning_token_creators: false, // Block tokens from known creators
     block_symbols: ["XXX"], // Blocked token symbols
     block_names: ["XXX"], // Blocked token names
@@ -90,29 +90,29 @@ export const config = {
     
     // Holder distribution checks
     allow_insider_topholders: false, // Allow insider accounts in top holders
-    max_alowed_pct_topholders: 50, // Maximum percentage for single top holder
-    max_alowed_pct_all_topholders: 50, // Maximum total percentage for all top holders
+    max_alowed_pct_topholders: 15, // Maximum percentage for single top holder
+    max_alowed_pct_all_topholders: 25, // Maximum total percentage for all top holders
     exclude_lp_from_topholders: true, // Exclude LP accounts from holder calculations
     
     // Market validation thresholds
     min_total_markets: 0, // Minimum required trading markets
     min_total_lp_providers: 0, // Minimum required liquidity providers
-    min_total_market_Liquidity: 5000, // Minimum required market liquidity
+    min_total_market_Liquidity: 50000, // Minimum required market liquidity
     
     // Miscellaneous settings
     ignore_pump_fun: false, // Ignore Pump.fun tokens
-    max_score: 15000, // Maximum allowed rug pull risk score (0 to disable)
+    max_score: 500, // Maximum allowed rug pull risk score (0 to disable)
     
     // Legacy risk checks to enforce
     legacy_not_allowed: [
+      // Commented out checks (can be enabled if needed)
       "Freeze Authority still enabled", // Block tokens with active freeze authority
       "Single holder ownership", // Block tokens with concentrated ownership
       "Copycat token", // Block copycat token names
-      // Commented out checks (can be enabled if needed)
-      //"High holder concentration",
-      //"Large Amount of LP Unlocked",
-      //"Low Liquidity",
-      //"Low amount of LP Providers",
+      "High holder concentration",
+      "Large Amount of LP Unlocked",
+      "Low Liquidity",
+      "Low amount of LP Providers",
     ],
   },
 }

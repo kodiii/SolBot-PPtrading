@@ -133,7 +133,7 @@ export class SimulationService {
           }
         }
       }
-    }, 5000); // Every 5 seconds
+    }, config.paper_trading.price_check.max_delay); // Every 5 seconds
   }
 
   /**

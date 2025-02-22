@@ -17,56 +17,70 @@ import { Decimal } from "../../utils/decimal";
 
 // Constants for database path and table formatting
 const DB_PATH = "src/papertrading/db/paper_trading.db";
-const TABLE_WIDTH = 150;  // Total width of the display tables
-const TOKEN_COL_WIDTH = 45;  // Width for token-related columns
-const NUM_COL_WIDTH = 20;  // Width for numerical value columns
-const TIME_COL_WIDTH = 25;  // Width for timestamp columns
+const TABLE_WIDTH = 200;  // Increased width for more columns
+const TOKEN_COL_WIDTH = 20;  // Adjusted for token name
+const ADDRESS_COL_WIDTH = 45; // Width for addresses
+const NUM_COL_WIDTH = 15;  // Width for numerical values
+const TIME_COL_WIDTH = 20;  // Width for timestamp columns
+
+/**
+ * Represents market data from dexscreener
+ */
+interface DexScreenerData {
+    volume_m5: number;
+    marketCap: number;
+    liquidity_usd: number;
+}
 
 /**
  * Represents an active trading position for a token
- * Tracks current amount, prices, and risk management parameters
  */
 interface TokenPosition {
-    token_mint: string;  // Token's mint address
-    token_name: string;  // Human-readable token name
-    amount: Decimal;     // Current position size
-    buy_price: Decimal;  // Average entry price
-    current_price: Decimal;  // Latest market price
-    last_updated: number;    // Timestamp of last update
-    stop_loss: Decimal;      // Stop loss price level
-    take_profit: Decimal;    // Take profit price level
+    token_mint: string;
+    token_name: string;
+    amount: Decimal;
+    buy_price: Decimal;
+    current_price: Decimal;
+    last_updated: number;
+    stop_loss: Decimal;
+    take_profit: Decimal;
+    position_size_sol: Decimal;
+    dex_data?: DexScreenerData;
 }
 
 /**
  * Represents a completed trade in the paper trading system
- * Records both buy and sell transactions with their details
  */
 interface SimulatedTrade {
-    timestamp: number;      // When the trade occurred
-    token_mint: string;     // Token's mint address
-    token_name: string;     // Human-readable token name
-    amount_sol: Decimal;    // Trade amount in SOL
-    amount_token: Decimal;  // Trade amount in token units
-    price_per_token: Decimal;  // Execution price
-    type: 'buy' | 'sell';     // Trade direction
-    fees: Decimal;            // Transaction fees in SOL
+    timestamp: number;
+    token_mint: string;
+    token_name: string;
+    amount_sol: Decimal;
+    amount_token: Decimal;
+    price_per_token: Decimal;
+    type: 'buy' | 'sell';
+    fees: Decimal;
+    slippage: Decimal;
+    dex_data?: DexScreenerData;
+    sell_price?: Decimal;
+    sell_fees?: Decimal;
+    time_sell?: number;
+    pnl?: Decimal;
 }
 
 /**
- * Aggregated statistics for trading performance analysis
- * Tracks profitability metrics and notable trades
+ * Represents aggregated statistics for trading performance analysis
  */
 interface TradingStats {
-    totalTrades: number;       // Total number of completed trades
-    profitableTrades: number;  // Number of profitable trades
-    totalProfitLoss: Decimal;  // Net P/L in SOL
-    winRate: Decimal;          // Percentage of profitable trades
-    avgProfitPerTrade: Decimal;  // Average P/L per trade
-    bestTrade: { token: string; profit: Decimal };   // Most profitable trade
-    worstTrade: { token: string; profit: Decimal };  // Least profitable trade
+    totalTrades: number;
+    profitableTrades: number;
+    totalProfitLoss: Decimal;
+    winRate: Decimal;
+    avgProfitPerTrade: Decimal;
+    bestTrade: { token: string; profit: Decimal };
+    worstTrade: { token: string; profit: Decimal };
 }
 
-// Unicode box drawing characters for creating table borders
 const BOX = {
     topLeft: '┌',
     topRight: '┐',
@@ -81,57 +95,36 @@ const BOX = {
     cross: '┼',
 };
 
-/**
- * Draws a boxed section with a title and content
- * Used for displaying single-section information like balances
- */
 function drawBox(title: string, content: string[]): void {
-    // Top border with title
     console.log('\n' + BOX.topLeft + BOX.horizontal.repeat(2) + 
                 chalk.bold.blue(` ${title} `) + 
                 BOX.horizontal.repeat(TABLE_WIDTH - title.length - 4) + BOX.topRight);
     
-    // Content with side borders
     content.forEach(line => {
         console.log(BOX.vertical + ' ' + line + ' '.repeat(Math.max(0, TABLE_WIDTH - line.length - 2)) + BOX.vertical);
     });
     
-    // Bottom border
     console.log(BOX.bottomLeft + BOX.horizontal.repeat(TABLE_WIDTH) + BOX.bottomRight);
 }
 
-/**
- * Draws a formatted table with headers and rows
- * Used for displaying structured data like positions and trades
- */
 function drawTable(headers: string[], rows: string[][], title: string): void {
     const headerLine = headers.join(BOX.vertical);
     const separator = BOX.horizontal.repeat(TABLE_WIDTH);
     
-    // Draw title and top border
     console.log('\n' + BOX.topLeft + BOX.horizontal.repeat(2) + 
                 chalk.bold.blue(` ${title} `) + 
                 BOX.horizontal.repeat(TABLE_WIDTH - title.length - 4) + BOX.topRight);
     
-    // Headers with yellow highlighting
     console.log(BOX.vertical + ' ' + chalk.yellow(headerLine) + ' ' + BOX.vertical);
-    
-    // Separator line between headers and data
     console.log(BOX.leftT + separator + BOX.rightT);
     
-    // Data rows
     rows.forEach(row => {
         console.log(BOX.vertical + ' ' + row.join(BOX.vertical) + ' ' + BOX.vertical);
     });
     
-    // Bottom border
     console.log(BOX.bottomLeft + separator + BOX.bottomRight);
 }
 
-/**
- * Displays the current virtual balance in SOL and USD equivalent
- * Updates in real-time with the latest SOL/USD price
- */
 async function displayVirtualBalance(): Promise<void> {
     try {
         const balance = await getVirtualBalance();
@@ -153,14 +146,9 @@ async function displayVirtualBalance(): Promise<void> {
     }
 }
 
-/**
- * Displays all active trading positions with current P/L and risk parameters
- * Shows token amounts, prices, and color-coded profit/loss percentages
- */
 async function displayActivePositions(): Promise<void> {
     const connectionManager = ConnectionManager.getInstance(DB_PATH);
     try {
-        // Fetch and parse position data from database
         const db = await connectionManager.getConnection();
         const positions = (await db.all('SELECT * FROM token_tracking')).map(pos => ({
             ...pos,
@@ -168,34 +156,38 @@ async function displayActivePositions(): Promise<void> {
             buy_price: new Decimal(pos.buy_price),
             current_price: new Decimal(pos.current_price),
             stop_loss: new Decimal(pos.stop_loss),
-            take_profit: new Decimal(pos.take_profit)
+            take_profit: new Decimal(pos.take_profit),
+            position_size_sol: new Decimal(pos.position_size_sol || 0)
         }));
         connectionManager.releaseConnection(db);
 
         if (positions.length > 0) {
-            // Define table structure
             const headers = [
-                'Token'.padEnd(TOKEN_COL_WIDTH),
-                'Amount'.padEnd(NUM_COL_WIDTH),
+                'Token Name'.padEnd(TOKEN_COL_WIDTH),
+                'Address'.padEnd(ADDRESS_COL_WIDTH),
+                'Position Size/Sol'.padEnd(NUM_COL_WIDTH),
                 'Buy Price'.padEnd(NUM_COL_WIDTH),
                 'Current Price'.padEnd(NUM_COL_WIDTH),
                 'PNL'.padEnd(NUM_COL_WIDTH),
-                'Stop Loss'.padEnd(NUM_COL_WIDTH),
-                'Take Profit'.padEnd(NUM_COL_WIDTH)
+                'Take Profit'.padEnd(NUM_COL_WIDTH),
+                'Stop Loss'.padEnd(NUM_COL_WIDTH)
             ];
 
-            // Format position data with color-coded P/L
             const rows = positions.map((pos: TokenPosition) => {
-                const pnlPercent = pos.current_price.subtract(pos.buy_price).divide(pos.buy_price).multiply(new Decimal(100));
+                const pnlPercent = pos.current_price.subtract(pos.buy_price)
+                    .divide(pos.buy_price)
+                    .multiply(new Decimal(100));
                 const pnlColor = pnlPercent.isPositive() || pnlPercent.isZero() ? chalk.green : chalk.red;
+                
                 return [
-                    pos.token_mint.padEnd(TOKEN_COL_WIDTH),
-                    pos.amount.toString(8).padEnd(NUM_COL_WIDTH),
-                    `$${pos.buy_price.toString(8)}`.padEnd(NUM_COL_WIDTH),
-                    `$${pos.current_price.toString(8)}`.padEnd(NUM_COL_WIDTH),
-                    pnlColor(pnlPercent.toString(2) + '%'.padEnd(NUM_COL_WIDTH - 3)),
-                    pos.stop_loss.toString(8).padEnd(NUM_COL_WIDTH),
-                    pos.take_profit.toString(8).padEnd(NUM_COL_WIDTH)
+                    pos.token_name.padEnd(TOKEN_COL_WIDTH),
+                    pos.token_mint.padEnd(ADDRESS_COL_WIDTH),
+                    pos.position_size_sol.toString(4).padEnd(NUM_COL_WIDTH),
+                    pos.buy_price.toString(4).padEnd(NUM_COL_WIDTH),
+                    pos.current_price.toString(4).padEnd(NUM_COL_WIDTH),
+                    pnlColor(pnlPercent.toString(2) + '%').padEnd(NUM_COL_WIDTH),
+                    pos.take_profit.toString(4).padEnd(NUM_COL_WIDTH),
+                    pos.stop_loss.toString(4).padEnd(NUM_COL_WIDTH)
                 ];
             });
 
@@ -208,41 +200,9 @@ async function displayActivePositions(): Promise<void> {
     }
 }
 
-/**
- * Displays aggregated trading statistics with color-coded performance metrics
- * Shows win rate, total P/L, and best/worst trades
- */
-async function displayTradingStats(stats: TradingStats): Promise<void> {
-    const content = [
-        `${chalk.yellow('Total Trades:')} ${stats.totalTrades}`,
-        `${chalk.yellow('Win Rate:')} ${stats.winRate.greaterThan(50) || stats.winRate.equals(50) ? chalk.green(stats.winRate.toString(1)) : chalk.red(stats.winRate.toString(1))}%`,
-        `${chalk.yellow('Total P/L:')} ${stats.totalProfitLoss.isPositive() || stats.totalProfitLoss.isZero() ? chalk.green(stats.totalProfitLoss.toString()) : chalk.red(stats.totalProfitLoss.toString())} SOL`,
-        `${chalk.yellow('Avg P/L per Trade:')} ${stats.avgProfitPerTrade.isPositive() || stats.avgProfitPerTrade.isZero() ? chalk.green(stats.avgProfitPerTrade.toString()) : chalk.red(stats.avgProfitPerTrade.toString())} SOL`,
-    ];
-
-    // Add best trade if available
-    if (!stats.bestTrade.profit.equals(new Decimal(-Infinity))) {
-        const bestTradeColor = stats.bestTrade.profit.isPositive() || stats.bestTrade.profit.isZero() ? chalk.green : chalk.red;
-        content.push(`${chalk.yellow('Best Trade:')} ${stats.bestTrade.token} (${bestTradeColor(stats.bestTrade.profit.toString(8))} SOL)`);
-    }
-    // Add worst trade if available
-    if (!stats.worstTrade.profit.equals(new Decimal(Infinity))) {
-        const worstTradeColor = stats.worstTrade.profit.isPositive() || stats.worstTrade.profit.isZero() ? chalk.green : chalk.red;
-        content.push(`${chalk.yellow('Worst Trade:')} ${stats.worstTrade.token} (${worstTradeColor(stats.worstTrade.profit.toString(8))} SOL)`);
-    }
-
-    drawBox('📈 Trading Statistics', content);
-}
-
-/**
- * Displays recent trades with execution details
- * Shows timestamp, trade type, amounts, and fees
- * @param limit Maximum number of trades to display
- */
-async function displayRecentTrades(limit: number = 20): Promise<void> {
+async function displayRecentTrades(limit: number = config.paper_trading.recent_trades_limit): Promise<void> {
     const connectionManager = ConnectionManager.getInstance(DB_PATH);
     try {
-        // Fetch recent trades from database
         const db = await connectionManager.getConnection();
         const trades = (await db.all(
             'SELECT * FROM simulated_trades ORDER BY timestamp DESC LIMIT ?',
@@ -252,30 +212,65 @@ async function displayRecentTrades(limit: number = 20): Promise<void> {
             amount_sol: new Decimal(trade.amount_sol),
             amount_token: new Decimal(trade.amount_token),
             price_per_token: new Decimal(trade.price_per_token),
-            fees: new Decimal(trade.fees)
+            fees: new Decimal(trade.fees),
+            slippage: new Decimal(trade.slippage || 0),
+            sell_price: trade.sell_price ? new Decimal(trade.sell_price) : undefined,
+            sell_fees: trade.sell_fees ? new Decimal(trade.sell_fees) : undefined,
+            pnl: trade.pnl ? new Decimal(trade.pnl) : undefined
         }));
         connectionManager.releaseConnection(db);
 
         if (trades.length > 0) {
-            // Define table structure
             const headers = [
-                'Time'.padEnd(TIME_COL_WIDTH),
-                'Type'.padEnd(10),
-                'Token'.padEnd(TOKEN_COL_WIDTH),
-                'Amount SOL'.padEnd(NUM_COL_WIDTH),
-                'Price/Token'.padEnd(NUM_COL_WIDTH),
-                'Fees'.padEnd(NUM_COL_WIDTH)
+                'Token Name'.padEnd(TOKEN_COL_WIDTH),
+                'Address'.padEnd(ADDRESS_COL_WIDTH),
+                'Volume 5m'.padEnd(NUM_COL_WIDTH),
+                'MarketCap'.padEnd(NUM_COL_WIDTH),
+                'Buy Price'.padEnd(NUM_COL_WIDTH),
+                'Sell Price'.padEnd(NUM_COL_WIDTH),
+                'Fees'.padEnd(NUM_COL_WIDTH),
+                'Slippage'.padEnd(NUM_COL_WIDTH),
+                'Position Size/Sol'.padEnd(NUM_COL_WIDTH),
+                'Time Buy'.padEnd(TIME_COL_WIDTH),
+                'Time Sell'.padEnd(TIME_COL_WIDTH),
+                'Liquidity/buy'.padEnd(NUM_COL_WIDTH),
+                'Liquidity/sell'.padEnd(NUM_COL_WIDTH),
+                'PNL'.padEnd(NUM_COL_WIDTH)
             ];
 
-            // Format trade data with color-coded types
-            const rows = trades.map((trade: SimulatedTrade) => [
-                new Date(trade.timestamp).toLocaleString().padEnd(TIME_COL_WIDTH),
-                (trade.type === 'buy' ? chalk.green : chalk.red)(trade.type.toUpperCase().padEnd(10)),
-                trade.token_mint.padEnd(TOKEN_COL_WIDTH),
-                trade.amount_sol.toString(8).padEnd(NUM_COL_WIDTH),
-                `$${trade.price_per_token.toString(8)}`.padEnd(NUM_COL_WIDTH),
-                trade.fees.toString(8).padEnd(NUM_COL_WIDTH)
-            ]);
+            const rows = trades.map((trade: SimulatedTrade) => {
+                const timeFormat = (timestamp: number) => 
+                    new Date(timestamp).toLocaleString('en-US', {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        second: '2-digit'
+                    });
+
+                // Calculate total fees (including sell fees if available)
+                const totalFees = trade.sell_fees ? 
+                    trade.fees.add(trade.sell_fees) : 
+                    trade.fees;
+
+                return [
+                    trade.token_name.padEnd(TOKEN_COL_WIDTH),
+                    trade.token_mint.padEnd(ADDRESS_COL_WIDTH),
+                    (trade.dex_data?.volume_m5 || '0').toString().padEnd(NUM_COL_WIDTH),
+                    (trade.dex_data?.marketCap || '0').toString().padEnd(NUM_COL_WIDTH),
+                    trade.price_per_token.toString(4).padEnd(NUM_COL_WIDTH),
+                    (trade.sell_price?.toString(4) || '-').padEnd(NUM_COL_WIDTH),
+                    totalFees.toString(4).padEnd(NUM_COL_WIDTH),
+                    trade.slippage.toString(2).padEnd(NUM_COL_WIDTH),
+                    trade.amount_sol.toString(4).padEnd(NUM_COL_WIDTH),
+                    timeFormat(trade.timestamp).padEnd(TIME_COL_WIDTH),
+                    (trade.time_sell ? timeFormat(trade.time_sell) : '-').padEnd(TIME_COL_WIDTH),
+                    (trade.dex_data?.liquidity_usd || '0').toString().padEnd(NUM_COL_WIDTH),
+                    (trade.time_sell ? (trade.dex_data?.liquidity_usd || '0').toString() : '-').padEnd(NUM_COL_WIDTH),
+                    (trade.pnl ? 
+                        (trade.pnl.isPositive() ? chalk.green : chalk.red)(trade.pnl.toString(4)) :
+                        '-'
+                    ).padEnd(NUM_COL_WIDTH)
+                ];
+            });
 
             drawTable(headers, rows, '📈 Recent Trades');
         } else {
@@ -286,38 +281,30 @@ async function displayRecentTrades(limit: number = 20): Promise<void> {
     }
 }
 
-/**
- * Main dashboard display function
- * Coordinates the display of all dashboard components and handles auto-refresh
- */
-async function displayDashboard(): Promise<void> {
-    console.clear();
-    console.log(chalk.bold.cyan('\n=== Paper Trading Dashboard ==='));
-    
-    // Display all dashboard components
-    await displayVirtualBalance();
-    await displayActivePositions();
-    
-    const stats = await calculateTradingStats();
-    if (stats) {
-        await displayTradingStats(stats);
-    }
-    
-    await displayRecentTrades();
+async function displayTradingStats(stats: TradingStats): Promise<void> {
+    const content = [
+        `${chalk.yellow('Total Trades:')} ${stats.totalTrades}`,
+        `${chalk.yellow('Win Rate:')} ${stats.winRate.greaterThan(50) || stats.winRate.equals(50) ? chalk.green(stats.winRate.toString(1)) : chalk.red(stats.winRate.toString(1))}%`,
+        `${chalk.yellow('Total P/L:')} ${stats.totalProfitLoss.isPositive() || stats.totalProfitLoss.isZero() ? chalk.green(stats.totalProfitLoss.toString()) : chalk.red(stats.totalProfitLoss.toString())} SOL`,
+        `${chalk.yellow('Avg P/L per Trade:')} ${stats.avgProfitPerTrade.isPositive() || stats.avgProfitPerTrade.isZero() ? chalk.green(stats.avgProfitPerTrade.toString()) : chalk.red(stats.avgProfitPerTrade.toString())} SOL`,
+    ];
 
-    console.log('\n' + chalk.gray(`Auto-refreshing every ${config.paper_trading.dashboard_refresh/1000} seconds. Press Ctrl+C to exit`));
+    if (!stats.bestTrade.profit.equals(new Decimal(-Infinity))) {
+        const bestTradeColor = stats.bestTrade.profit.isPositive() || stats.bestTrade.profit.isZero() ? chalk.green : chalk.red;
+        content.push(`${chalk.yellow('Best Trade:')} ${stats.bestTrade.token} (${bestTradeColor(stats.bestTrade.profit.toString(8))} SOL)`);
+    }
+    if (!stats.worstTrade.profit.equals(new Decimal(Infinity))) {
+        const worstTradeColor = stats.worstTrade.profit.isPositive() || stats.worstTrade.profit.isZero() ? chalk.green : chalk.red;
+        content.push(`${chalk.yellow('Worst Trade:')} ${stats.worstTrade.token} (${worstTradeColor(stats.worstTrade.profit.toString(8))} SOL)`);
+    }
+
+    drawBox('📈 Trading Statistics', content);
 }
 
-/**
- * Calculates comprehensive trading statistics from historical trade data
- * Processes all trades to compute metrics like win rate, P/L, and best/worst trades
- * @returns Trading statistics or null if no trades exist
- */
 async function calculateTradingStats(): Promise<TradingStats | null> {
     const connectionManager = ConnectionManager.getInstance(DB_PATH);
     try {
         const db = await connectionManager.getConnection();
-        // Fetch all trades and convert numeric strings to Decimal objects
         const trades = (await db.all('SELECT * FROM simulated_trades')).map(trade => ({
             ...trade,
             amount_sol: new Decimal(trade.amount_sol),
@@ -329,7 +316,6 @@ async function calculateTradingStats(): Promise<TradingStats | null> {
 
         if (trades.length === 0) return null;
 
-        // Group trades by token for P/L calculation
         const tokenTrades = new Map<string, SimulatedTrade[]>();
         trades.forEach((trade: SimulatedTrade) => {
             if (!tokenTrades.has(trade.token_mint)) {
@@ -343,14 +329,12 @@ async function calculateTradingStats(): Promise<TradingStats | null> {
         let bestTrade = { token: '', profit: new Decimal(-Infinity) };
         let worstTrade = { token: '', profit: new Decimal(Infinity) };
 
-        // Calculate P/L for each token's trades
         tokenTrades.forEach((trades, tokenMint) => {
             let buyTotal = Decimal.ZERO;
             let sellTotal = Decimal.ZERO;
             let buyFees = Decimal.ZERO;
             let sellFees = Decimal.ZERO;
 
-            // Sum up buy and sell amounts separately
             trades.forEach(trade => {
                 if (trade.type === 'buy') {
                     buyTotal = buyTotal.add(trade.amount_sol);
@@ -361,12 +345,10 @@ async function calculateTradingStats(): Promise<TradingStats | null> {
                 }
             });
 
-            // Calculate net profit/loss including fees
             const totalFees = buyFees.add(sellFees);
             const profit = sellTotal.subtract(buyTotal).subtract(totalFees);
             if (profit.isPositive()) profitableTrades++;
 
-            // Update best/worst trade records
             if (profit.greaterThan(bestTrade.profit)) {
                 bestTrade = { token: trades[0].token_mint, profit };
             }
@@ -377,7 +359,6 @@ async function calculateTradingStats(): Promise<TradingStats | null> {
             totalProfitLoss = totalProfitLoss.add(profit);
         });
 
-        // Calculate win rate and average profit per trade
         const winRate = new Decimal(profitableTrades)
             .divide(tokenTrades.size)
             .multiply(100);
@@ -401,10 +382,6 @@ async function calculateTradingStats(): Promise<TradingStats | null> {
     }
 }
 
-/**
- * Initializes and starts the dashboard
- * Sets up database connection, initializes paper trading system, and starts auto-refresh
- */
 async function startDashboard(): Promise<void> {
     const connectionManager = ConnectionManager.getInstance(DB_PATH);
     await connectionManager.initialize();
@@ -419,24 +396,34 @@ async function startDashboard(): Promise<void> {
     setInterval(displayDashboard, config.paper_trading.dashboard_refresh);
 }
 
-/**
- * Resets the paper trading system to initial state
- * Clears all trades, positions, and resets virtual balance to initial value
- * @returns boolean indicating success or failure
- */
+async function displayDashboard(): Promise<void> {
+    console.clear();
+    console.log(chalk.bold.cyan('\n=== Paper Trading Dashboard ==='));
+    
+    await displayVirtualBalance();
+    await displayActivePositions();
+    
+    const stats = await calculateTradingStats();
+    if (stats) {
+        await displayTradingStats(stats);
+    }
+    
+    await displayRecentTrades();
+
+    console.log('\n' + chalk.gray(`Auto-refreshing every ${config.paper_trading.dashboard_refresh/1000} seconds. Press Ctrl+C to exit`));
+}
+
 async function resetPaperTrading(): Promise<boolean> {
     const connectionManager = ConnectionManager.getInstance(DB_PATH);
     try {
         const db = await connectionManager.getConnection();
 
-        // Clear all trading data
         await db.exec(`
             DELETE FROM virtual_balance;
             DELETE FROM simulated_trades;
             DELETE FROM token_tracking;
         `);
 
-        // Reset virtual balance to initial value
         await db.run(
             'INSERT INTO virtual_balance (balance_sol, updated_at) VALUES (?, ?)',
             [config.paper_trading.initial_balance, Date.now()]
