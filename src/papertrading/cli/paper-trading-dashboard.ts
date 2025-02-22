@@ -18,7 +18,7 @@ import { Decimal } from "../../utils/decimal";
 // Constants for database path and table formatting
 const DB_PATH = "src/papertrading/db/paper_trading.db";
 const TABLE_WIDTH = 200;  // Increased width for more columns
-const TOKEN_COL_WIDTH = 20;  // Adjusted for token name
+const TOKEN_COL_WIDTH = 30;  // Adjusted for token name
 const ADDRESS_COL_WIDTH = 45; // Width for addresses
 const NUM_COL_WIDTH = 15;  // Width for numerical values
 const TIME_COL_WIDTH = 20;  // Width for timestamp columns
