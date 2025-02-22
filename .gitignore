@@ -38,7 +38,6 @@ paper_trading.db
 config.ts
 
 # Documentation and Development Notes
-/cline_docs/
 /coverage/
 *.md
 !README.md
