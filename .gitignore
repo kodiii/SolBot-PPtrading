@@ -35,6 +35,7 @@ next-env.d.ts
 holdings.db
 myConfig.ts
 paper_trading.db
+config.ts
 
 # Documentation and Development Notes
 /cline_docs/
