@@ -43,7 +43,3 @@ config.ts
 !README.md
 !Instructions.md
 !cline_docs/*.md
-ideas.txt
-
-# Test Files
-**/__tests__/
