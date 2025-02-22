@@ -16,7 +16,15 @@ npm install
      - `HELIUS_HTTPS_URI_TX`: Helius transaction API endpoint with API key
      - Other API endpoints should work as provided
 
-3. Build the project:
+3. Configure trading settings:
+   - Copy `src/config.ts.backup` to `src/config.ts`
+   - Customize the configuration parameters in `config.ts` according to your trading strategy:
+     - `paper_trading`: Adjust simulation settings like initial balance and position limits
+     - `swap`: Configure transaction parameters like amount and slippage
+     - `sell`: Set stop-loss and take-profit percentages
+     - `rug_check`: Customize security validation rules and risk thresholds
+
+4. Build the project:
 ```bash
 npm run build
 ```
