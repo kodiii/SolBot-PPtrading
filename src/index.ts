@@ -96,8 +96,8 @@ async function processTransaction(signature: string): Promise<void> {
     console.log("🎮 Paper Trading Mode: Simulating trade for new token");
     const tokenPrice = await simulationService.getTokenPrice(data.tokenMint);
     if (tokenPrice) {
-      console.log(`💰 Found Raydium price: $${tokenPrice}`);
-      const success = await simulationService.executeBuy(data.tokenMint, data.tokenMint, tokenPrice);
+      console.log(`💰 Found Raydium price: $${tokenPrice.price}`);
+      const success = await simulationService.executeBuy(data.tokenMint, data.tokenMint, tokenPrice.price);
       if (success) {
         console.log("🟢 Paper trade executed successfully");
       } else {

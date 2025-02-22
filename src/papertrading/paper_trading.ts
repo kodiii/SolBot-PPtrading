@@ -40,6 +40,8 @@ interface VirtualBalance {
  * @property {Decimal} price_per_token - Execution price per token
  * @property {'buy' | 'sell'} type - Trade direction
  * @property {Decimal} fees - Transaction fees in SOL
+ * @property {Decimal} slippage - Price slippage percentage
+ * @property {DexScreenerData} [dex_data] - Optional market data from DEX
  */
 interface SimulatedTrade {
   timestamp: number;
@@ -50,6 +52,12 @@ interface SimulatedTrade {
   price_per_token: Decimal;
   type: 'buy' | 'sell';
   fees: Decimal;
+  slippage?: Decimal;
+  dex_data?: {
+    volume_m5?: number;
+    marketCap?: number;
+    liquidity_usd?: number;
+  };
 }
 
 /**
@@ -111,7 +119,16 @@ export async function initializePaperTradingDB(): Promise<boolean> {
           amount_token TEXT NOT NULL,
           price_per_token TEXT NOT NULL,
           type TEXT NOT NULL,
-          fees TEXT NOT NULL
+          fees TEXT NOT NULL,
+          slippage TEXT DEFAULT '0',
+          volume_m5 TEXT DEFAULT '0',
+          market_cap TEXT DEFAULT '0',
+          liquidity_usd TEXT DEFAULT '0',
+          sell_price TEXT DEFAULT NULL,
+          sell_fees TEXT DEFAULT NULL,
+          time_sell INTEGER DEFAULT NULL,
+          pnl TEXT DEFAULT NULL,
+          liquidity_usd_sell TEXT DEFAULT NULL
         );
       `);
 
@@ -137,7 +154,7 @@ export async function initializePaperTradingDB(): Promise<boolean> {
       if (!balance) {
         await db.run(
           'INSERT INTO virtual_balance (balance_sol, updated_at) VALUES (?, ?)',
-          [new Decimal(config.paper_trading.initial_balance).toString(), Date.now()]
+          [config.paper_trading.initial_balance.toString(), Date.now()]
         );
         console.log(`🎮 Paper Trading balance set to ${config.paper_trading.initial_balance} SOL`);
       }
@@ -201,20 +218,46 @@ export async function recordSimulatedTrade(trade: SimulatedTrade): Promise<boole
     const db = await connectionManager.getConnection();
     try {
       await connectionManager.transaction(async (transaction) => {
-        await db.run(
-          `INSERT INTO simulated_trades (timestamp, token_mint, token_name, amount_sol, amount_token, price_per_token, type, fees)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-          [
-            trade.timestamp,
-            trade.token_mint,
-            trade.token_name,
-            trade.amount_sol.toString(),
-            trade.amount_token.toString(),
-            trade.price_per_token.toString(),
-            trade.type,
-            trade.fees.toString()
-          ]
-        );
+        if (trade.type === 'sell') {
+          // Update existing buy record with sell information
+          await db.run(
+            `UPDATE simulated_trades 
+             SET sell_price = ?,
+                 sell_fees = ?,
+                 time_sell = ?,
+                 pnl = ?,
+                 liquidity_usd_sell = ?
+             WHERE token_mint = ? AND type = 'buy' AND sell_price IS NULL`,
+            [
+              trade.price_per_token.toString(),
+              trade.fees.toString(),
+              trade.timestamp,
+              trade.amount_sol.subtract(trade.fees).toString(),
+              trade.dex_data?.liquidity_usd || 0,
+              trade.token_mint
+            ]
+          );
+        } else {
+          // Insert new buy trade record
+          await db.run(
+            `INSERT INTO simulated_trades (timestamp, token_mint, token_name, amount_sol, amount_token, price_per_token, type, fees, slippage, volume_m5, market_cap, liquidity_usd)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [
+              trade.timestamp,
+              trade.token_mint,
+              trade.token_name,
+              trade.amount_sol.toString(),
+              trade.amount_token.toString(),
+              trade.price_per_token.toString(),
+              trade.type,
+              trade.fees.toString(),
+              trade.slippage?.toString() || '0',
+              trade.dex_data?.volume_m5 || 0,
+              trade.dex_data?.marketCap || 0,
+              trade.dex_data?.liquidity_usd || 0
+            ]
+          );
+        }
 
         // Update virtual balance
         const currentBalance = await getVirtualBalance();
@@ -249,10 +292,10 @@ export async function recordSimulatedTrade(trade: SimulatedTrade): Promise<boole
               trade.price_per_token.toString(),
               trade.price_per_token.toString(),
               trade.timestamp,
-              stopLossPrice.toString(),
-              takeProfitPrice.toString(),
+              stopLossPrice.toString(8),
+              takeProfitPrice.toString(8),
               trade.amount_token.toString(),
-              trade.price_per_token.toString(),
+              trade.price_per_token.toString(8),
               trade.timestamp
             ]
           );
@@ -288,7 +331,7 @@ export async function updateTokenPrice(tokenMint: string, currentPrice: Decimal)
         `UPDATE token_tracking 
          SET current_price = ?, last_updated = ?
          WHERE token_mint = ?`,
-        [currentPrice.toString(), Date.now(), tokenMint]
+        [currentPrice.toString(8), Date.now(), tokenMint]
       );
 
       const token = await db.get(

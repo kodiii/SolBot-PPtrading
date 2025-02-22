@@ -8,6 +8,7 @@
 
 import axios from 'axios';
 import { config } from '../../config';
+import { ConnectionManager } from '../db/connection_manager';
 import {
   initializePaperTradingDB,
   recordSimulatedTrade,
@@ -82,11 +83,9 @@ export class SimulationService {
   private lastPrices: Map<string, Decimal> = new Map();
   private solUsdPrice: Decimal | null = null;
   private coinDeskUri: string;
+  private db: any; // Database connection instance
+  private connectionManager: ConnectionManager;
 
-  /**
-   * Private constructor initializes the service
-   * Sets up SOL price tracking and initializes paper trading database
-   */
   private constructor() {
     this.coinDeskUri = process.env.COINDESK_HTTPS_URI || "";
     this.updateSolPrice(); // Initial SOL price fetch
@@ -95,9 +94,14 @@ export class SimulationService {
     if (!this.coinDeskUri) {
       console.error('❌ COINDESK_HTTPS_URI not configured in environment');
     }
+
+    // Initialize database connection
+    this.connectionManager = ConnectionManager.getInstance("src/papertrading/db/paper_trading.db");
+    
     // Initialize the paper trading database
-    initializePaperTradingDB().then((success) => {
+    initializePaperTradingDB().then(async (success) => {
       if (success) {
+        this.db = await this.connectionManager.getConnection();
         console.log('🎮 Paper Trading DB initialized successfully');
         this.startPriceTracking();
       } else {
@@ -125,9 +129,9 @@ export class SimulationService {
     this.priceCheckInterval = setInterval(async () => {
       const tokens = await getTrackedTokens();
       for (const token of tokens) {
-        const currentPrice = await this.getTokenPrice(token.token_mint);
-        if (currentPrice) {
-          const updatedToken = await updateTokenPrice(token.token_mint, currentPrice);
+        const priceData = await this.getTokenPrice(token.token_mint);
+        if (priceData && priceData.price) {
+          const updatedToken = await updateTokenPrice(token.token_mint, priceData.price);
           if (updatedToken) {
             await this.checkPriceTargets(updatedToken);
           }
@@ -151,7 +155,7 @@ export class SimulationService {
    * @param retryCount Current retry attempt number
    * @returns Current token price or null if unavailable
    */
-  public async getTokenPrice(tokenMint: string, retryCount = 0): Promise<Decimal | null> {
+  public async getTokenPrice(tokenMint: string, retryCount = 0): Promise<{ price: Decimal; symbol?: string; dexData?: { volume_m5: number; marketCap: number; liquidity_usd: number; } } | null> {
     try {
       const attempt = retryCount + 1;
       if (config.paper_trading.verbose_log) {
@@ -170,8 +174,16 @@ export class SimulationService {
       if (response.data && response.data.length > 0) {
         // Find Raydium pair
         const raydiumPair = response.data.find(pair => pair.dexId === 'raydium');
-        if (raydiumPair?.priceNative) {
-          return new Decimal(raydiumPair.priceNative);
+        if (raydiumPair?.priceUsd) {
+          return {
+            price: new Decimal(raydiumPair.priceUsd),
+            symbol: raydiumPair.baseToken.symbol,
+            dexData: {
+              volume_m5: raydiumPair.volume?.m5 || 0,
+              marketCap: raydiumPair.marketCap || 0,
+              liquidity_usd: raydiumPair.liquidity?.usd || 0
+            }
+          };
         }
         console.log('⚠️ No Raydium pair found');
       }
@@ -252,8 +264,8 @@ export class SimulationService {
 ): Promise<boolean> {
   // Check positions limit
   const openPositions = await getOpenPositionsCount();
-  if (openPositions >= config.paper_trading.max_open_positions) {
-    console.log(`❌ Maximum open positions limit (${config.paper_trading.max_open_positions}) reached`);
+  if (openPositions >= config.swap.max_open_positions) {
+    console.log(`❌ Maximum open positions limit (${config.swap.max_open_positions}) reached`);
     return false;
   }
 
@@ -281,15 +293,24 @@ export class SimulationService {
   // Calculate token amount with slippage-adjusted price
   const amountTokens = amountInSol.divide(priceWithSlippage);
 
+    // Get DexScreener data for the token
+    const priceData = await this.getTokenPrice(tokenMint);
+    if (!priceData) {
+      console.log('❌ Could not get token price data');
+      return false;
+    }
+
     const success = await recordSimulatedTrade({
       timestamp: Date.now(),
       token_mint: tokenMint,
-      token_name: tokenName,
+      token_name: priceData.symbol || tokenName, // Use symbol from DexScreener if available
       amount_sol: amountInSol,
       amount_token: amountTokens,
       price_per_token: priceWithSlippage, // Store slippage-adjusted price
       type: 'buy',
-      fees: fees
+      fees: fees,
+      slippage: randomSlippage,
+      dex_data: priceData.dexData
     });
 
     if (success) {
@@ -323,7 +344,30 @@ export class SimulationService {
     const amountInSol = token.amount.multiply(priceWithSlippage);
     const fees = new Decimal(config.sell.prio_fee_max_lamports).divide(Decimal.LAMPORTS_PER_SOL);
 
-    console.log(`🎯 Simulated slippage: ${randomSlippage.multiply(100).toString(4)}%`);
+    // Get the buy trade to calculate total slippage
+    const buyTrade = await this.db.get(
+      'SELECT slippage FROM simulated_trades WHERE token_mint = ? AND type = "buy" ORDER BY timestamp DESC LIMIT 1',
+      [token.token_mint]
+    );
+    const buySlippage = buyTrade ? new Decimal(buyTrade.slippage) : new Decimal(0);
+    const totalSlippage = buySlippage.add(randomSlippage);
+
+    console.log(`🎯 Simulated sell slippage: ${randomSlippage.multiply(100).toString(4)}%`);
+    console.log(`🎯 Total trade slippage (buy+sell): ${totalSlippage.multiply(100).toString(4)}%`);
+    
+    // Get DexScreener data for the token
+    const priceData = await this.getTokenPrice(token.token_mint);
+    if (!priceData) {
+      console.log('❌ Could not fetch token price and liquidity data for sell operation');
+      return false;
+    }
+
+    // Log liquidity information
+    if (priceData.dexData) {
+      console.log(`💧 Current Liquidity: $${priceData.dexData.liquidity_usd.toLocaleString()}`);
+      console.log(`📊 5m Volume: $${priceData.dexData.volume_m5.toLocaleString()}`);
+      console.log(`💰 Market Cap: $${priceData.dexData.marketCap.toLocaleString()}`);
+    }
     
     const success = await recordSimulatedTrade({
       timestamp: Date.now(),
@@ -331,9 +375,11 @@ export class SimulationService {
       token_name: token.token_name,
       amount_sol: amountInSol,
       amount_token: token.amount,
-      price_per_token: priceWithSlippage, // Store slippage-adjusted price
+      price_per_token: priceWithSlippage,
       type: 'sell',
-      fees: fees
+      fees: fees,
+      slippage: totalSlippage, // Store combined buy+sell slippage
+      dex_data: priceData.dexData // Ensure we're storing the latest liquidity data
     });
 
     if (success) {

@@ -17,10 +17,10 @@ import { Decimal } from "../../utils/decimal";
 
 // Constants for database path and table formatting
 const DB_PATH = "src/papertrading/db/paper_trading.db";
-const TABLE_WIDTH = 200;  // Increased width for more columns
-const TOKEN_COL_WIDTH = 30;  // Adjusted for token name
+const TABLE_WIDTH = 300;  // Increased width for more columns
+const TOKEN_COL_WIDTH = 12;  // Adjusted for token name
 const ADDRESS_COL_WIDTH = 45; // Width for addresses
-const NUM_COL_WIDTH = 15;  // Width for numerical values
+const NUM_COL_WIDTH = 20;  // Width for numerical values
 const TIME_COL_WIDTH = 20;  // Width for timestamp columns
 
 /**
@@ -30,6 +30,7 @@ interface DexScreenerData {
     volume_m5: number;
     marketCap: number;
     liquidity_usd: number;
+    liquidity_usd_sell?: number;
 }
 
 /**
@@ -183,11 +184,11 @@ async function displayActivePositions(): Promise<void> {
                     pos.token_name.padEnd(TOKEN_COL_WIDTH),
                     pos.token_mint.padEnd(ADDRESS_COL_WIDTH),
                     pos.position_size_sol.toString(4).padEnd(NUM_COL_WIDTH),
-                    pos.buy_price.toString(4).padEnd(NUM_COL_WIDTH),
-                    pos.current_price.toString(4).padEnd(NUM_COL_WIDTH),
+                    `$${pos.buy_price.toString(4)}`.padEnd(NUM_COL_WIDTH),
+                    `$${pos.current_price.toString(4)}`.padEnd(NUM_COL_WIDTH),
                     pnlColor(pnlPercent.toString(2) + '%').padEnd(NUM_COL_WIDTH),
-                    pos.take_profit.toString(4).padEnd(NUM_COL_WIDTH),
-                    pos.stop_loss.toString(4).padEnd(NUM_COL_WIDTH)
+                    `$${pos.take_profit.toString(4)}`.padEnd(NUM_COL_WIDTH),
+                    `$${pos.stop_loss.toString(4)}`.padEnd(NUM_COL_WIDTH)
                 ];
             });
 
@@ -216,7 +217,13 @@ async function displayRecentTrades(limit: number = config.paper_trading.recent_t
             slippage: new Decimal(trade.slippage || 0),
             sell_price: trade.sell_price ? new Decimal(trade.sell_price) : undefined,
             sell_fees: trade.sell_fees ? new Decimal(trade.sell_fees) : undefined,
-            pnl: trade.pnl ? new Decimal(trade.pnl) : undefined
+            pnl: trade.pnl ? new Decimal(trade.pnl) : undefined,
+            dex_data: {
+                volume_m5: trade.volume_m5 ? parseFloat(trade.volume_m5) : 0,
+                marketCap: trade.market_cap ? parseFloat(trade.market_cap) : 0,
+                liquidity_usd: trade.liquidity_usd ? parseFloat(trade.liquidity_usd) : 0,
+                liquidity_usd_sell: trade.liquidity_usd_sell ? parseFloat(trade.liquidity_usd_sell) : 0
+            }
         }));
         connectionManager.releaseConnection(db);
 
@@ -256,15 +263,15 @@ async function displayRecentTrades(limit: number = config.paper_trading.recent_t
                     trade.token_mint.padEnd(ADDRESS_COL_WIDTH),
                     (trade.dex_data?.volume_m5 || '0').toString().padEnd(NUM_COL_WIDTH),
                     (trade.dex_data?.marketCap || '0').toString().padEnd(NUM_COL_WIDTH),
-                    trade.price_per_token.toString(4).padEnd(NUM_COL_WIDTH),
-                    (trade.sell_price?.toString(4) || '-').padEnd(NUM_COL_WIDTH),
+                    `$${trade.price_per_token.toString(8)}`.padEnd(NUM_COL_WIDTH),
+                    (trade.sell_price ? `$${trade.sell_price.toString(8)}` : '-').padEnd(NUM_COL_WIDTH),
                     totalFees.toString(4).padEnd(NUM_COL_WIDTH),
-                    trade.slippage.toString(2).padEnd(NUM_COL_WIDTH),
+                    trade.slippage.toString(4).padEnd(NUM_COL_WIDTH),
                     trade.amount_sol.toString(4).padEnd(NUM_COL_WIDTH),
                     timeFormat(trade.timestamp).padEnd(TIME_COL_WIDTH),
                     (trade.time_sell ? timeFormat(trade.time_sell) : '-').padEnd(TIME_COL_WIDTH),
                     (trade.dex_data?.liquidity_usd || '0').toString().padEnd(NUM_COL_WIDTH),
-                    (trade.time_sell ? (trade.dex_data?.liquidity_usd || '0').toString() : '-').padEnd(NUM_COL_WIDTH),
+                    (trade.time_sell ? (trade.dex_data?.liquidity_usd_sell || '0').toString() : '-').padEnd(NUM_COL_WIDTH),
                     (trade.pnl ? 
                         (trade.pnl.isPositive() ? chalk.green : chalk.red)(trade.pnl.toString(4)) :
                         '-'
