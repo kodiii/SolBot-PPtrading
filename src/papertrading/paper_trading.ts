@@ -249,25 +249,42 @@ export async function recordSimulatedTrade(trade: SimulatedTrade): Promise<boole
     try {
       await connectionManager.transaction(async (transaction) => {
         if (trade.sell_price) {
-          // Get the original buy trade to get buy_slippage
+          // Get the original buy trade details
           const buyTrade = await db.get(
-            'SELECT buy_slippage FROM simulated_trades WHERE token_mint = ? AND sell_price IS NULL',
+            'SELECT amount_sol, buy_price, buy_fees, buy_slippage FROM simulated_trades WHERE token_mint = ? AND sell_price IS NULL',
             [trade.token_mint]
           );
-          const buySlippage = buyTrade ? new Decimal(buyTrade.buy_slippage) : new Decimal(0);
 
-          // Calculate sell return (amount - sell_fees - sell_slippage)
+          if (!buyTrade) {
+            console.error('Could not find original buy trade for PNL calculation');
+            return false;
+          }
+
+          const originalBuyAmount = new Decimal(buyTrade.amount_sol);
+          const buySlippage = new Decimal(buyTrade.buy_slippage);
+          const buyFees = new Decimal(buyTrade.buy_fees);
+
+          // Calculate sell return (current amount - sell_fees - sell_slippage)
           const sellReturn = trade.amount_sol
             .subtract(trade.sell_fees!)
             .subtract(trade.amount_sol.multiply(trade.sell_slippage || new Decimal(0)));
 
-          // Calculate buy cost (amount + buy_fees + buy_slippage)
-          const buyCost = trade.amount_sol
-            .add(trade.buy_fees)
-            .add(trade.amount_sol.multiply(buySlippage));
+          // Calculate buy cost using original buy amount (buy amount + buy_fees + buy_slippage)
+          const buyCost = originalBuyAmount
+            .add(buyFees)
+            .add(originalBuyAmount.multiply(buySlippage));
 
-          // Calculate PNL
+          // PNL is sell return minus buy cost
           const pnl = sellReturn.subtract(buyCost);
+
+          console.log(`PNL Calculation:
+          Sell Amount: ${trade.amount_sol.toString()} SOL
+          Sell Fees: ${trade.sell_fees!.toString()} SOL
+          Sell Slippage: ${trade.sell_slippage?.toString() || '0'} SOL
+          Buy Amount: ${originalBuyAmount.toString()} SOL
+          Buy Fees: ${buyFees.toString()} SOL
+          Buy Slippage: ${buySlippage.toString()} SOL
+          Final PNL: ${pnl.toString()} SOL`);
 
           // Update existing buy record with sell information
           await db.run(
@@ -291,25 +308,34 @@ export async function recordSimulatedTrade(trade: SimulatedTrade): Promise<boole
           );
         } else {
           // Insert new buy trade record
+          const buyValues = [
+            trade.token_name,
+            trade.token_mint,
+            trade.amount_sol.toString(),
+            trade.amount_token.toString(),
+            trade.buy_price.toString(),
+            trade.buy_fees.toString(),
+            trade.buy_slippage.toString(),
+            trade.time_buy,
+            trade.dex_data?.volume_m5 || 0,
+            trade.dex_data?.marketCap || 0,
+            trade.dex_data?.liquidity_buy_usd || 0
+          ];
+
+          console.log(`Recording Buy Trade:
+          Token: ${trade.token_name}
+          Amount SOL: ${trade.amount_sol.toString()}
+          Buy Price: ${trade.buy_price.toString()}
+          Buy Fees: ${trade.buy_fees.toString()}
+          Buy Slippage: ${trade.buy_slippage.toString()}`);
+          
           await db.run(
             `INSERT INTO simulated_trades (
                token_name, token_mint, amount_sol, amount_token,
                buy_price, buy_fees, buy_slippage, time_buy,
                volume_m5, market_cap, liquidity_buy_usd
              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-            [
-             trade.token_name,
-             trade.token_mint,
-             trade.amount_sol.toString(),
-             trade.amount_token.toString(),
-             trade.buy_price.toString(),
-             trade.buy_fees.toString(),
-             trade.buy_slippage.toString(),
-             trade.time_buy,
-             trade.dex_data?.volume_m5 || 0,
-             trade.dex_data?.marketCap || 0,
-             trade.dex_data?.liquidity_buy_usd || 0
-            ]
+            buyValues
           );
         }
 

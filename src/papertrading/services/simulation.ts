@@ -10,7 +10,6 @@ import axios from 'axios';
 import { config } from '../../config';
 import { ConnectionManager } from '../db/connection_manager';
 import {
-  initializePaperTradingDB,
   recordSimulatedTrade,
   getVirtualBalance,
   updateTokenPrice,
@@ -100,15 +99,13 @@ export class SimulationService {
     // Initialize database connection
     this.connectionManager = ConnectionManager.getInstance("src/papertrading/db/paper_trading.db");
     
-    // Initialize the paper trading database
-    initializePaperTradingDB().then(async (success) => {
-      if (success) {
-        this.db = await this.connectionManager.getConnection();
-        console.log('🎮 Paper Trading DB initialized successfully');
-        this.startPriceTracking();
-      } else {
-        console.error('❌ Failed to initialize Paper Trading DB');
-      }
+    // Get database connection
+    this.connectionManager.getConnection().then(db => {
+      this.db = db;
+      console.log('🎮 Paper Trading Service initialized successfully');
+      this.startPriceTracking();
+    }).catch(error => {
+      console.error('❌ Failed to get database connection:', error);
     });
   }
 
@@ -308,41 +305,41 @@ export class SimulationService {
    * @returns Success status of the buy operation
    */
   public async executeBuy(
-  tokenMint: string,
-  tokenName: string,
-  currentPrice: Decimal
-): Promise<boolean> {
-  // Check positions limit
-  const openPositions = await getOpenPositionsCount();
-  if (openPositions >= config.swap.max_open_positions) {
-    console.log(`❌ Maximum open positions limit (${config.swap.max_open_positions}) reached`);
-    return false;
-  }
+    tokenMint: string,
+    tokenName: string,
+    currentPrice: Decimal
+  ): Promise<boolean> {
+    // Check positions limit
+    const openPositions = await getOpenPositionsCount();
+    if (openPositions >= config.swap.max_open_positions) {
+      console.log(`❌ Maximum open positions limit (${config.swap.max_open_positions}) reached`);
+      return false;
+    }
 
-  const balance = await getVirtualBalance();
-  if (!balance) {
-    console.log('❌ Could not get virtual balance');
-    return false;
-  }
+    const balance = await getVirtualBalance();
+    if (!balance) {
+      console.log('❌ Could not get virtual balance');
+      return false;
+    }
 
-  // Convert configured lamport amount to SOL
-  const amountInSol = new Decimal(config.swap.amount).divide(Decimal.LAMPORTS_PER_SOL);
-  const fees = new Decimal(config.swap.prio_fee_max_lamports).divide(Decimal.LAMPORTS_PER_SOL);
+    // Convert configured lamport amount to SOL
+    const amountInSol = new Decimal(config.swap.amount).divide(Decimal.LAMPORTS_PER_SOL);
+    const fees = new Decimal(config.swap.prio_fee_max_lamports).divide(Decimal.LAMPORTS_PER_SOL);
 
-  if (balance.balance_sol.lessThan(amountInSol.add(fees))) {
-    console.log('❌ Insufficient virtual balance for trade');
-    return false;
-  }
+    if (balance.balance_sol.lessThan(amountInSol.add(fees))) {
+      console.log('❌ Insufficient virtual balance for trade');
+      return false;
+    }
 
-  // Apply slippage to simulate real market conditions
-  const slippageBps = new Decimal(config.swap.slippageBps);
-  const maxSlippage = slippageBps.divide(10000); // Convert basis points to decimal (200 -> 0.02)
-  const randomSlippage = maxSlippage.multiply(new Decimal(Math.random())); // Random slippage between 0 and max
-  const priceWithSlippage = currentPrice.multiply(Decimal.ONE.add(randomSlippage));
+    // Apply slippage to simulate real market conditions
+    const slippageBps = new Decimal(config.swap.slippageBps);
+    const maxSlippage = slippageBps.divide(10000); // Convert basis points to decimal (200 -> 0.02)
+    const randomSlippage = maxSlippage.multiply(new Decimal(Math.random())); // Random slippage between 0 and max
+    const priceWithSlippage = currentPrice.multiply(Decimal.ONE.add(randomSlippage));
 
-  // Calculate token amount with slippage-adjusted price (price is already in SOL)
-  const amountTokens = amountInSol.divide(priceWithSlippage);
-  console.log(`💱 Token price in SOL: ${currentPrice.toString(8)} SOL`);
+    // Calculate token amount with slippage-adjusted price (price is already in SOL)
+    const amountTokens = amountInSol.divide(priceWithSlippage);
+    console.log(`💱 Token price in SOL: ${currentPrice.toString(8)} SOL`);
 
     // Get DexScreener data for the token
     const priceData = await this.getTokenPrice(tokenMint);
@@ -398,16 +395,6 @@ export class SimulationService {
     const amountInSol = token.amount.multiply(priceWithSlippage);
     const fees = new Decimal(config.sell.prio_fee_max_lamports).divide(Decimal.LAMPORTS_PER_SOL);
 
-    // Get the buy trade details
-    const buyTrade = await this.db.get(
-      'SELECT buy_slippage, buy_fees FROM simulated_trades WHERE token_mint = ? AND sell_price IS NULL ORDER BY time_buy DESC LIMIT 1',
-      [token.token_mint]
-    );
-    const buySlippage = buyTrade ? new Decimal(buyTrade.buy_slippage) : new Decimal(0);
-
-    console.log(`🎯 Simulated sell slippage: ${randomSlippage.multiply(100).toString(4)}%`);
-    console.log(`🎯 Buy slippage: ${buySlippage.multiply(100).toString(4)}%`);
-    
     // Get DexScreener data for the token
     const priceData = await this.getTokenPrice(token.token_mint);
     if (!priceData) {
@@ -421,19 +408,19 @@ export class SimulationService {
       console.log(`📊 5m Volume: $${priceData.dexData.volume_m5.toLocaleString()}`);
       console.log(`💰 Market Cap: $${priceData.dexData.marketCap.toLocaleString()}`);
     }
-    
+
     const success = await recordSimulatedTrade({
       token_name: token.token_name,
       token_mint: token.token_mint,
       amount_sol: amountInSol,
       amount_token: token.amount,
       buy_price: token.buy_price,
-      buy_fees: token.buy_price.multiply(new Decimal(config.swap.slippageBps).divide(10000)),
-      buy_slippage: buySlippage,
+      buy_fees: token.buy_fees,
+      buy_slippage: token.buy_slippage,
       sell_price: priceWithSlippage,
       sell_fees: fees,
       sell_slippage: randomSlippage,
-      time_buy: token.last_updated - 1000, // Approximating buy time
+      time_buy: token.time_buy,
       time_sell: Date.now(),
       dex_data: {
         volume_m5: priceData.dexData?.volume_m5 || 0,

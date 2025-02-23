@@ -6,7 +6,7 @@
  * The dashboard auto-refreshes to show live updates of trading activities.
  */
 
-import chalk from "chalk";
+import chalk, { ChalkFunction } from "chalk";
 import dotenv from "dotenv";
 dotenv.config(); // Load environment variables
 import { ConnectionManager } from "../db/connection_manager";
@@ -14,6 +14,7 @@ import { initializePaperTradingDB, getVirtualBalance } from "../paper_trading";
 import { config } from "../../config";
 import { SimulationService } from "../services";
 import { Decimal } from "../../utils/decimal";
+import { dashboardStyle, columnWidths, getBoxChars, DashboardStyle, ColorScheme } from '../config/dashboard_style';
 
 // Constants for database path and table formatting
 const DB_PATH = "src/papertrading/db/paper_trading.db";
@@ -23,15 +24,6 @@ function calculateTableWidth(columnWidths: number[]): number {
     // Add 1 for each separator between columns, plus 2 for left/right borders
     return columnWidths.reduce((sum, width) => sum + width, 0) + columnWidths.length + 1;
 }
-
-// Column widths for different data types
-const TOKEN_NAME_WIDTH = 8;      // For token names
-const ADDRESS_WIDTH = 42;        // For token addresses
-const TIME_WIDTH = 15;          // For timestamps
-const SOL_PRICE_WIDTH = 12;     // For SOL prices (8 decimals)
-const USD_AMOUNT_WIDTH = 12;    // For USD amounts
-const TOKEN_AMOUNT_WIDTH = 15;   // For token amounts
-const PERCENT_WIDTH = 10;       // For percentage values
 
 /**
  * Represents market data from dexscreener
@@ -100,38 +92,57 @@ interface TradingStats {
     worstTrade: { token: string; profit: Decimal };
 }
 
-const BOX = {
-    topLeft: '┌',
-    topRight: '┐',
-    bottomLeft: '└',
-    bottomRight: '┘',
-    horizontal: '─',
-    vertical: '│',
-    leftT: '├',
-    rightT: '┤',
-    topT: '┬',
-    bottomT: '┴',
-    cross: '┼',
-};
+const STYLE: DashboardStyle = dashboardStyle;  // Using the single dashboard style configuration
+const BOX = getBoxChars(STYLE.border_style);
+
+// Update column width constants
+const {
+    TOKEN_NAME_WIDTH,
+    ADDRESS_WIDTH,
+    TIME_WIDTH,
+    SOL_PRICE_WIDTH,
+    USD_AMOUNT_WIDTH,
+    TOKEN_AMOUNT_WIDTH,
+    PERCENT_WIDTH
+} = columnWidths;
 
 function drawBox(title: string, content: string[]): void {
-    // Calculate required width based on the longest line including title
+    // Add spacing based on configuration
+    console.log('\n'.repeat(STYLE.section_spacing));
+    
     const contentWidth = Math.max(
-        title.length + 4,  // Title width plus padding
+        title.length + 4,
         ...content.map(line => line.length)
     );
-    const boxWidth = contentWidth + 2;  // Add 2 for left/right borders
+    const boxWidth = contentWidth + 2;
 
-    console.log('\n' + BOX.topLeft + BOX.horizontal.repeat(2) +
-                chalk.bold.blue(` ${title} `) +
+    console.log(BOX.topLeft + BOX.horizontal.repeat(2) +
+                (chalk[STYLE.header_style] as ChalkFunction)(`${title}`) +
                 BOX.horizontal.repeat(Math.max(0, boxWidth - title.length - 4)) + BOX.topRight);
     
     content.forEach(line => {
-        const paddedLine = line.padEnd(contentWidth);
+        const paddedLine = STYLE.align_numbers === "right" && line.includes(':') ?
+            line.replace(/([\d.]+)/, num => num.padStart(8)) :
+            line.padEnd(contentWidth);
         console.log(BOX.vertical + ' ' + paddedLine + ' ' + BOX.vertical);
     });
     
     console.log(BOX.bottomLeft + BOX.horizontal.repeat(boxWidth) + BOX.bottomRight);
+}
+
+function formatTimestamp(timestamp: number): string {
+    return new Date(timestamp).toLocaleTimeString('en-US', {
+        hour12: false,
+        timeStyle: 'medium'
+    });
+}
+
+function colorizeValue(value: number | Decimal, prefix = ''): string {
+    const numValue = value instanceof Decimal ? value.toNumber() : value;
+    const colorize = (color: keyof typeof chalk) => (chalk[color] as ChalkFunction);
+    if (numValue > 0) return colorize(STYLE.color_scheme.profit)(prefix + value.toString());
+    if (numValue < 0) return colorize(STYLE.color_scheme.loss)(prefix + value.toString());
+    return colorize(STYLE.color_scheme.neutral)(prefix + value.toString());
 }
 
 function drawTable(headers: string[], rows: string[][], title: string): void {
@@ -147,21 +158,28 @@ function drawTable(headers: string[], rows: string[][], title: string): void {
     // Create separator line
     const separator = BOX.horizontal.repeat(columnWidths.reduce((sum, width) => sum + width, 0) + columnWidths.length + 1);
 
-    // Draw table header
-    console.log('\n' + BOX.topLeft + BOX.horizontal.repeat(2) +
-                chalk.bold.blue(` ${title} `) +
+    // Add extra padding for better visual spacing
+    console.log('\n');
+    // Draw table header with rounded corners
+    console.log(BOX.topLeft + BOX.horizontal.repeat(2) +
+                chalk.bold.cyan(` ${title} `) +
                 BOX.horizontal.repeat(separator.length - title.length - 4) + BOX.topRight);
 
-    // Draw headers
+    // Draw headers with bold styling
     console.log(BOX.vertical + ' ' + headers.map((header, i) =>
-        chalk.yellow(header.padEnd(columnWidths[i]))).join(BOX.vertical) + ' ' + BOX.vertical);
+        chalk.bold.yellow(header.padEnd(columnWidths[i]))).join(BOX.vertical) + ' ' + BOX.vertical);
 
     console.log(BOX.leftT + separator + BOX.rightT);
 
-    // Draw rows
-    rows.forEach(row => {
-        console.log(BOX.vertical + ' ' + row.map((cell, i) =>
-            cell.padEnd(columnWidths[i])).join(BOX.vertical) + ' ' + BOX.vertical);
+    // Draw rows with alternating background for better readability
+    rows.forEach((row, rowIndex) => {
+        const rowContent = row.map((cell, i) => cell.padEnd(columnWidths[i])).join(BOX.vertical);
+        console.log(BOX.vertical + ' ' + rowContent + ' ' + BOX.vertical);
+        
+        // Add subtle separator between rows (except last row)
+        if (rowIndex < rows.length - 1) {
+            console.log(BOX.leftT + separator + BOX.rightT);
+        }
     });
 
     console.log(BOX.bottomLeft + separator + BOX.bottomRight);
@@ -219,8 +237,6 @@ async function displayActivePositions(): Promise<void> {
             ];
 
             const rows = positions.map((pos: TokenPosition) => {
-                // Calculate percentage gain/loss:
-                // ((sell_price - buy_price) / buy_price) * 100
                 // Calculate percentage gain/loss:
                 // ((sell_price - buy_price) / buy_price) * 100
                 const rawPnlPercent = pos.current_price.subtract(pos.buy_price)
@@ -440,16 +456,36 @@ async function calculateTradingStats(): Promise<TradingStats | null> {
 
 async function startDashboard(): Promise<void> {
     const connectionManager = ConnectionManager.getInstance(DB_PATH);
-    await connectionManager.initialize();
     
-    const success = await initializePaperTradingDB();
-    if (!success) {
-        console.error('Failed to initialize paper trading database');
-        return;
-    }
+    try {
+        // Initialize connection manager first
+        await connectionManager.initialize();
+        
+        // Try to get a database connection
+        const db = await connectionManager.getConnection();
+        await connectionManager.releaseConnection(db);
+        
+        // If we got here, database connection succeeded
+        await displayDashboard();
+        const intervalId = setInterval(displayDashboard, config.paper_trading.dashboard_refresh);
 
-    await displayDashboard();
-    setInterval(displayDashboard, config.paper_trading.dashboard_refresh);
+        // Cleanup on process termination
+        process.on('SIGINT', async () => {
+            clearInterval(intervalId);
+            console.log('\nDashboard stopped. Goodbye!');
+            process.exit(0);
+        });
+
+        // Cleanup on uncaught exceptions
+        process.on('uncaughtException', async (error) => {
+            console.error('Uncaught exception:', error);
+            clearInterval(intervalId);
+            process.exit(1);
+        });
+    } catch (error) {
+        console.error('Error connecting to database. Make sure the bot is running:', error);
+        process.exit(1);
+    }
 }
 
 async function displayDashboard(): Promise<void> {

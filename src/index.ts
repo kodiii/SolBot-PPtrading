@@ -19,6 +19,8 @@ import { config } from "./config"; // System configuration and trading parameter
 import { fetchTransactionDetails, createSwapTransaction, getRugCheckConfirmed, fetchAndSaveSwapDetails } from "./transactions";
 import { validateEnv } from "./utils/env-validator";
 import { SimulationService } from "./papertrading/services";
+import { ConnectionManager } from "./papertrading/db/connection_manager";
+import { initializePaperTradingDB } from "./papertrading/paper_trading";
 
 // Initialize paper trading simulation service if enabled in config
 const simulationService = config.rug_check.simulation_mode ? SimulationService.getInstance() : null;
@@ -143,6 +145,23 @@ let init = false;
 async function websocketHandler(): Promise<void> {
   // Load environment variables from the .env file
   const env = validateEnv();
+
+  // Initialize paper trading database
+  const connectionManager = ConnectionManager.getInstance("src/papertrading/db/paper_trading.db");
+  await connectionManager.initialize();
+  
+  const dbSuccess = await initializePaperTradingDB();
+  if (!dbSuccess) {
+    console.error('Failed to initialize paper trading database');
+    process.exit(1);
+  }
+  console.log('🎮 Paper Trading DB initialized successfully');
+  
+  // Initialize simulation service if simulation mode is enabled
+  if (config.rug_check.simulation_mode) {
+    SimulationService.getInstance();
+    console.log('🎯 Paper Trading Simulation Mode enabled');
+  }
 
   // Create a WebSocket connection
   let ws: WebSocket | null = new WebSocket(env.HELIUS_WSS_URI);
