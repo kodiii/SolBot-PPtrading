@@ -112,14 +112,14 @@ describe('Paper Trading', () => {
 
   describe('simulated trade operations', () => {
     const mockTrade = {
-      timestamp: Date.now(),
-      token_mint: 'token123',
       token_name: 'Test Token',
+      token_mint: 'token123',
       amount_sol: new Decimal('1.5'),
       amount_token: new Decimal('1000'),
-      price_per_token: new Decimal('0.0015'),
-      type: 'buy' as const,
-      fees: new Decimal('0.001')
+      buy_price: new Decimal('0.0015'),
+      buy_fees: new Decimal('0.001'),
+      buy_slippage: new Decimal('0.01'),
+      time_buy: Date.now()
     };
 
     it('should record a buy trade', async () => {
@@ -137,7 +137,13 @@ describe('Paper Trading', () => {
     });
 
     it('should record a sell trade', async () => {
-      const sellTrade = { ...mockTrade, type: 'sell' as const };
+      const sellTrade = {
+        ...mockTrade,
+        sell_price: new Decimal('0.002'),
+        sell_fees: new Decimal('0.001'),
+        sell_slippage: new Decimal('0.01'),
+        time_sell: Date.now()
+      };
       getMock.mockResolvedValueOnce({
         balance_sol: '10.0',
         updated_at: Date.now()
@@ -240,14 +246,14 @@ describe('Paper Trading', () => {
     it('should handle transaction failures', async () => {
       mockConnectionManager.transaction.mockRejectedValueOnce(new Error('Transaction Error'));
       const result = await recordSimulatedTrade({
-        timestamp: Date.now(),
-        token_mint: 'token123',
         token_name: 'Test Token',
+        token_mint: 'token123',
         amount_sol: new Decimal('1.5'),
         amount_token: new Decimal('1000'),
-        price_per_token: new Decimal('0.0015'),
-        type: 'buy',
-        fees: new Decimal('0.001')
+        buy_price: new Decimal('0.0015'),
+        buy_fees: new Decimal('0.001'),
+        buy_slippage: new Decimal('0.01'),
+        time_buy: Date.now()
       });
       expect(result).toBe(false);
     });

@@ -196,9 +196,9 @@ export class SimulationService {
       if (response.data && response.data.length > 0) {
         // Find Raydium pair
         const raydiumPair = response.data.find(pair => pair.dexId === 'raydium');
-        if (raydiumPair?.priceUsd) {
+        if (raydiumPair?.priceNative) {
           return {
-            price: new Decimal(raydiumPair.priceUsd),
+            price: new Decimal(raydiumPair.priceNative),
             symbol: raydiumPair.baseToken.symbol,
             dexData: {
               volume_m5: raydiumPair.volume?.m5 || 0,
@@ -257,17 +257,25 @@ export class SimulationService {
    */
   private async checkPriceTargets(token: TokenTracking): Promise<void> {
     // Calculate current price change percentage from buy price
-    const priceChangePercent = token.current_price.subtract(token.buy_price).divide(token.buy_price).multiply(new Decimal(100));
+    // ((current_price - buy_price) / buy_price) * 100
+    const priceChangePercent = token.current_price
+      .subtract(token.buy_price)
+      .divide(token.buy_price)
+      .multiply(new Decimal(100));
+
+    // Show more detailed percentage in logs
+    console.log(`📊 Price Change: ${priceChangePercent.toString(4)}% (${token.buy_price.toString(8)} -> ${token.current_price.toString(8)} SOL)`);
+
     const stopLossThreshold = new Decimal(-config.sell.stop_loss_percent);
     const takeProfitThreshold = new Decimal(config.sell.take_profit_percent);
 
     // Stop loss triggered if price drops by configured percentage or more
     if (priceChangePercent.lessThan(stopLossThreshold) || priceChangePercent.equals(stopLossThreshold)) {
-      await this.executeSell(token, `Stop Loss triggered at ${priceChangePercent.toString(2)}% change`);
+      await this.executeSell(token, `Stop Loss triggered at ${priceChangePercent.toString(4)}% change`);
     }
     // Take profit triggered if price increases by configured percentage or more
     else if (priceChangePercent.greaterThan(takeProfitThreshold) || priceChangePercent.equals(takeProfitThreshold)) {
-      await this.executeSell(token, `Take Profit triggered at ${priceChangePercent.toString(2)}% change`);
+      await this.executeSell(token, `Take Profit triggered at ${priceChangePercent.toString(4)}% change`);
     }
   }
 
@@ -297,7 +305,7 @@ export class SimulationService {
     return false;
   }
 
-  // Use fixed amount from config
+  // Convert configured lamport amount to SOL
   const amountInSol = new Decimal(config.swap.amount).divide(Decimal.LAMPORTS_PER_SOL);
   const fees = new Decimal(config.swap.prio_fee_max_lamports).divide(Decimal.LAMPORTS_PER_SOL);
 
@@ -312,8 +320,9 @@ export class SimulationService {
   const randomSlippage = maxSlippage.multiply(new Decimal(Math.random())); // Random slippage between 0 and max
   const priceWithSlippage = currentPrice.multiply(Decimal.ONE.add(randomSlippage));
 
-  // Calculate token amount with slippage-adjusted price
+  // Calculate token amount with slippage-adjusted price (price is already in SOL)
   const amountTokens = amountInSol.divide(priceWithSlippage);
+  console.log(`💱 Token price in SOL: ${currentPrice.toString(8)} SOL`);
 
     // Get DexScreener data for the token
     const priceData = await this.getTokenPrice(tokenMint);
@@ -323,24 +332,27 @@ export class SimulationService {
     }
 
     const success = await recordSimulatedTrade({
-      timestamp: Date.now(),
+      token_name: priceData.symbol || tokenName,
       token_mint: tokenMint,
-      token_name: priceData.symbol || tokenName, // Use symbol from DexScreener if available
       amount_sol: amountInSol,
       amount_token: amountTokens,
-      price_per_token: priceWithSlippage, // Store slippage-adjusted price
-      type: 'buy',
-      fees: fees,
-      slippage: randomSlippage,
-      dex_data: priceData.dexData
+      buy_price: priceWithSlippage,
+      buy_fees: fees,
+      buy_slippage: randomSlippage,
+      time_buy: Date.now(),
+      dex_data: {
+        volume_m5: priceData.dexData?.volume_m5 || 0,
+        marketCap: priceData.dexData?.marketCap || 0,
+        liquidity_buy_usd: priceData.dexData?.liquidity_usd || 0
+      }
     });
 
     if (success) {
       console.log(`🎯 Simulated slippage: ${randomSlippage.multiply(100).toString(4)}%`);
-      console.log(`🎮 Paper Trade: Bought ${amountTokens.toString(2)} ${tokenName} tokens`);
-      console.log(`💰 Original price: $${currentPrice.toString()}`);
-      console.log(`💰 Price with slippage: $${priceWithSlippage.toString()}`);
-      console.log(`🏦 Total spent: ${amountInSol.toString(4)} SOL (+ ${fees.toString()} SOL fees)`);
+      console.log(`🎮 Paper Trade: Bought ${amountTokens.toString(8)} ${tokenName} tokens`);
+      console.log(`💰 Original price: ${currentPrice.toString(8)} SOL`);
+      console.log(`💰 Price with slippage: ${priceWithSlippage.toString(8)} SOL`);
+      console.log(`🏦 Total spent: ${amountInSol.toString(8)} SOL (+ ${fees.toString(8)} SOL fees)`);
       return true;
     }
 
@@ -366,16 +378,15 @@ export class SimulationService {
     const amountInSol = token.amount.multiply(priceWithSlippage);
     const fees = new Decimal(config.sell.prio_fee_max_lamports).divide(Decimal.LAMPORTS_PER_SOL);
 
-    // Get the buy trade to calculate total slippage
+    // Get the buy trade details
     const buyTrade = await this.db.get(
-      'SELECT slippage FROM simulated_trades WHERE token_mint = ? AND type = "buy" ORDER BY timestamp DESC LIMIT 1',
+      'SELECT buy_slippage, buy_fees FROM simulated_trades WHERE token_mint = ? AND sell_price IS NULL ORDER BY time_buy DESC LIMIT 1',
       [token.token_mint]
     );
-    const buySlippage = buyTrade ? new Decimal(buyTrade.slippage) : new Decimal(0);
-    const totalSlippage = buySlippage.add(randomSlippage);
+    const buySlippage = buyTrade ? new Decimal(buyTrade.buy_slippage) : new Decimal(0);
 
     console.log(`🎯 Simulated sell slippage: ${randomSlippage.multiply(100).toString(4)}%`);
-    console.log(`🎯 Total trade slippage (buy+sell): ${totalSlippage.multiply(100).toString(4)}%`);
+    console.log(`🎯 Buy slippage: ${buySlippage.multiply(100).toString(4)}%`);
     
     // Get DexScreener data for the token
     const priceData = await this.getTokenPrice(token.token_mint);
@@ -392,24 +403,32 @@ export class SimulationService {
     }
     
     const success = await recordSimulatedTrade({
-      timestamp: Date.now(),
-      token_mint: token.token_mint,
       token_name: token.token_name,
+      token_mint: token.token_mint,
       amount_sol: amountInSol,
       amount_token: token.amount,
-      price_per_token: priceWithSlippage,
-      type: 'sell',
-      fees: fees,
-      slippage: totalSlippage, // Store combined buy+sell slippage
-      dex_data: priceData.dexData // Ensure we're storing the latest liquidity data
+      buy_price: token.buy_price,
+      buy_fees: token.buy_price.multiply(new Decimal(config.swap.slippageBps).divide(10000)),
+      buy_slippage: buySlippage,
+      sell_price: priceWithSlippage,
+      sell_fees: fees,
+      sell_slippage: randomSlippage,
+      time_buy: token.last_updated - 1000, // Approximating buy time
+      time_sell: Date.now(),
+      dex_data: {
+        volume_m5: priceData.dexData?.volume_m5 || 0,
+        marketCap: priceData.dexData?.marketCap || 0,
+        liquidity_buy_usd: priceData.dexData?.liquidity_usd || 0,
+        liquidity_sell_usd: priceData.dexData?.liquidity_usd || 0
+      }
     });
 
     if (success) {
       console.log(`🎮 Paper Trade: ${reason}`);
-      console.log(`📈 Sold ${token.amount.toString(2)} ${token.token_name} tokens`);
-      console.log(`💰 Original price: $${token.current_price.toString()}`);
-      console.log(`💰 Price with slippage: $${priceWithSlippage.toString()}`);
-      console.log(`🏦 Total received: ${amountInSol.toString(4)} SOL (- ${fees.toString()} SOL fees)`);
+      console.log(`📈 Sold ${token.amount.toString(8)} ${token.token_name} tokens`);
+      console.log(`💰 Original price: ${token.current_price.toString(8)} SOL`);
+      console.log(`💰 Price with slippage: ${priceWithSlippage.toString(8)} SOL`);
+      console.log(`🏦 Total received: ${amountInSol.toString(8)} SOL (- ${fees.toString(8)} SOL fees)`);
       return true;
     }
 

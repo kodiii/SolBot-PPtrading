@@ -55,20 +55,25 @@ interface TokenPosition {
  * Represents a completed trade in the paper trading system
  */
 interface SimulatedTrade {
-    timestamp: number;
-    token_mint: string;
     token_name: string;
+    token_mint: string;
     amount_sol: Decimal;
     amount_token: Decimal;
-    price_per_token: Decimal;
-    type: 'buy' | 'sell';
-    fees: Decimal;
-    slippage: Decimal;
-    dex_data?: DexScreenerData;
+    buy_price: Decimal;
+    buy_fees: Decimal;
+    buy_slippage: Decimal;
     sell_price?: Decimal;
     sell_fees?: Decimal;
+    sell_slippage?: Decimal;
+    time_buy: number;
     time_sell?: number;
     pnl?: Decimal;
+    dex_data?: {
+        volume_m5?: number;
+        marketCap?: number;
+        liquidity_buy_usd?: number;
+        liquidity_sell_usd?: number;
+    };
 }
 
 /**
@@ -168,21 +173,26 @@ async function displayActivePositions(): Promise<void> {
             const headers = [
                 'Token Name'.padEnd(TOKEN_COL_WIDTH),
                 'Address'.padEnd(ADDRESS_COL_WIDTH),
-                'Volume 5m'.padEnd(NUM_COL_WIDTH),
-                'Market Cap'.padEnd(NUM_COL_WIDTH),
+                'Volume 5m ($)'.padEnd(NUM_COL_WIDTH),
+                'Market Cap ($)'.padEnd(NUM_COL_WIDTH),
                 'Position Size/Sol'.padEnd(NUM_COL_WIDTH),
-                'Buy Price'.padEnd(NUM_COL_WIDTH),
-                'Current Price'.padEnd(NUM_COL_WIDTH),
+                'Buy Price (SOL)'.padEnd(NUM_COL_WIDTH),
+                'Current Price (SOL)'.padEnd(NUM_COL_WIDTH),
                 'PNL'.padEnd(NUM_COL_WIDTH),
-                'Take Profit'.padEnd(NUM_COL_WIDTH),
-                'Stop Loss'.padEnd(NUM_COL_WIDTH)
+                'Take Profit (SOL)'.padEnd(NUM_COL_WIDTH),
+                'Stop Loss (SOL)'.padEnd(NUM_COL_WIDTH)
             ];
 
             const rows = positions.map((pos: TokenPosition) => {
-                const pnlPercent = pos.current_price.subtract(pos.buy_price)
+                // Calculate percentage gain/loss:
+                // ((sell_price - buy_price) / buy_price) * 100
+                // Calculate percentage gain/loss:
+                // ((sell_price - buy_price) / buy_price) * 100
+                const rawPnlPercent = pos.current_price.subtract(pos.buy_price)
                     .divide(pos.buy_price)
                     .multiply(new Decimal(100));
-                const pnlColor = pnlPercent.isPositive() ? chalk.green : chalk.red;
+                const formattedPnlPercent = rawPnlPercent.toString(4); // Show 4 decimal places for more precision
+                const pnlColor = rawPnlPercent.isPositive() ? chalk.green : chalk.red;
                 
                 return [
                     pos.token_name.padEnd(TOKEN_COL_WIDTH),
@@ -190,11 +200,11 @@ async function displayActivePositions(): Promise<void> {
                     (pos.volume_m5 || '0').toString().padEnd(NUM_COL_WIDTH),
                     (pos.market_cap || '0').toString().padEnd(NUM_COL_WIDTH),
                     pos.position_size_sol.toString(4).padEnd(NUM_COL_WIDTH),
-                    `$${pos.buy_price.toString(4)}`.padEnd(NUM_COL_WIDTH),
-                    `$${pos.current_price.toString(4)}`.padEnd(NUM_COL_WIDTH),
-                    pnlColor(pnlPercent.toString(2) + '%').padEnd(NUM_COL_WIDTH),
-                    `$${pos.take_profit.toString(4)}`.padEnd(NUM_COL_WIDTH),
-                    `$${pos.stop_loss.toString(4)}`.padEnd(NUM_COL_WIDTH)
+                    `${pos.buy_price.toString(8)} SOL`.padEnd(NUM_COL_WIDTH),
+                    `${pos.current_price.toString(8)} SOL`.padEnd(NUM_COL_WIDTH),
+                    pnlColor(formattedPnlPercent + '%').padEnd(NUM_COL_WIDTH),
+                    `${pos.take_profit.toString(8)} SOL`.padEnd(NUM_COL_WIDTH),
+                    `${pos.stop_loss.toString(8)} SOL`.padEnd(NUM_COL_WIDTH)
                 ];
             });
 
@@ -212,23 +222,26 @@ async function displayRecentTrades(limit: number = config.paper_trading.recent_t
     try {
         const db = await connectionManager.getConnection();
         const trades = (await db.all(
-            'SELECT * FROM simulated_trades ORDER BY timestamp DESC LIMIT ?',
+            'SELECT * FROM simulated_trades ORDER BY time_buy DESC LIMIT ?',
             [limit]
         )).map(trade => ({
             ...trade,
             amount_sol: new Decimal(trade.amount_sol),
             amount_token: new Decimal(trade.amount_token),
-            price_per_token: new Decimal(trade.price_per_token),
-            fees: new Decimal(trade.fees),
-            slippage: new Decimal(trade.slippage || 0),
+            buy_price: new Decimal(trade.buy_price),
+            buy_fees: new Decimal(trade.buy_fees),
+            buy_slippage: new Decimal(trade.buy_slippage || 0),
             sell_price: trade.sell_price ? new Decimal(trade.sell_price) : undefined,
             sell_fees: trade.sell_fees ? new Decimal(trade.sell_fees) : undefined,
+            sell_slippage: new Decimal(trade.sell_slippage || 0),
+            time_buy: trade.time_buy,
+            time_sell: trade.time_sell,
             pnl: trade.pnl ? new Decimal(trade.pnl) : undefined,
             dex_data: {
                 volume_m5: trade.volume_m5 ? parseFloat(trade.volume_m5) : 0,
                 marketCap: trade.market_cap ? parseFloat(trade.market_cap) : 0,
-                liquidity_usd: trade.liquidity_usd ? parseFloat(trade.liquidity_usd) : 0,
-                liquidity_usd_sell: trade.liquidity_usd_sell ? parseFloat(trade.liquidity_usd_sell) : 0
+                liquidity_buy_usd: trade.liquidity_buy_usd ? parseFloat(trade.liquidity_buy_usd) : 0,
+                liquidity_sell_usd: trade.liquidity_sell_usd ? parseFloat(trade.liquidity_sell_usd) : 0
             }
         }));
         connectionManager.releaseConnection(db);
@@ -237,18 +250,16 @@ async function displayRecentTrades(limit: number = config.paper_trading.recent_t
             const headers = [
                 'Token Name'.padEnd(TOKEN_COL_WIDTH),
                 'Address'.padEnd(ADDRESS_COL_WIDTH),
-                'Volume 5m'.padEnd(NUM_COL_WIDTH),
-                'MarketCap'.padEnd(NUM_COL_WIDTH),
-                'Buy Price'.padEnd(NUM_COL_WIDTH),
-                'Sell Price'.padEnd(NUM_COL_WIDTH),
-                'Fees'.padEnd(NUM_COL_WIDTH),
-                'Slippage'.padEnd(NUM_COL_WIDTH),
+                'Volume 5m ($)'.padEnd(NUM_COL_WIDTH),
+                'MarketCap ($)'.padEnd(NUM_COL_WIDTH),
+                'Buy Price (SOL)'.padEnd(NUM_COL_WIDTH),
+                'Sell Price (SOL)'.padEnd(NUM_COL_WIDTH),
                 'Position Size/Sol'.padEnd(NUM_COL_WIDTH),
                 'Time Buy'.padEnd(TIME_COL_WIDTH),
                 'Time Sell'.padEnd(TIME_COL_WIDTH),
-                'Liquidity/buy'.padEnd(NUM_COL_WIDTH),
-                'Liquidity/sell'.padEnd(NUM_COL_WIDTH),
-                'PNL'.padEnd(NUM_COL_WIDTH)
+                'Liquidity/buy ($)'.padEnd(NUM_COL_WIDTH),
+                'Liquidity/sell ($)'.padEnd(NUM_COL_WIDTH),
+                'PNL (SOL)'.padEnd(NUM_COL_WIDTH)
             ];
 
             const rows = trades.map((trade: SimulatedTrade) => {
@@ -259,25 +270,18 @@ async function displayRecentTrades(limit: number = config.paper_trading.recent_t
                         second: '2-digit'
                     });
 
-                // Calculate total fees (including sell fees if available)
-                const totalFees = trade.sell_fees ? 
-                    trade.fees.add(trade.sell_fees) : 
-                    trade.fees;
-
                 return [
                     trade.token_name.padEnd(TOKEN_COL_WIDTH),
                     trade.token_mint.padEnd(ADDRESS_COL_WIDTH),
                     (trade.dex_data?.volume_m5 || '0').toString().padEnd(NUM_COL_WIDTH),
                     (trade.dex_data?.marketCap || '0').toString().padEnd(NUM_COL_WIDTH),
-                    `$${trade.price_per_token.toString(8)}`.padEnd(NUM_COL_WIDTH),
-                    (trade.sell_price ? `$${trade.sell_price.toString(8)}` : '-').padEnd(NUM_COL_WIDTH),
-                    totalFees.toString(4).padEnd(NUM_COL_WIDTH),
-                    trade.slippage.toString(4).padEnd(NUM_COL_WIDTH),
+                    `${trade.buy_price.toString(8)} SOL`.padEnd(NUM_COL_WIDTH),
+                    (trade.sell_price ? `${trade.sell_price.toString(8)} SOL` : '-').padEnd(NUM_COL_WIDTH),
                     trade.amount_sol.toString(4).padEnd(NUM_COL_WIDTH),
-                    timeFormat(trade.timestamp).padEnd(TIME_COL_WIDTH),
+                    timeFormat(trade.time_buy).padEnd(TIME_COL_WIDTH),
                     (trade.time_sell ? timeFormat(trade.time_sell) : '-').padEnd(TIME_COL_WIDTH),
-                    (trade.dex_data?.liquidity_usd || '0').toString().padEnd(NUM_COL_WIDTH),
-                    (trade.time_sell ? (trade.dex_data?.liquidity_usd_sell || '0').toString() : '-').padEnd(NUM_COL_WIDTH),
+                    (trade.dex_data?.liquidity_buy_usd || '0').toString().padEnd(NUM_COL_WIDTH),
+                    (trade.time_sell ? (trade.dex_data?.liquidity_sell_usd || '0').toString() : '-').padEnd(NUM_COL_WIDTH),
                     (trade.pnl ? 
                         (trade.pnl.isPositive() ? chalk.green : chalk.red)(trade.pnl.toString(4)) :
                         '-'
@@ -297,9 +301,9 @@ async function displayRecentTrades(limit: number = config.paper_trading.recent_t
 async function displayTradingStats(stats: TradingStats): Promise<void> {
     const content = [
         `${chalk.yellow('Total Trades:')} ${stats.totalTrades}`,
-        `${chalk.yellow('Win Rate:')} ${stats.winRate.greaterThan(50) || stats.winRate.equals(50) ? chalk.green(stats.winRate.toString(1)) : chalk.red(stats.winRate.toString(1))}%`,
-        `${chalk.yellow('Total P/L:')} ${stats.totalProfitLoss.isPositive() || stats.totalProfitLoss.isZero() ? chalk.green(stats.totalProfitLoss.toString()) : chalk.red(stats.totalProfitLoss.toString())} SOL`,
-        `${chalk.yellow('Avg P/L per Trade:')} ${stats.avgProfitPerTrade.isPositive() || stats.avgProfitPerTrade.isZero() ? chalk.green(stats.avgProfitPerTrade.toString()) : chalk.red(stats.avgProfitPerTrade.toString())} SOL`,
+        `${chalk.yellow('Win Rate:')} ${stats.winRate.greaterThan(50) || stats.winRate.equals(50) ? chalk.green(stats.winRate.toString(4)) : chalk.red(stats.winRate.toString(4))}%`,
+        `${chalk.yellow('Total P/L:')} ${stats.totalProfitLoss.isPositive() || stats.totalProfitLoss.isZero() ? chalk.green(stats.totalProfitLoss.toString(8)) : chalk.red(stats.totalProfitLoss.toString(8))} SOL`,
+        `${chalk.yellow('Avg P/L per Trade:')} ${stats.avgProfitPerTrade.isPositive() || stats.avgProfitPerTrade.isZero() ? chalk.green(stats.avgProfitPerTrade.toString(8)) : chalk.red(stats.avgProfitPerTrade.toString(8))} SOL`,
     ];
 
     if (!stats.bestTrade.profit.equals(new Decimal(-Infinity))) {
@@ -349,15 +353,16 @@ async function calculateTradingStats(): Promise<TradingStats | null> {
 
         tokenTrades.forEach((trades, tokenMint) => {
             // Find completed trades (buy trades with sell_price)
-            const completedBuyTrades = trades.filter(t => 
-                t.type === 'buy' && t.sell_price !== undefined && t.pnl !== undefined
+            // Find trades that have been sold
+            const soldTrades = trades.filter(t =>
+                t.sell_price !== undefined && t.pnl !== undefined
             );
 
-            if (completedBuyTrades.length === 0) return;
+            if (soldTrades.length === 0) return;
 
-            completedTrades += completedBuyTrades.length;
+            completedTrades += soldTrades.length;
             
-            completedBuyTrades.forEach(trade => {
+            soldTrades.forEach((trade: SimulatedTrade) => {
                 const profit = trade.pnl!; // We know pnl exists from the filter
                 totalProfitLoss = totalProfitLoss.add(profit);
 

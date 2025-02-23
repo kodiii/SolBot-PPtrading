@@ -25,7 +25,10 @@ describe('Paper Trading Simulation Tests', () => {
     it('should execute a successful buy trade', async () => {
       const tokenMint = 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v'; // Example USDC token
       const tokenName = 'USDC';
-      const currentPrice = new Decimal('0.000042'); // Example price in SOL
+      const currentPrice = new Decimal('0.000042'); // Price in SOL (0.000042 SOL per token)
+      
+      // With 1 SOL to spend, we should get approximately 23,809.52 tokens (1/0.000042)
+      // minus fees and slippage
 
       const success = await simulationService.executeBuy(tokenMint, tokenName, currentPrice);
       expect(success).toBe(true);
@@ -35,6 +38,17 @@ describe('Paper Trading Simulation Tests', () => {
       const position = tokens.find(t => t.token_mint === tokenMint);
       expect(position).toBeDefined();
       expect(position?.token_name).toBe(tokenName);
+      expect(position?.buy_price).toBeDefined();
+      expect(position?.buy_fees).toBeDefined();
+      expect(position?.buy_slippage).toBeDefined();
+      expect(position?.time_buy).toBeDefined();
+
+      // Verify token amount (1 SOL / 0.000042 SOL per token)
+      // Should be around 23,809 tokens, but less due to fees and slippage
+      const expectedBaseAmount = new Decimal(1).divide(currentPrice);
+      const actualAmount = position!.amount;
+      expect(actualAmount.lessThan(expectedBaseAmount)).toBe(true); // Due to fees and slippage
+      expect(actualAmount.greaterThan(expectedBaseAmount.multiply(new Decimal('0.95')))).toBe(true); // Should not lose more than 5% to fees/slippage
     });
 
     it('should fail buy when exceeding position limit', async () => {
@@ -67,6 +81,15 @@ describe('Paper Trading Simulation Tests', () => {
       expect(priceData).not.toBeNull();
       expect(priceData?.price).toBeDefined();
       expect(priceData?.dexData).toBeDefined();
+      expect(priceData?.dexData?.liquidity_usd).toBeDefined();
+      
+      // Verify all required market data fields
+      if (priceData?.dexData) {
+        const { volume_m5, marketCap, liquidity_usd } = priceData.dexData;
+        expect(typeof volume_m5).toBe('number');
+        expect(typeof marketCap).toBe('number');
+        expect(typeof liquidity_usd).toBe('number');
+      }
     });
 
     it('should handle invalid token addresses', async () => {
@@ -131,7 +154,12 @@ describe('Paper Trading Simulation Tests', () => {
       const tokensAfterBuy = await getTrackedTokens();
       const initialPosition = tokensAfterBuy.find(t => t.token_mint === tokenMint);
       expect(initialPosition).toBeDefined();
+      expect(initialPosition?.buy_price.equals(initialPrice)).toBe(true);
+      expect(initialPosition?.buy_fees).toBeDefined();
+      expect(initialPosition?.buy_slippage).toBeDefined();
+      expect(initialPosition?.time_buy).toBeDefined();
       expect(initialPosition?.current_price.equals(initialPrice)).toBe(true);
+      expect(initialPosition?.liquidity_buy_usd).toBeDefined();
 
       // Wait for 15 seconds
       await new Promise(resolve => setTimeout(resolve, 15000));
