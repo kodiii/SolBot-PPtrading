@@ -486,3 +486,97 @@ public async transaction<T>(
 ```
 
 These patterns ensure robust database operations with proper memory management, error handling, resource optimization, and recovery mechanisms, while providing a clear separation between paper and real trading modes in the frontend architecture.
+
+## Dashboard Style Configuration Pattern (Added 23/02/2025)
+
+### Configurable UI Styling System
+```typescript
+// Color scheme interface for consistent styling
+interface ColorScheme {
+    // Value colors for metrics
+    profit: keyof typeof chalk;
+    loss: keyof typeof chalk;
+    neutral: keyof typeof chalk;
+    
+    // Text element colors
+    header: keyof typeof chalk;
+    title: keyof typeof chalk;
+    text: keyof typeof chalk;
+    label: keyof typeof chalk;
+    
+    // Border styling
+    border: keyof typeof chalk;
+    separator: keyof typeof chalk;
+}
+
+// Complete dashboard styling configuration
+interface DashboardStyle {
+    border_style: "single" | "double";
+    header_style: keyof typeof chalk;
+    text_style: "normal" | "bold" | "dim";
+    color_scheme: ColorScheme;
+    section_spacing: number;
+    align_numbers: "left" | "right";
+    row_separator: boolean;
+}
+```
+
+1. **Color Configuration**
+   - Semantic color assignments (profit/loss)
+   - Element-specific colors (headers/borders)
+   - Support for basic and bright colors
+   - Background color options
+
+2. **Layout Management**
+   - Dynamic table width calculation
+   - Column width constraints
+   - Section spacing control
+   - Number alignment options
+   - Configurable row separators
+
+3. **Style Implementation**
+   ```typescript
+   // Example of dynamic table width calculation
+   function calculateTableWidth(columnWidths: number[]): number {
+       return columnWidths.reduce((sum, width) => sum + width, 0)
+              + columnWidths.length + 1; // Add separators
+   }
+
+   // Color application with type safety
+   const colorBorder = (str: string) =>
+       (chalk[STYLE.color_scheme.border] as ChalkFunction)(str);
+   ```
+   - Type-safe color application
+   - Dynamic width calculations
+   - Consistent border styling
+   - Flexible text formatting
+
+4. **Column Configuration**
+   ```typescript
+   export const columnWidths = {
+       TOKEN_NAME_WIDTH: 8,
+       ADDRESS_WIDTH: 42,
+       TIME_WIDTH: 15,
+       SOL_PRICE_WIDTH: 12,
+       USD_AMOUNT_WIDTH: 12,
+       TOKEN_AMOUNT_WIDTH: 15,
+       PERCENT_WIDTH: 10
+   };
+   ```
+   - Standardized column widths
+   - Content-type specific sizing
+   - Maintainable configuration
+   - Responsive to content length
+
+5. **Box Drawing Patterns**
+   ```typescript
+   export const getBoxChars = (style: "single" | "double") => ({
+       topLeft: style === "double" ? '╔' : '┌',
+       topRight: style === "double" ? '╗' : '┐',
+       // ... other box characters
+   });
+   ```
+   - Configurable border styles
+   - Unicode box drawing
+   - Consistent visual presentation
+   - Style switching support

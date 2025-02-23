@@ -1,7 +1,7 @@
 # Trading Platform Frontend Architecture
 
 ```mermaid
-graph TD
+flowchart TD
     subgraph "Core Application"
         Nav[Navigation System]
         Auth[Authentication]
