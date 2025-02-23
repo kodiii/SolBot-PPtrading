@@ -17,11 +17,21 @@ import { Decimal } from "../../utils/decimal";
 
 // Constants for database path and table formatting
 const DB_PATH = "src/papertrading/db/paper_trading.db";
-const TABLE_WIDTH = 239;  // Increased width for more columns
-const TOKEN_COL_WIDTH = 12;  // Adjusted for token name
-const ADDRESS_COL_WIDTH = 45; // Width for addresses
-const NUM_COL_WIDTH = 20;  // Width for numerical values
-const TIME_COL_WIDTH = 20;  // Width for timestamp columns
+
+// Helper function to calculate table width based on column widths
+function calculateTableWidth(columnWidths: number[]): number {
+    // Add 1 for each separator between columns, plus 2 for left/right borders
+    return columnWidths.reduce((sum, width) => sum + width, 0) + columnWidths.length + 1;
+}
+
+// Column widths for different data types
+const TOKEN_NAME_WIDTH = 10;     // For token names
+const ADDRESS_WIDTH = 50;        // For token addresses
+const TIME_WIDTH = 20;          // For timestamps
+const SOL_PRICE_WIDTH = 18;     // For SOL prices (8 decimals)
+const USD_AMOUNT_WIDTH = 15;    // For USD amounts
+const TOKEN_AMOUNT_WIDTH = 20;   // For token amounts
+const PERCENT_WIDTH = 15;       // For percentage values
 
 /**
  * Represents market data from dexscreener
@@ -105,24 +115,33 @@ const BOX = {
 };
 
 function drawBox(title: string, content: string[]): void {
-    console.log('\n' + BOX.topLeft + BOX.horizontal.repeat(2) + 
-                chalk.bold.blue(` ${title} `) + 
-                BOX.horizontal.repeat(TABLE_WIDTH - title.length - 4) + BOX.topRight);
+    // Calculate required width based on the longest line including title
+    const contentWidth = Math.max(
+        title.length + 4,  // Title width plus padding
+        ...content.map(line => line.length)
+    );
+    const boxWidth = contentWidth + 2;  // Add 2 for left/right borders
+
+    console.log('\n' + BOX.topLeft + BOX.horizontal.repeat(2) +
+                chalk.bold.blue(` ${title} `) +
+                BOX.horizontal.repeat(Math.max(0, boxWidth - title.length - 4)) + BOX.topRight);
     
     content.forEach(line => {
-        console.log(BOX.vertical + ' ' + line + ' '.repeat(Math.max(0, TABLE_WIDTH - line.length - 2)) + BOX.vertical);
+        console.log(BOX.vertical + ' ' + line + ' '.repeat(Math.max(0, boxWidth - line.length - 2)) + BOX.vertical);
     });
     
-    console.log(BOX.bottomLeft + BOX.horizontal.repeat(TABLE_WIDTH) + BOX.bottomRight);
+    console.log(BOX.bottomLeft + BOX.horizontal.repeat(boxWidth) + BOX.bottomRight);
 }
 
 function drawTable(headers: string[], rows: string[][], title: string): void {
     const headerLine = headers.join(BOX.vertical);
-    const separator = BOX.horizontal.repeat(TABLE_WIDTH);
+    // Calculate table width based on the header line plus borders
+    const tableWidth = headerLine.length + 2;  // Add 2 for left/right borders
+    const separator = BOX.horizontal.repeat(tableWidth);
     
-    console.log('\n' + BOX.topLeft + BOX.horizontal.repeat(2) + 
-                chalk.bold.blue(` ${title} `) + 
-                BOX.horizontal.repeat(TABLE_WIDTH - title.length - 4) + BOX.topRight);
+    console.log('\n' + BOX.topLeft + BOX.horizontal.repeat(2) +
+                chalk.bold.blue(` ${title} `) +
+                BOX.horizontal.repeat(Math.max(0, tableWidth - title.length - 4)) + BOX.topRight);
     
     console.log(BOX.vertical + ' ' + chalk.yellow(headerLine) + ' ' + BOX.vertical);
     console.log(BOX.leftT + separator + BOX.rightT);
@@ -172,17 +191,17 @@ async function displayActivePositions(): Promise<void> {
 
         if (positions.length > 0) {
             const headers = [
-                'Token Name'.padEnd(TOKEN_COL_WIDTH),
-                'Address'.padEnd(ADDRESS_COL_WIDTH),
-                'Volume 5m ($)'.padEnd(NUM_COL_WIDTH),
-                'Market Cap ($)'.padEnd(NUM_COL_WIDTH),
-                'Liquidity ($)'.padEnd(NUM_COL_WIDTH),
-                'Position Size (Tokens)'.padEnd(NUM_COL_WIDTH),
-                'Buy Price (SOL)'.padEnd(NUM_COL_WIDTH),
-                'Current Price (SOL)'.padEnd(NUM_COL_WIDTH),
-                'PNL'.padEnd(NUM_COL_WIDTH),
-                'Take Profit (SOL)'.padEnd(NUM_COL_WIDTH),
-                'Stop Loss (SOL)'.padEnd(NUM_COL_WIDTH)
+                'Token Name'.padEnd(TOKEN_NAME_WIDTH),
+                'Address'.padEnd(ADDRESS_WIDTH),
+                'Volume 5m ($)'.padEnd(USD_AMOUNT_WIDTH),
+                'Market Cap ($)'.padEnd(USD_AMOUNT_WIDTH),
+                'Liquidity ($)'.padEnd(USD_AMOUNT_WIDTH),
+                'Position Size (Tokens)'.padEnd(TOKEN_AMOUNT_WIDTH),
+                'Buy Price (SOL)'.padEnd(SOL_PRICE_WIDTH),
+                'Current Price (SOL)'.padEnd(SOL_PRICE_WIDTH),
+                'PNL'.padEnd(PERCENT_WIDTH),
+                'Take Profit (SOL)'.padEnd(SOL_PRICE_WIDTH),
+                'Stop Loss (SOL)'.padEnd(SOL_PRICE_WIDTH)
             ];
 
             const rows = positions.map((pos: TokenPosition) => {
@@ -197,17 +216,17 @@ async function displayActivePositions(): Promise<void> {
                 const pnlColor = rawPnlPercent.isPositive() ? chalk.green : chalk.red;
                 
                 return [
-                    pos.token_name.padEnd(TOKEN_COL_WIDTH),
-                    pos.token_mint.padEnd(ADDRESS_COL_WIDTH),
-                    (pos.volume_m5 || '0').toString().padEnd(NUM_COL_WIDTH),
-                    (pos.market_cap || '0').toString().padEnd(NUM_COL_WIDTH),
-                    (pos.liquidity_usd || '0').toString().padEnd(NUM_COL_WIDTH),
-                    pos.amount.toString(2).padEnd(NUM_COL_WIDTH),
-                    `${pos.buy_price.toString(8)}`.padEnd(NUM_COL_WIDTH),
-                    `${pos.current_price.toString(8)}`.padEnd(NUM_COL_WIDTH),
-                    pnlColor(formattedPnlPercent + '%').padEnd(NUM_COL_WIDTH),
-                    `${pos.take_profit.toString(8)}`.padEnd(NUM_COL_WIDTH),
-                    `${pos.stop_loss.toString(8)}`.padEnd(NUM_COL_WIDTH)
+                    pos.token_name.padEnd(TOKEN_NAME_WIDTH),
+                    pos.token_mint.padEnd(ADDRESS_WIDTH),
+                    (pos.volume_m5 || '0').toString().padEnd(USD_AMOUNT_WIDTH),
+                    (pos.market_cap || '0').toString().padEnd(USD_AMOUNT_WIDTH),
+                    (pos.liquidity_usd || '0').toString().padEnd(USD_AMOUNT_WIDTH),
+                    pos.amount.toString(2).padEnd(TOKEN_AMOUNT_WIDTH),
+                    `${pos.buy_price.toString(8)}`.padEnd(SOL_PRICE_WIDTH),
+                    `${pos.current_price.toString(8)}`.padEnd(SOL_PRICE_WIDTH),
+                    pnlColor(formattedPnlPercent + '%').padEnd(PERCENT_WIDTH),
+                    `${pos.take_profit.toString(8)}`.padEnd(SOL_PRICE_WIDTH),
+                    `${pos.stop_loss.toString(8)}`.padEnd(SOL_PRICE_WIDTH)
                 ];
             });
 
@@ -251,18 +270,18 @@ async function displayRecentTrades(limit: number = config.paper_trading.recent_t
 
         if (trades.length > 0) {
             const headers = [
-                'Token Name'.padEnd(TOKEN_COL_WIDTH),
-                'Address'.padEnd(ADDRESS_COL_WIDTH),
-                //'Volume 5m ($)'.padEnd(NUM_COL_WIDTH),
-                'Buy Price (SOL)'.padEnd(NUM_COL_WIDTH),
-                'Sell Price (SOL)'.padEnd(NUM_COL_WIDTH),
-                'Position Size (Tokens)'.padEnd(NUM_COL_WIDTH),
-                'Time Buy'.padEnd(TIME_COL_WIDTH),
-                'Time Sell'.padEnd(TIME_COL_WIDTH),
-                'MarketCap ($)'.padEnd(NUM_COL_WIDTH),
-                'Liquidity/buy ($)'.padEnd(NUM_COL_WIDTH),
-                'Liquidity/sell ($)'.padEnd(NUM_COL_WIDTH),
-                'PNL (SOL)'.padEnd(NUM_COL_WIDTH)
+                'Token Name'.padEnd(TOKEN_NAME_WIDTH),
+                'Address'.padEnd(ADDRESS_WIDTH),
+                //'Volume 5m ($)'.padEnd(USD_AMOUNT_WIDTH),
+                'Buy Price (SOL)'.padEnd(SOL_PRICE_WIDTH),
+                'Sell Price (SOL)'.padEnd(SOL_PRICE_WIDTH),
+                'Position Size (Tokens)'.padEnd(TOKEN_AMOUNT_WIDTH),
+                'Time Buy'.padEnd(TIME_WIDTH),
+                'Time Sell'.padEnd(TIME_WIDTH),
+                'MarketCap ($)'.padEnd(USD_AMOUNT_WIDTH),
+                'Liquidity/buy ($)'.padEnd(USD_AMOUNT_WIDTH),
+                'Liquidity/sell ($)'.padEnd(USD_AMOUNT_WIDTH),
+                'PNL (SOL)'.padEnd(SOL_PRICE_WIDTH)
             ];
 
             const rows = trades.map((trade: SimulatedTrade) => {
@@ -274,21 +293,21 @@ async function displayRecentTrades(limit: number = config.paper_trading.recent_t
                     });
 
                 return [
-                    trade.token_name.padEnd(TOKEN_COL_WIDTH),
-                    trade.token_mint.padEnd(ADDRESS_COL_WIDTH),
-                    //(trade.dex_data?.volume_m5 || '0').toString().padEnd(NUM_COL_WIDTH),
-                    `${trade.buy_price.toString(8)}`.padEnd(NUM_COL_WIDTH),
-                    (trade.sell_price ? `${trade.sell_price.toString(8)}` : '-').padEnd(NUM_COL_WIDTH),
-                    trade.amount_token.toString(2).padEnd(NUM_COL_WIDTH),
-                    timeFormat(trade.time_buy).padEnd(TIME_COL_WIDTH),
-                    (trade.time_sell ? timeFormat(trade.time_sell) : '-').padEnd(TIME_COL_WIDTH),
-                    (trade.dex_data?.marketCap || '0').toString().padEnd(NUM_COL_WIDTH),
-                    (trade.dex_data?.liquidity_buy_usd || '0').toString().padEnd(NUM_COL_WIDTH),
-                    (trade.time_sell ? (trade.dex_data?.liquidity_sell_usd || '0').toString() : '-').padEnd(NUM_COL_WIDTH),
+                    trade.token_name.padEnd(TOKEN_NAME_WIDTH),
+                    trade.token_mint.padEnd(ADDRESS_WIDTH),
+                    //(trade.dex_data?.volume_m5 || '0').toString().padEnd(USD_AMOUNT_WIDTH),
+                    `${trade.buy_price.toString(8)}`.padEnd(SOL_PRICE_WIDTH),
+                    (trade.sell_price ? `${trade.sell_price.toString(8)}` : '-').padEnd(SOL_PRICE_WIDTH),
+                    trade.amount_token.toString(2).padEnd(TOKEN_AMOUNT_WIDTH),
+                    timeFormat(trade.time_buy).padEnd(TIME_WIDTH),
+                    (trade.time_sell ? timeFormat(trade.time_sell) : '-').padEnd(TIME_WIDTH),
+                    (trade.dex_data?.marketCap || '0').toString().padEnd(USD_AMOUNT_WIDTH),
+                    (trade.dex_data?.liquidity_buy_usd || '0').toString().padEnd(USD_AMOUNT_WIDTH),
+                    (trade.time_sell ? (trade.dex_data?.liquidity_sell_usd || '0').toString() : '-').padEnd(USD_AMOUNT_WIDTH),
                     (trade.pnl ?
-                        (trade.pnl.isPositive() ? chalk.green : chalk.red)(trade.pnl.toString(8)) :
+                        (trade.pnl.isPositive() ? chalk.green : chalk.red)(trade.pnl.toString(8) + ' SOL') :
                         '-'
-                    ).padEnd(NUM_COL_WIDTH)
+                    ).padEnd(SOL_PRICE_WIDTH)
                 ];
             });
 
