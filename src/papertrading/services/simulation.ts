@@ -81,8 +81,10 @@ export class SimulationService {
   private static instance: SimulationService;
   private priceCheckInterval: NodeJS.Timeout | null = null;
   private lastPrices: Map<string, Decimal> = new Map();
+  private lastLogTime: Map<string, number> = new Map(); // Track last log time per token
   private solUsdPrice: Decimal | null = null;
   private coinDeskUri: string;
+  private LOG_THROTTLE_MS = 10000; // Only log once every 10 seconds per token
   private db: any; // Database connection instance
   private connectionManager: ConnectionManager;
 
@@ -131,11 +133,15 @@ export class SimulationService {
       for (const token of tokens) {
         const priceData = await this.getTokenPrice(token.token_mint);
         if (priceData && priceData.price) {
-          // Log market metrics for monitoring
-          if (config.paper_trading.verbose_log && priceData.dexData) {
-            console.log(`📊 Market Data for ${token.token_name}:`);
-            console.log(`   Volume (5m): $${priceData.dexData.volume_m5.toLocaleString()}`);
-            console.log(`   Market Cap: $${priceData.dexData.marketCap.toLocaleString()}`);
+          // Log market metrics only when there are significant changes
+          const previousPriceData = this.lastPrices.get(token.token_mint);
+          if (priceData.dexData && (!previousPriceData || !priceData.price.equals(previousPriceData))) {
+            this.lastPrices.set(token.token_mint, priceData.price);
+            if (config.paper_trading.verbose_log) {
+              console.log(`📊 Market Data for ${token.token_name}:`);
+              console.log(`   Volume (5m): $${priceData.dexData.volume_m5.toLocaleString()}`);
+              console.log(`   Market Cap: $${priceData.dexData.marketCap.toLocaleString()}`);
+            }
           }
 
           // Store market data in database
@@ -159,7 +165,7 @@ export class SimulationService {
           }
         }
       }
-    }, config.paper_trading.price_check.max_delay); // Every 5 seconds
+    }, config.paper_trading.real_data_update);
   }
 
   /**
@@ -180,8 +186,15 @@ export class SimulationService {
   public async getTokenPrice(tokenMint: string, retryCount = 0): Promise<{ price: Decimal; symbol?: string; dexData?: { volume_m5: number; marketCap: number; liquidity_usd: number; } } | null> {
     try {
       const attempt = retryCount + 1;
-      if (config.paper_trading.verbose_log) {
-        console.log(`🔍 Fetching price for token: ${tokenMint}${attempt > 1 ? ` (Attempt ${attempt}/${config.paper_trading.price_check.max_retries})` : ''}`);
+      const now = Date.now();
+      const lastLog = this.lastLogTime.get(tokenMint) || 0;
+      
+      // Only log if enough time has passed since last log
+      if (now - lastLog > this.LOG_THROTTLE_MS) {
+        if (attempt > 1) {
+          console.log(`🔍 Fetching price (Attempt ${attempt}/${config.paper_trading.price_check.max_retries}) for token: ${tokenMint}`);
+        }
+        this.lastLogTime.set(tokenMint, now);
       }
       
       const response = await axios.get<DexscreenerPriceResponse>(
@@ -256,18 +269,25 @@ export class SimulationService {
    * @param token Token tracking information
    */
   private async checkPriceTargets(token: TokenTracking): Promise<void> {
-    // Calculate current price change percentage from buy price
-    // ((current_price - buy_price) / buy_price) * 100
+    // Only log price changes if there is a significant movement
     const priceChangePercent = token.current_price
       .subtract(token.buy_price)
       .divide(token.buy_price)
       .multiply(new Decimal(100));
 
-    // Show more detailed percentage in logs
-    console.log(`📊 Price Change: ${priceChangePercent.toString(4)}% (${token.buy_price.toString(8)} -> ${token.current_price.toString(8)} SOL)`);
-
     const stopLossThreshold = new Decimal(-config.sell.stop_loss_percent);
     const takeProfitThreshold = new Decimal(config.sell.take_profit_percent);
+
+    // Log price changes when approaching/exceeding thresholds and respecting throttle
+    const approachingThreshold = stopLossThreshold.multiply(0.8).abs(); // 80% of stop loss
+    const now = Date.now();
+    const lastLog = this.lastLogTime.get(token.token_mint) || 0;
+
+    if (priceChangePercent.abs().greaterThan(approachingThreshold) &&
+        (now - lastLog > this.LOG_THROTTLE_MS)) {
+      console.log(`📊 Price Change: ${priceChangePercent.toString(4)}% (${token.buy_price.toString(8)} -> ${token.current_price.toString(8)} SOL)`);
+      this.lastLogTime.set(token.token_mint, now);
+    }
 
     // Stop loss triggered if price drops by configured percentage or more
     if (priceChangePercent.lessThan(stopLossThreshold) || priceChangePercent.equals(stopLossThreshold)) {

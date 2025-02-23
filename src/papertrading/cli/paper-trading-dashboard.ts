@@ -17,7 +17,7 @@ import { Decimal } from "../../utils/decimal";
 
 // Constants for database path and table formatting
 const DB_PATH = "src/papertrading/db/paper_trading.db";
-const TABLE_WIDTH = 300;  // Increased width for more columns
+const TABLE_WIDTH = 239;  // Increased width for more columns
 const TOKEN_COL_WIDTH = 12;  // Adjusted for token name
 const ADDRESS_COL_WIDTH = 45; // Width for addresses
 const NUM_COL_WIDTH = 20;  // Width for numerical values
@@ -49,6 +49,7 @@ interface TokenPosition {
     dex_data?: DexScreenerData;
     volume_m5?: number;
     market_cap?: number;
+    liquidity_usd?: number;
 }
 
 /**
@@ -175,6 +176,7 @@ async function displayActivePositions(): Promise<void> {
                 'Address'.padEnd(ADDRESS_COL_WIDTH),
                 'Volume 5m ($)'.padEnd(NUM_COL_WIDTH),
                 'Market Cap ($)'.padEnd(NUM_COL_WIDTH),
+                'Liquidity ($)'.padEnd(NUM_COL_WIDTH),
                 'Position Size/Sol'.padEnd(NUM_COL_WIDTH),
                 'Buy Price (SOL)'.padEnd(NUM_COL_WIDTH),
                 'Current Price (SOL)'.padEnd(NUM_COL_WIDTH),
@@ -199,6 +201,7 @@ async function displayActivePositions(): Promise<void> {
                     pos.token_mint.padEnd(ADDRESS_COL_WIDTH),
                     (pos.volume_m5 || '0').toString().padEnd(NUM_COL_WIDTH),
                     (pos.market_cap || '0').toString().padEnd(NUM_COL_WIDTH),
+                    (pos.liquidity_usd || '0').toString().padEnd(NUM_COL_WIDTH),
                     pos.position_size_sol.toString(4).padEnd(NUM_COL_WIDTH),
                     `${pos.buy_price.toString(8)} SOL`.padEnd(NUM_COL_WIDTH),
                     `${pos.current_price.toString(8)} SOL`.padEnd(NUM_COL_WIDTH),
@@ -250,13 +253,13 @@ async function displayRecentTrades(limit: number = config.paper_trading.recent_t
             const headers = [
                 'Token Name'.padEnd(TOKEN_COL_WIDTH),
                 'Address'.padEnd(ADDRESS_COL_WIDTH),
-                'Volume 5m ($)'.padEnd(NUM_COL_WIDTH),
-                'MarketCap ($)'.padEnd(NUM_COL_WIDTH),
+                //'Volume 5m ($)'.padEnd(NUM_COL_WIDTH),
                 'Buy Price (SOL)'.padEnd(NUM_COL_WIDTH),
                 'Sell Price (SOL)'.padEnd(NUM_COL_WIDTH),
                 'Position Size/Sol'.padEnd(NUM_COL_WIDTH),
                 'Time Buy'.padEnd(TIME_COL_WIDTH),
                 'Time Sell'.padEnd(TIME_COL_WIDTH),
+                'MarketCap ($)'.padEnd(NUM_COL_WIDTH),
                 'Liquidity/buy ($)'.padEnd(NUM_COL_WIDTH),
                 'Liquidity/sell ($)'.padEnd(NUM_COL_WIDTH),
                 'PNL (SOL)'.padEnd(NUM_COL_WIDTH)
@@ -273,13 +276,13 @@ async function displayRecentTrades(limit: number = config.paper_trading.recent_t
                 return [
                     trade.token_name.padEnd(TOKEN_COL_WIDTH),
                     trade.token_mint.padEnd(ADDRESS_COL_WIDTH),
-                    (trade.dex_data?.volume_m5 || '0').toString().padEnd(NUM_COL_WIDTH),
-                    (trade.dex_data?.marketCap || '0').toString().padEnd(NUM_COL_WIDTH),
+                    //(trade.dex_data?.volume_m5 || '0').toString().padEnd(NUM_COL_WIDTH),
                     `${trade.buy_price.toString(8)} SOL`.padEnd(NUM_COL_WIDTH),
                     (trade.sell_price ? `${trade.sell_price.toString(8)} SOL` : '-').padEnd(NUM_COL_WIDTH),
                     trade.amount_sol.toString(4).padEnd(NUM_COL_WIDTH),
                     timeFormat(trade.time_buy).padEnd(TIME_COL_WIDTH),
                     (trade.time_sell ? timeFormat(trade.time_sell) : '-').padEnd(TIME_COL_WIDTH),
+                    (trade.dex_data?.marketCap || '0').toString().padEnd(NUM_COL_WIDTH),
                     (trade.dex_data?.liquidity_buy_usd || '0').toString().padEnd(NUM_COL_WIDTH),
                     (trade.time_sell ? (trade.dex_data?.liquidity_sell_usd || '0').toString() : '-').padEnd(NUM_COL_WIDTH),
                     (trade.pnl ? 
