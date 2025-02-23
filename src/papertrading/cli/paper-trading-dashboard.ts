@@ -25,13 +25,13 @@ function calculateTableWidth(columnWidths: number[]): number {
 }
 
 // Column widths for different data types
-const TOKEN_NAME_WIDTH = 10;     // For token names
-const ADDRESS_WIDTH = 50;        // For token addresses
-const TIME_WIDTH = 20;          // For timestamps
-const SOL_PRICE_WIDTH = 18;     // For SOL prices (8 decimals)
-const USD_AMOUNT_WIDTH = 15;    // For USD amounts
-const TOKEN_AMOUNT_WIDTH = 20;   // For token amounts
-const PERCENT_WIDTH = 15;       // For percentage values
+const TOKEN_NAME_WIDTH = 8;      // For token names
+const ADDRESS_WIDTH = 42;        // For token addresses
+const TIME_WIDTH = 15;          // For timestamps
+const SOL_PRICE_WIDTH = 12;     // For SOL prices (8 decimals)
+const USD_AMOUNT_WIDTH = 12;    // For USD amounts
+const TOKEN_AMOUNT_WIDTH = 15;   // For token amounts
+const PERCENT_WIDTH = 10;       // For percentage values
 
 /**
  * Represents market data from dexscreener
@@ -127,29 +127,43 @@ function drawBox(title: string, content: string[]): void {
                 BOX.horizontal.repeat(Math.max(0, boxWidth - title.length - 4)) + BOX.topRight);
     
     content.forEach(line => {
-        console.log(BOX.vertical + ' ' + line + ' '.repeat(Math.max(0, boxWidth - line.length - 2)) + BOX.vertical);
+        const paddedLine = line.padEnd(contentWidth);
+        console.log(BOX.vertical + ' ' + paddedLine + ' ' + BOX.vertical);
     });
     
     console.log(BOX.bottomLeft + BOX.horizontal.repeat(boxWidth) + BOX.bottomRight);
 }
 
 function drawTable(headers: string[], rows: string[][], title: string): void {
-    const headerLine = headers.join(BOX.vertical);
-    // Calculate table width based on the header line plus borders
-    const tableWidth = headerLine.length + 2;  // Add 2 for left/right borders
-    const separator = BOX.horizontal.repeat(tableWidth);
-    
+    // Calculate max width for each column based on content
+    const columnWidths = headers.map((header, index) => {
+        const maxContentWidth = Math.max(
+            header.length,
+            ...rows.map(row => row[index].length)
+        );
+        return maxContentWidth + 2; // Add padding
+    });
+
+    // Create separator line
+    const separator = BOX.horizontal.repeat(columnWidths.reduce((sum, width) => sum + width, 0) + columnWidths.length + 1);
+
+    // Draw table header
     console.log('\n' + BOX.topLeft + BOX.horizontal.repeat(2) +
                 chalk.bold.blue(` ${title} `) +
-                BOX.horizontal.repeat(Math.max(0, tableWidth - title.length - 4)) + BOX.topRight);
-    
-    console.log(BOX.vertical + ' ' + chalk.yellow(headerLine) + ' ' + BOX.vertical);
+                BOX.horizontal.repeat(separator.length - title.length - 4) + BOX.topRight);
+
+    // Draw headers
+    console.log(BOX.vertical + ' ' + headers.map((header, i) =>
+        chalk.yellow(header.padEnd(columnWidths[i]))).join(BOX.vertical) + ' ' + BOX.vertical);
+
     console.log(BOX.leftT + separator + BOX.rightT);
-    
+
+    // Draw rows
     rows.forEach(row => {
-        console.log(BOX.vertical + ' ' + row.join(BOX.vertical) + ' ' + BOX.vertical);
+        console.log(BOX.vertical + ' ' + row.map((cell, i) =>
+            cell.padEnd(columnWidths[i])).join(BOX.vertical) + ' ' + BOX.vertical);
     });
-    
+
     console.log(BOX.bottomLeft + separator + BOX.bottomRight);
 }
 
