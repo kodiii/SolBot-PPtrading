@@ -177,7 +177,7 @@ async function displayActivePositions(): Promise<void> {
                 'Volume 5m ($)'.padEnd(NUM_COL_WIDTH),
                 'Market Cap ($)'.padEnd(NUM_COL_WIDTH),
                 'Liquidity ($)'.padEnd(NUM_COL_WIDTH),
-                'Position Size/Sol'.padEnd(NUM_COL_WIDTH),
+                'Position Size (Tokens)'.padEnd(NUM_COL_WIDTH),
                 'Buy Price (SOL)'.padEnd(NUM_COL_WIDTH),
                 'Current Price (SOL)'.padEnd(NUM_COL_WIDTH),
                 'PNL'.padEnd(NUM_COL_WIDTH),
@@ -202,12 +202,12 @@ async function displayActivePositions(): Promise<void> {
                     (pos.volume_m5 || '0').toString().padEnd(NUM_COL_WIDTH),
                     (pos.market_cap || '0').toString().padEnd(NUM_COL_WIDTH),
                     (pos.liquidity_usd || '0').toString().padEnd(NUM_COL_WIDTH),
-                    pos.position_size_sol.toString(4).padEnd(NUM_COL_WIDTH),
-                    `${pos.buy_price.toString(8)} SOL`.padEnd(NUM_COL_WIDTH),
-                    `${pos.current_price.toString(8)} SOL`.padEnd(NUM_COL_WIDTH),
+                    pos.amount.toString(2).padEnd(NUM_COL_WIDTH),
+                    `${pos.buy_price.toString(8)}`.padEnd(NUM_COL_WIDTH),
+                    `${pos.current_price.toString(8)}`.padEnd(NUM_COL_WIDTH),
                     pnlColor(formattedPnlPercent + '%').padEnd(NUM_COL_WIDTH),
-                    `${pos.take_profit.toString(8)} SOL`.padEnd(NUM_COL_WIDTH),
-                    `${pos.stop_loss.toString(8)} SOL`.padEnd(NUM_COL_WIDTH)
+                    `${pos.take_profit.toString(8)}`.padEnd(NUM_COL_WIDTH),
+                    `${pos.stop_loss.toString(8)}`.padEnd(NUM_COL_WIDTH)
                 ];
             });
 
@@ -256,7 +256,7 @@ async function displayRecentTrades(limit: number = config.paper_trading.recent_t
                 //'Volume 5m ($)'.padEnd(NUM_COL_WIDTH),
                 'Buy Price (SOL)'.padEnd(NUM_COL_WIDTH),
                 'Sell Price (SOL)'.padEnd(NUM_COL_WIDTH),
-                'Position Size/Sol'.padEnd(NUM_COL_WIDTH),
+                'Position Size (Tokens)'.padEnd(NUM_COL_WIDTH),
                 'Time Buy'.padEnd(TIME_COL_WIDTH),
                 'Time Sell'.padEnd(TIME_COL_WIDTH),
                 'MarketCap ($)'.padEnd(NUM_COL_WIDTH),
@@ -277,16 +277,16 @@ async function displayRecentTrades(limit: number = config.paper_trading.recent_t
                     trade.token_name.padEnd(TOKEN_COL_WIDTH),
                     trade.token_mint.padEnd(ADDRESS_COL_WIDTH),
                     //(trade.dex_data?.volume_m5 || '0').toString().padEnd(NUM_COL_WIDTH),
-                    `${trade.buy_price.toString(8)} SOL`.padEnd(NUM_COL_WIDTH),
-                    (trade.sell_price ? `${trade.sell_price.toString(8)} SOL` : '-').padEnd(NUM_COL_WIDTH),
-                    trade.amount_sol.toString(4).padEnd(NUM_COL_WIDTH),
+                    `${trade.buy_price.toString(8)}`.padEnd(NUM_COL_WIDTH),
+                    (trade.sell_price ? `${trade.sell_price.toString(8)}` : '-').padEnd(NUM_COL_WIDTH),
+                    trade.amount_token.toString(2).padEnd(NUM_COL_WIDTH),
                     timeFormat(trade.time_buy).padEnd(TIME_COL_WIDTH),
                     (trade.time_sell ? timeFormat(trade.time_sell) : '-').padEnd(TIME_COL_WIDTH),
                     (trade.dex_data?.marketCap || '0').toString().padEnd(NUM_COL_WIDTH),
                     (trade.dex_data?.liquidity_buy_usd || '0').toString().padEnd(NUM_COL_WIDTH),
                     (trade.time_sell ? (trade.dex_data?.liquidity_sell_usd || '0').toString() : '-').padEnd(NUM_COL_WIDTH),
-                    (trade.pnl ? 
-                        (trade.pnl.isPositive() ? chalk.green : chalk.red)(trade.pnl.toString(4)) :
+                    (trade.pnl ?
+                        (trade.pnl.isPositive() ? chalk.green : chalk.red)(trade.pnl.toString(8)) :
                         '-'
                     ).padEnd(NUM_COL_WIDTH)
                 ];
