@@ -4,34 +4,85 @@ import chalk, { ChalkFunction } from "chalk";
  * Interface for color scheme configuration
  */
 export interface ColorScheme {
+    // Value colors
     profit: keyof typeof chalk;
     loss: keyof typeof chalk;
     neutral: keyof typeof chalk;
+    
+    // Text colors
+    header: keyof typeof chalk;
+    title: keyof typeof chalk;
+    text: keyof typeof chalk;
+    label: keyof typeof chalk;
+    
+    // Border colors
+    border: keyof typeof chalk;
+    separator: keyof typeof chalk;
 }
 
 /**
  * Interface for dashboard style configuration
  */
 export interface DashboardStyle {
+    // Border style
     border_style: "single" | "double";
+    
+    // Text styling
     header_style: keyof typeof chalk;
+    text_style: "normal" | "bold" | "dim";
+    
+    // Colors
     color_scheme: ColorScheme;
+    
+    // Layout
     section_spacing: number;
     align_numbers: "left" | "right";
+    row_separator: boolean;  // Whether to show separators between rows
 }
 
 /**
  * Dashboard style configuration
+ * You can customize the dashboard appearance by modifying these values:
+ *
+ * Colors available:
+ * - Basic: "black", "red", "green", "yellow", "blue", "magenta", "cyan", "white"
+ * - Bright: "blackBright", "redBright", "greenBright", "yellowBright",
+ *          "blueBright", "magentaBright", "cyanBright", "whiteBright"
+ * - Background: "bgBlack", "bgRed", "bgGreen", "bgYellow", "bgBlue",
+ *              "bgMagenta", "bgCyan", "bgWhite"
+ * - Bright Background: "bgBlackBright", "bgRedBright", "bgGreenBright",
+ *                     "bgYellowBright", "bgBlueBright", "bgMagentaBright",
+ *                     "bgCyanBright", "bgWhiteBright"
  */
 export const dashboardStyle: DashboardStyle = {
+    // Border appearance
     border_style: "double",
+    
+    // Text styling
+    header_style: "bold",
+    text_style: "normal",
+    
+    // Spacing
     section_spacing: 1,
-    header_style: "cyan",
-    align_numbers: "left",
+    align_numbers: "right",
+    row_separator: true,
+    
+    // Color scheme
     color_scheme: {
-        profit: "green",
-        loss: "red",
-        neutral: "white"
+        // Value colors
+        profit: "greenBright",
+        loss: "redBright",
+        neutral: "white",
+        
+        // Text colors
+        header: "cyanBright",
+        title: "yellowBright",
+        text: "white",
+        label: "yellow",
+        
+        // Border colors
+        border: "blue",
+        separator: "blue"
     }
 };
 

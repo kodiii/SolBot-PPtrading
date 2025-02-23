@@ -10,11 +10,11 @@ import chalk, { ChalkFunction } from "chalk";
 import dotenv from "dotenv";
 dotenv.config(); // Load environment variables
 import { ConnectionManager } from "../db/connection_manager";
-import { initializePaperTradingDB, getVirtualBalance } from "../paper_trading";
+import { getVirtualBalance } from "../paper_trading";
 import { config } from "../../config";
 import { SimulationService } from "../services";
 import { Decimal } from "../../utils/decimal";
-import { dashboardStyle, columnWidths, getBoxChars, DashboardStyle, ColorScheme } from '../config/dashboard_style';
+import { dashboardStyle, columnWidths, getBoxChars, DashboardStyle } from '../config/dashboard_style';
 
 // Constants for database path and table formatting
 const DB_PATH = "src/papertrading/db/paper_trading.db";
@@ -116,18 +116,40 @@ function drawBox(title: string, content: string[]): void {
     );
     const boxWidth = contentWidth + 2;
 
-    console.log(BOX.topLeft + BOX.horizontal.repeat(2) +
-                (chalk[STYLE.header_style] as ChalkFunction)(`${title}`) +
-                BOX.horizontal.repeat(Math.max(0, boxWidth - title.length - 4)) + BOX.topRight);
+    // Color the border elements
+    const colorBorder = (str: string) => (chalk[STYLE.color_scheme.border] as ChalkFunction)(str);
     
+    // Draw box top with colored title and borders
+    console.log(
+        colorBorder(BOX.topLeft + BOX.horizontal.repeat(2)) +
+        (chalk[STYLE.color_scheme.title] as ChalkFunction)(`${title}`) +
+        colorBorder(BOX.horizontal.repeat(Math.max(0, boxWidth - title.length - 4)) + BOX.topRight)
+    );
+    
+    // Draw content with proper alignment and colors
     content.forEach(line => {
+        let displayLine = line;
+        if (line.includes(':')) {
+            // Color labels differently from values
+            const [label, value] = line.split(':');
+            displayLine = (chalk[STYLE.color_scheme.label] as ChalkFunction)(label + ':') +
+                         (chalk[STYLE.color_scheme.text] as ChalkFunction)(value);
+        }
+        
+        // Apply number alignment if configured
         const paddedLine = STYLE.align_numbers === "right" && line.includes(':') ?
             line.replace(/([\d.]+)/, num => num.padStart(8)) :
             line.padEnd(contentWidth);
-        console.log(BOX.vertical + ' ' + paddedLine + ' ' + BOX.vertical);
+            
+        console.log(
+            colorBorder(BOX.vertical) + ' ' +
+            paddedLine + ' ' +
+            colorBorder(BOX.vertical)
+        );
     });
     
-    console.log(BOX.bottomLeft + BOX.horizontal.repeat(boxWidth) + BOX.bottomRight);
+    // Draw box bottom
+    console.log(colorBorder(BOX.bottomLeft + BOX.horizontal.repeat(boxWidth) + BOX.bottomRight));
 }
 
 function formatTimestamp(timestamp: number): string {
@@ -146,43 +168,115 @@ function colorizeValue(value: number | Decimal, prefix = ''): string {
 }
 
 function drawTable(headers: string[], rows: string[][], title: string): void {
-    // Calculate max width for each column based on content
-    const columnWidths = headers.map((header, index) => {
-        const maxContentWidth = Math.max(
+    // Map of minimum widths for each header
+    const columnMinWidths: { [key: string]: number } = {
+        'Token Name': TOKEN_NAME_WIDTH,
+        'Address': ADDRESS_WIDTH,
+        'Volume 5m ($)': USD_AMOUNT_WIDTH,
+        'Market Cap ($)': USD_AMOUNT_WIDTH,
+        'Liquidity ($)': USD_AMOUNT_WIDTH,
+        'Position Size (Tokens)': TOKEN_AMOUNT_WIDTH,
+        'Buy Price (SOL)': SOL_PRICE_WIDTH,
+        'Sell Price (SOL)': SOL_PRICE_WIDTH,
+        'Current Price (SOL)': SOL_PRICE_WIDTH,
+        'PNL': PERCENT_WIDTH,
+        'Take Profit (SOL)': SOL_PRICE_WIDTH,
+        'Stop Loss (SOL)': SOL_PRICE_WIDTH,
+        'Time Buy': TIME_WIDTH,
+        'Time Sell': TIME_WIDTH,
+        'Liquidity/buy ($)': USD_AMOUNT_WIDTH,
+        'Liquidity/sell ($)': USD_AMOUNT_WIDTH,
+        'PNL (SOL)': SOL_PRICE_WIDTH,
+        'MarketCap ($)': USD_AMOUNT_WIDTH
+    };
+
+    // Calculate actual column widths based on content and minimum widths
+    const activeColumnWidths = headers.map((header, index) => {
+        const currentColWidth = Math.max(
             header.length,
-            ...rows.map(row => row[index].length)
+            ...rows.map(row => row[index]?.length || 0)
         );
-        return maxContentWidth + 2; // Add padding
+        return Math.max(currentColWidth + 2, columnMinWidths[header] || 0);
     });
 
-    // Create separator line
-    const separator = BOX.horizontal.repeat(columnWidths.reduce((sum, width) => sum + width, 0) + columnWidths.length + 1);
+    // Calculate table width using our helper function
+    const tableWidth = calculateTableWidth(activeColumnWidths);
+    const separator = BOX.horizontal.repeat(tableWidth);
 
-    // Add extra padding for better visual spacing
-    console.log('\n');
-    // Draw table header with rounded corners
-    console.log(BOX.topLeft + BOX.horizontal.repeat(2) +
-                chalk.bold.cyan(` ${title} `) +
-                BOX.horizontal.repeat(separator.length - title.length - 4) + BOX.topRight);
+    // Add spacing based on configuration
+    console.log('\n'.repeat(STYLE.section_spacing));
 
-    // Draw headers with bold styling
-    console.log(BOX.vertical + ' ' + headers.map((header, i) =>
-        chalk.bold.yellow(header.padEnd(columnWidths[i]))).join(BOX.vertical) + ' ' + BOX.vertical);
+    // Color helpers
+    const colorBorder = (str: string) => (chalk[STYLE.color_scheme.border] as ChalkFunction)(str);
+    const colorSeparator = (str: string) => (chalk[STYLE.color_scheme.separator] as ChalkFunction)(str);
+    const colorHeader = (str: string) => (chalk[STYLE.color_scheme.header] as ChalkFunction)(str);
+    const colorTitle = (str: string) => (chalk[STYLE.color_scheme.title] as ChalkFunction)(str);
+    
+    // Draw table header
+    console.log(
+        colorBorder(BOX.topLeft + BOX.horizontal.repeat(2)) +
+        colorTitle(` ${title} `) +
+        colorBorder(BOX.horizontal.repeat(tableWidth - title.length - 4) + BOX.topRight)
+    );
 
-    console.log(BOX.leftT + separator + BOX.rightT);
+    // Draw column headers
+    console.log(
+        colorBorder(BOX.vertical) + ' ' +
+        headers.map((header, i) =>
+            colorHeader(header.padEnd(activeColumnWidths[i]))
+        ).join(colorSeparator(BOX.vertical)) +
+        ' ' + colorBorder(BOX.vertical)
+    );
 
-    // Draw rows with alternating background for better readability
+    // Draw separator after headers
+    console.log(
+        colorBorder(BOX.leftT) +
+        colorSeparator(separator) +
+        colorBorder(BOX.rightT)
+    );
+
+    // Draw rows
     rows.forEach((row, rowIndex) => {
-        const rowContent = row.map((cell, i) => cell.padEnd(columnWidths[i])).join(BOX.vertical);
-        console.log(BOX.vertical + ' ' + rowContent + ' ' + BOX.vertical);
+        const formattedRow = row.map((cell, i) => {
+            // Handle number alignment
+            const shouldRightAlign = STYLE.align_numbers === "right" && !isNaN(Number(cell.replace(/[^0-9.-]/g, '')));
+            const alignedCell = shouldRightAlign ?
+                cell.padStart(activeColumnWidths[i]) :
+                cell.padEnd(activeColumnWidths[i]);
+
+            // Color the cell based on whether it's a number and its value
+            if (!isNaN(Number(cell.replace(/[^0-9.-]/g, '')))) {
+                const num = Number(cell.replace(/[^0-9.-]/g, ''));
+                if (num > 0) return (chalk[STYLE.color_scheme.profit] as ChalkFunction)(alignedCell);
+                if (num < 0) return (chalk[STYLE.color_scheme.loss] as ChalkFunction)(alignedCell);
+                return (chalk[STYLE.color_scheme.neutral] as ChalkFunction)(alignedCell);
+            }
+            return (chalk[STYLE.color_scheme.text] as ChalkFunction)(alignedCell);
+        });
+
+        // Draw the row
+        console.log(
+            colorBorder(BOX.vertical) + ' ' +
+            formattedRow.join(colorSeparator(BOX.vertical)) +
+            ' ' + colorBorder(BOX.vertical)
+        );
         
-        // Add subtle separator between rows (except last row)
-        if (rowIndex < rows.length - 1) {
-            console.log(BOX.leftT + separator + BOX.rightT);
+        // Add separator between rows if enabled (except last row)
+        if (STYLE.row_separator && rowIndex < rows.length - 1) {
+            console.log(
+                colorBorder(BOX.leftT) +
+                colorSeparator(separator) +
+                colorBorder(BOX.rightT)
+            );
         }
     });
 
-    console.log(BOX.bottomLeft + separator + BOX.bottomRight);
+    // Draw table bottom
+    console.log(
+        colorBorder(BOX.bottomLeft) +
+        colorSeparator(separator) +
+        colorBorder(BOX.bottomRight)
+    );
 }
 
 async function displayVirtualBalance(): Promise<void> {
