@@ -66,12 +66,22 @@ function formatCell(content: string, style: DashboardStyle, title: string): stri
         return colors.colorLabel(label) + colors.colorValue(value);
     }
     
-    // If no label pattern, handle as regular content
-    const numMatch = content.match(/^[-+]?\d*\.?\d+/);
+    // Check for percentage values with proper coloring
+    const pnlMatch = content.trim().match(/^([-+]?\d*\.?\d+)%$/);
+    if (pnlMatch) {
+        const num = parseFloat(pnlMatch[1]);
+        if (num > 0) return colors.colorProfit(content);
+        if (num < 0) return colors.colorLoss(content);
+        return colors.colorNeutral(content);
+    }
+
+    // Check for numeric values
+    const numMatch = content.trim().match(/^[-+]?\d*\.?\d+/);
     if (numMatch) {
         const num = parseFloat(numMatch[0]);
         if (num > 0) return colors.colorProfit(content);
         if (num < 0) return colors.colorLoss(content);
+        return colors.colorNeutral(content);
     }
     
     // Default text coloring
