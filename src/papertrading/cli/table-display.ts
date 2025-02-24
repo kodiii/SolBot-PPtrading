@@ -1,6 +1,6 @@
 import chalk from "chalk";
 import { DashboardStyle, columnWidths } from '../config/dashboard_style';
-import { SimulatedTrade, TokenPosition, TradingStats } from './types.js';
+import { SimulatedTrade, TokenPosition, TradingStats } from './types';
 import { renderTableHeader, renderTableRow, renderTableSeparator, renderTableFooter, calculateTableWidth, createEmptyRow } from './table-renderer';
 import { Decimal } from "../../utils/decimal";
 

@@ -64,8 +64,8 @@ export interface DashboardStyle {
  * Base column widths for different data types
  */
 export const columnWidths = {
-    TOKEN_NAME_WIDTH: 12,      // For token names
-    ADDRESS_WIDTH: 45,        // For token addresses
+    TOKEN_NAME_WIDTH: 15,      // For token names
+    ADDRESS_WIDTH: 47,        // For token addresses
     TIME_WIDTH: 20,          // For timestamps
     SOL_PRICE_WIDTH: 17,     // For SOL prices (8 decimals)
     USD_AMOUNT_WIDTH: 20,    // For USD amounts
@@ -79,16 +79,16 @@ export const columnWidths = {
 export const sectionConfigs: { [key: string]: SectionConfig } = {
     virtualBalance: {
         title: '📊 Virtual Balance',
-        width: 150,
+        width: 110,
         columns: [
-            { header: 'Balance', width: 76 }
+            { header: 'Balance', width: 100 }
         ],
         borderColor: "blue",
         order: 1  // Show first
     },
     activePositions: {
         title: '🎯 Active Positions',
-        width: 250,
+        width: 245,
         columns: [
             { header: 'Token Name', width: columnWidths.TOKEN_NAME_WIDTH },
             { header: 'Address', width: columnWidths.ADDRESS_WIDTH },
@@ -103,20 +103,20 @@ export const sectionConfigs: { [key: string]: SectionConfig } = {
             { header: 'Stop Loss (SOL)', width: columnWidths.SOL_PRICE_WIDTH }
         ],
         borderColor: "green",
-        order: 3  // Show second
+        order: 3  // Show third
     },
     tradingStats: {
         title: '📈 Trading Statistics',
-        width: 150,
+        width: 52,
         columns: [
-            { header: 'Stats', width: 76 }
+            { header: 'Stats', width: 50 }
         ],
         borderColor: "yellow",
-        order: 2  // Show third
+        order: 2  // Show second
     },
     recentTrades: {
         title: '📈 Recent Trades',
-        width: 240,
+        width: 245,
         columns: [
             { header: 'Token Name', width: columnWidths.TOKEN_NAME_WIDTH },
             { header: 'Address', width: columnWidths.ADDRESS_WIDTH },

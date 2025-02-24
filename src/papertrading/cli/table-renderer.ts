@@ -1,5 +1,6 @@
 import chalk, { ChalkFunction } from "chalk";
 import { DashboardStyle, getBoxChars, SectionConfig, sectionConfigs } from '../config/dashboard_style';
+import { getStringWidth, padStringToWidth } from './utils/string-width';
 
 /**
  * Calculates the width of a table based on its columns
@@ -16,6 +17,16 @@ export function calculateTableWidth(columnWidths: number[]): number {
  */
 export function getSectionConfig(title: string): SectionConfig | undefined {
     return Object.values(sectionConfigs).find(config => config.title === title);
+}
+
+/**
+ * Gets effective table width based on section config or fallback
+ */
+export function getEffectiveTableWidth(title: string, columnWidths: number[], style: DashboardStyle): number {
+    const sectionConfig = getSectionConfig(title);
+    return sectionConfig ? 
+        sectionConfig.width :
+        Math.min(calculateTableWidth(columnWidths), style.section_width);
 }
 
 /**
@@ -44,31 +55,28 @@ export function renderTableHeader(
     style: DashboardStyle,
     boxChars = getBoxChars(style.border_style)
 ): void {
-    // Get section config if available
-    const sectionConfig = getSectionConfig(title);
-    const tableWidth = sectionConfig ? 
-        sectionConfig.width :
-        Math.min(calculateTableWidth(columnWidths), style.section_width);
-
+    const tableWidth = getEffectiveTableWidth(title, columnWidths, style);
     const separator = boxChars.horizontal.repeat(tableWidth);
     const colors = getColorFunctions(style);
 
-    // Draw title
+    // Draw title with proper width handling
+    const titleVisualWidth = getStringWidth(title);
     console.log(
         colors.colorBorder(boxChars.topLeft + boxChars.horizontal.repeat(2)) +
-        colors.colorTitle(title) +
-        colors.colorBorder(boxChars.horizontal.repeat(Math.max(0, tableWidth - title.length - 4)) + boxChars.topRight)
+        colors.colorTitle(` ${title} `) +
+        colors.colorBorder(boxChars.horizontal.repeat(Math.max(0, tableWidth - titleVisualWidth - 4)) + boxChars.topRight)
     );
 
-    // Draw headers using configured widths if available
+    // Draw headers using configured widths and proper character width handling
     const headerRow = headers.map((header, i) => {
         let width;
+        const sectionConfig = getSectionConfig(title);
         if (sectionConfig) {
             width = sectionConfig.columns[i]?.width || columnWidths[i];
         } else {
             width = columnWidths[i];
         }
-        return colors.colorHeader(header.padEnd(width));
+        return colors.colorHeader(padStringToWidth(header, width));
     }).join(colors.colorSeparator(boxChars.vertical));
 
     console.log(
@@ -103,9 +111,10 @@ export function renderTableRow(
         const shouldRightAlign = style.align_numbers === "right" && 
             !isNaN(Number(cell.replace(/[^0-9.-]/g, '')));
         
+        // Use proper width handling for padding
         const alignedCell = shouldRightAlign ?
-            cell.padStart(maxWidth) :
-            cell.padEnd(maxWidth);
+            padStringToWidth(cell, maxWidth, 'right') :
+            padStringToWidth(cell, maxWidth, 'left');
 
         // Color the cell based on whether it's a number and its value
         if (!isNaN(Number(cell.replace(/[^0-9.-]/g, '')))) {
@@ -133,7 +142,7 @@ export function renderTableSeparator(
     boxChars = getBoxChars(style.border_style)
 ): void {
     const colors = getColorFunctions(style);
-    const separator = boxChars.horizontal.repeat(Math.min(tableWidth, style.section_width));
+    const separator = boxChars.horizontal.repeat(tableWidth);
     console.log(
         colors.colorBorder(boxChars.leftT) +
         colors.colorSeparator(separator) +
@@ -150,7 +159,7 @@ export function renderTableFooter(
     boxChars = getBoxChars(style.border_style)
 ): void {
     const colors = getColorFunctions(style);
-    const separator = boxChars.horizontal.repeat(Math.min(tableWidth, style.section_width));
+    const separator = boxChars.horizontal.repeat(tableWidth);
     console.log(
         colors.colorBorder(boxChars.bottomLeft) +
         colors.colorSeparator(separator) +
@@ -164,8 +173,8 @@ export function renderTableFooter(
 export function createEmptyRow(headers: string[], message: string, columnWidths: number[]): string[] {
     return headers.map((_, index) => {
         if (index === Math.floor(headers.length / 2)) {
-            return message.padEnd(columnWidths[index]);
+            return padStringToWidth(message, columnWidths[index]);
         }
-        return ''.padEnd(columnWidths[index]);
+        return padStringToWidth('', columnWidths[index]);
     });
 }

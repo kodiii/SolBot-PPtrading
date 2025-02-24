@@ -1,5 +1,5 @@
 import { DashboardStyle } from '../../config/dashboard_style';
-import { renderTableHeader, renderTableRow, renderTableSeparator, renderTableFooter, calculateTableWidth } from '../table-renderer';
+import { renderTableHeader, renderTableRow, renderTableSeparator, renderTableFooter, calculateTableWidth, getEffectiveTableWidth } from '../table-renderer';
 
 /**
  * Displays a table with the given content and styling
@@ -8,27 +8,27 @@ export function displayTable(
     title: string,
     headers: string[],
     rows: string[][],
-    columnSizes: number[],
+    columnWidths: number[],
     style: DashboardStyle,
     fixedHeader: boolean = false
 ): void {
     // Add spacing based on configuration
     console.log('\n'.repeat(style.section_spacing));
 
-    // Calculate total table width
-    const tableWidth = calculateTableWidth(columnSizes);
+    // Calculate total table width for this section
+    const tableWidth = getEffectiveTableWidth(title, columnWidths, style);
 
     // Render header
-    renderTableHeader(title, headers, columnSizes, style);
+    renderTableHeader(title, headers, columnWidths, style);
 
     // Render rows with separators
     rows.forEach((row, rowIndex) => {
-        renderTableRow(row, columnSizes, style);
+        renderTableRow(row, columnWidths, style);
         if (style.row_separator && rowIndex < rows.length - 1) {
             renderTableSeparator(tableWidth, style);
         }
     });
 
-    // Render footer
+    // Render footer with the section's width
     renderTableFooter(tableWidth, style);
 }
