@@ -93,9 +93,12 @@ export const columnWidths = {
     ADDRESS_WIDTH: 47,        // For token addresses
     TIME_WIDTH: 20,          // For timestamps
     SOL_PRICE_WIDTH: 18,     // For SOL prices (8 decimals)
-    USD_AMOUNT_WIDTH: 20,    // For USD amounts
+    USD_AMOUNT_WIDTH: 25,    // For USD amounts (volume, market cap, liquidity)
     TOKEN_AMOUNT_WIDTH: 20,   // For token amounts
-    PERCENT_WIDTH: 20        // For percentage values
+    PERCENT_WIDTH: 20,       // For percentage values
+    CURRENT_PRICE_WIDTH: 25, // For current price in SOL (more precision needed)
+    PNL_WIDTH: 15,          // For PNL display
+    TP_SL_WIDTH: 22         // For Take Profit and Stop Loss
 };
 
 /**
@@ -121,7 +124,7 @@ export const sectionConfigs: { [key: string]: SectionConfig } = {
     },
     activePositions: {
         title: '🎯 Active Positions',
-        width: 245,
+        width: 245,  // Increased to account for wider columns (CURRENT_PRICE_WIDTH, PNL_WIDTH, and TP_SL_WIDTH)
         columns: [
             { header: 'Token Name', width: columnWidths.TOKEN_NAME_WIDTH },
             { header: 'Address', width: columnWidths.ADDRESS_WIDTH },
@@ -130,10 +133,10 @@ export const sectionConfigs: { [key: string]: SectionConfig } = {
             { header: 'Liquidity ($)', width: columnWidths.USD_AMOUNT_WIDTH },
             { header: 'Position Size (Tk)', width: columnWidths.TOKEN_AMOUNT_WIDTH },
             { header: 'Buy Price (SOL)', width: columnWidths.SOL_PRICE_WIDTH },
-            { header: 'Current Price (SOL)', width: columnWidths.SOL_PRICE_WIDTH },
-            { header: 'PNL', width: columnWidths.PERCENT_WIDTH },
-            { header: 'Take Profit (SOL)', width: columnWidths.SOL_PRICE_WIDTH },
-            { header: 'Stop Loss (SOL)', width: columnWidths.SOL_PRICE_WIDTH }
+            { header: 'Current Price (SOL)', width: columnWidths.CURRENT_PRICE_WIDTH },
+            { header: 'PNL', width: columnWidths.PNL_WIDTH },
+            { header: 'Take Profit (SOL)', width: columnWidths.TP_SL_WIDTH },
+            { header: 'Stop Loss (SOL)', width: columnWidths.TP_SL_WIDTH }
         ],
         colors: {
             border: "magenta",
