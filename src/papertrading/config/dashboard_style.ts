@@ -81,7 +81,7 @@ export const sectionConfigs: { [key: string]: SectionConfig } = {
         title: '📊 Virtual Balance',
         width: 70,
         columns: [
-            { header: 'Balance', width: 70 }
+            { header: 'Balance', width: 68 }
         ],
         borderColor: "blue",
         order: 1  // Show first

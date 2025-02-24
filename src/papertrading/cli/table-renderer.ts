@@ -1,16 +1,6 @@
 import chalk, { ChalkFunction } from "chalk";
 import { DashboardStyle, getBoxChars, SectionConfig, sectionConfigs } from '../config/dashboard_style';
-import { getStringWidth, padStringToWidth, truncateToWidth } from './utils/string-width';
-
-/**
- * Calculates the width of a table based on its columns
- */
-export function calculateTableWidth(columnWidths: number[]): number {
-    return Math.max(
-        columnWidths.reduce((sum, width) => sum + width, 0) + columnWidths.length + 1,
-        20 // Minimum width to prevent empty tables from collapsing
-    );
-}
+import { getStringWidth, padStringToWidth } from './utils/string-width';
 
 /**
  * Gets section configuration by title
@@ -24,9 +14,10 @@ export function getSectionConfig(title: string): SectionConfig | undefined {
  */
 export function getEffectiveTableWidth(title: string, columnWidths: number[], style: DashboardStyle): number {
     const sectionConfig = getSectionConfig(title);
+    const totalWidth = columnWidths.reduce((sum, width) => sum + width, 0) + columnWidths.length + 1;
     return sectionConfig ? 
-        sectionConfig.width :
-        Math.min(calculateTableWidth(columnWidths), style.section_width);
+        Math.max(sectionConfig.width, totalWidth) :
+        Math.min(totalWidth, style.section_width);
 }
 
 /**
@@ -55,27 +46,21 @@ export function renderTableHeader(
     style: DashboardStyle,
     boxChars = getBoxChars(style.border_style)
 ): void {
-    const tableWidth = getEffectiveTableWidth(title, columnWidths, style);
-    const separator = boxChars.horizontal.repeat(tableWidth);
     const colors = getColorFunctions(style);
-
-    // Calculate title padding considering Unicode characters
-    const titleVisualWidth = getStringWidth(title);
-    const titleWithPadding = ` ${title} `;
-    const remainingWidth = Math.max(0, tableWidth - titleVisualWidth - 4);
-
-    // Draw title with proper width handling
+    const tableWidth = getEffectiveTableWidth(title, columnWidths, style);
+    
+    // Draw title
+    const titleWidth = getStringWidth(title);
     console.log(
         colors.colorBorder(boxChars.topLeft + boxChars.horizontal.repeat(2)) +
-        colors.colorTitle(titleWithPadding) +
-        colors.colorBorder(boxChars.horizontal.repeat(remainingWidth) + boxChars.topRight)
+        colors.colorTitle(` ${title} `) +
+        colors.colorBorder(boxChars.horizontal.repeat(Math.max(0, tableWidth - titleWidth - 4)) + boxChars.topRight)
     );
 
-    // Draw headers using configured widths and proper character width handling
+    // Draw headers
     const headerRow = headers.map((header, i) => {
         const width = columnWidths[i];
-        const truncatedHeader = truncateToWidth(header, width);
-        return colors.colorHeader(padStringToWidth(truncatedHeader, width));
+        return colors.colorHeader(padStringToWidth(header, width));
     }).join(colors.colorSeparator(boxChars.vertical));
 
     console.log(
@@ -84,7 +69,8 @@ export function renderTableHeader(
         ' ' + colors.colorBorder(boxChars.vertical)
     );
 
-    // Draw separator after headers
+    // Draw separator
+    const separator = boxChars.horizontal.repeat(tableWidth);
     console.log(
         colors.colorBorder(boxChars.leftT) +
         colors.colorSeparator(separator) +
@@ -104,23 +90,8 @@ export function renderTableRow(
     const colors = getColorFunctions(style);
 
     const formattedRow = row.map((cell, i) => {
-        const width = columnWidths[i];
-        const truncatedCell = truncateToWidth(cell, width);
-        const shouldRightAlign = style.align_numbers === "right" && 
-            !isNaN(Number(cell.replace(/[^0-9.-]/g, '')));
-
-        const alignedCell = shouldRightAlign ?
-            padStringToWidth(truncatedCell, width, 'right') :
-            padStringToWidth(truncatedCell, width, 'left');
-
-        // Color the cell based on whether it's a number and its value
-        if (!isNaN(Number(cell.replace(/[^0-9.-]/g, '')))) {
-            const num = Number(cell.replace(/[^0-9.-]/g, ''));
-            if (num > 0) return colors.colorProfit(alignedCell);
-            if (num < 0) return colors.colorLoss(alignedCell);
-            return colors.colorNeutral(alignedCell);
-        }
-        return colors.colorText(alignedCell);
+        // Content is already formatted and padded by the display component
+        return cell;
     });
 
     console.log(
@@ -170,9 +141,15 @@ export function renderTableFooter(
 export function createEmptyRow(headers: string[], message: string, columnWidths: number[]): string[] {
     return headers.map((_, index) => {
         if (index === Math.floor(headers.length / 2)) {
-            const truncatedMessage = truncateToWidth(message, columnWidths[index]);
-            return padStringToWidth(truncatedMessage, columnWidths[index]);
+            return padStringToWidth(message, columnWidths[index]);
         }
-        return ''.padEnd(columnWidths[index]);
+        return ' '.repeat(columnWidths[index]);
     });
+}
+
+/**
+ * Calculates the width of a table based on its columns
+ */
+export function calculateTableWidth(columnWidths: number[]): number {
+    return columnWidths.reduce((sum, width) => sum + width, 0) + columnWidths.length + 1;
 }
