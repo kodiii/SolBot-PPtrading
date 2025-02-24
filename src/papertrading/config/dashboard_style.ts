@@ -1,6 +1,25 @@
 import chalk, { ChalkFunction } from "chalk";
 
 /**
+ * Column configuration for table headers and their widths
+ */
+export interface ColumnConfig {
+    header: string;
+    width: number;
+}
+
+/**
+ * Section configuration for different table types
+ */
+export interface SectionConfig {
+    title: string;
+    width: number;
+    columns: ColumnConfig[];
+    borderColor: keyof typeof chalk;
+    order: number;  // Lower numbers display first
+}
+
+/**
  * Interface for color scheme configuration
  */
 export interface ColorScheme {
@@ -36,23 +55,88 @@ export interface DashboardStyle {
     
     // Layout
     section_spacing: number;
+    section_width: number;  // Default width for sections
     align_numbers: "left" | "right";
     row_separator: boolean;  // Whether to show separators between rows
 }
 
 /**
+ * Base column widths for different data types
+ */
+export const columnWidths = {
+    TOKEN_NAME_WIDTH: 12,      // For token names
+    ADDRESS_WIDTH: 45,        // For token addresses
+    TIME_WIDTH: 20,          // For timestamps
+    SOL_PRICE_WIDTH: 17,     // For SOL prices (8 decimals)
+    USD_AMOUNT_WIDTH: 20,    // For USD amounts
+    TOKEN_AMOUNT_WIDTH: 20,   // For token amounts
+    PERCENT_WIDTH: 20        // For percentage values
+};
+
+/**
+ * Section configurations for different table types
+ */
+export const sectionConfigs: { [key: string]: SectionConfig } = {
+    virtualBalance: {
+        title: '📊 Virtual Balance',
+        width: 150,
+        columns: [
+            { header: 'Balance', width: 76 }
+        ],
+        borderColor: "blue",
+        order: 1  // Show first
+    },
+    activePositions: {
+        title: '🎯 Active Positions',
+        width: 250,
+        columns: [
+            { header: 'Token Name', width: columnWidths.TOKEN_NAME_WIDTH },
+            { header: 'Address', width: columnWidths.ADDRESS_WIDTH },
+            { header: 'Volume 5m ($)', width: columnWidths.USD_AMOUNT_WIDTH },
+            { header: 'Market Cap ($)', width: columnWidths.USD_AMOUNT_WIDTH },
+            { header: 'Liquidity ($)', width: columnWidths.USD_AMOUNT_WIDTH },
+            { header: 'Position Size (Tk)', width: columnWidths.TOKEN_AMOUNT_WIDTH },
+            { header: 'Buy Price (SOL)', width: columnWidths.SOL_PRICE_WIDTH },
+            { header: 'Current Price (SOL)', width: columnWidths.SOL_PRICE_WIDTH },
+            { header: 'PNL', width: columnWidths.PERCENT_WIDTH },
+            { header: 'Take Profit (SOL)', width: columnWidths.SOL_PRICE_WIDTH },
+            { header: 'Stop Loss (SOL)', width: columnWidths.SOL_PRICE_WIDTH }
+        ],
+        borderColor: "green",
+        order: 3  // Show second
+    },
+    tradingStats: {
+        title: '📈 Trading Statistics',
+        width: 150,
+        columns: [
+            { header: 'Stats', width: 76 }
+        ],
+        borderColor: "yellow",
+        order: 2  // Show third
+    },
+    recentTrades: {
+        title: '📈 Recent Trades',
+        width: 240,
+        columns: [
+            { header: 'Token Name', width: columnWidths.TOKEN_NAME_WIDTH },
+            { header: 'Address', width: columnWidths.ADDRESS_WIDTH },
+            { header: 'Buy Price (SOL)', width: columnWidths.SOL_PRICE_WIDTH },
+            { header: 'Sell Price (SOL)', width: columnWidths.SOL_PRICE_WIDTH },
+            { header: 'Position Size (Tk)', width: columnWidths.TOKEN_AMOUNT_WIDTH },
+            { header: 'Time Buy', width: columnWidths.TIME_WIDTH },
+            { header: 'Time Sell', width: columnWidths.TIME_WIDTH },
+            { header: 'MarketCap ($)', width: columnWidths.USD_AMOUNT_WIDTH },
+            { header: 'Liquidity/buy ($)', width: columnWidths.USD_AMOUNT_WIDTH },
+            { header: 'Liquidity/sell ($)', width: columnWidths.USD_AMOUNT_WIDTH },
+            { header: 'PNL (SOL)', width: columnWidths.SOL_PRICE_WIDTH }
+        ],
+        borderColor: "magenta",
+        order: 4  // Show last
+    }
+};
+
+/**
  * Dashboard style configuration
- * You can customize the dashboard appearance by modifying these values:
- *
- * Colors available:
- * - Basic: "black", "red", "green", "yellow", "blue", "magenta", "cyan", "white"
- * - Bright: "blackBright", "redBright", "greenBright", "yellowBright",
- *          "blueBright", "magentaBright", "cyanBright", "whiteBright"
- * - Background: "bgBlack", "bgRed", "bgGreen", "bgYellow", "bgBlue",
- *              "bgMagenta", "bgCyan", "bgWhite"
- * - Bright Background: "bgBlackBright", "bgRedBright", "bgGreenBright",
- *                     "bgYellowBright", "bgBlueBright", "bgMagentaBright",
- *                     "bgCyanBright", "bgWhiteBright"
  */
 export const dashboardStyle: DashboardStyle = {
     // Border appearance
@@ -62,8 +146,9 @@ export const dashboardStyle: DashboardStyle = {
     header_style: "bold",
     text_style: "normal",
     
-    // Spacing
+    // Spacing and layout
     section_spacing: 1,
+    section_width: 214,  // Default width for sections
     align_numbers: "right",
     row_separator: true,
     
@@ -84,19 +169,6 @@ export const dashboardStyle: DashboardStyle = {
         border: "blue",
         separator: "blue"
     }
-};
-
-/**
- * Column width configurations for table formatting
- */
-export const columnWidths = {
-    TOKEN_NAME_WIDTH: 8,      // For token names
-    ADDRESS_WIDTH: 42,        // For token addresses
-    TIME_WIDTH: 15,          // For timestamps
-    SOL_PRICE_WIDTH: 12,     // For SOL prices (8 decimals)
-    USD_AMOUNT_WIDTH: 12,    // For USD amounts
-    TOKEN_AMOUNT_WIDTH: 15,   // For token amounts
-    PERCENT_WIDTH: 10        // For percentage values
 };
 
 /**
