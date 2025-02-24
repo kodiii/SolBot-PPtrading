@@ -66,6 +66,16 @@ function formatCell(content: string, style: DashboardStyle, title: string): stri
         return colors.colorLabel(label) + colors.colorValue(value);
     }
     
+    // Special case for addresses (base58/hex)
+    if (content.trim().length >= 32) {
+        return colors.colorText(content);
+    }
+
+    // Special case for timestamps
+    if (content.trim().match(/^\d{1,2}:\d{2}:\d{2}$/)) {
+        return colors.colorText(content);
+    }
+
     // Check for percentage values with proper coloring
     const pnlMatch = content.trim().match(/^([-+]?\d*\.?\d+)%$/);
     if (pnlMatch) {
@@ -75,8 +85,8 @@ function formatCell(content: string, style: DashboardStyle, title: string): stri
         return colors.colorNeutral(content);
     }
 
-    // Check for numeric values
-    const numMatch = content.trim().match(/^[-+]?\d*\.?\d+/);
+    // Check for numeric values (only in numeric columns)
+    const numMatch = content.trim().match(/^[-+]?\d*\.?\d+$/);
     if (numMatch) {
         const num = parseFloat(numMatch[0]);
         if (num > 0) return colors.colorProfit(content);
