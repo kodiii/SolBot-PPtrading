@@ -98,7 +98,9 @@ export const columnWidths = {
     PERCENT_WIDTH: 20,       // For percentage values
     CURRENT_PRICE_WIDTH: 25, // For current price in SOL (more precision needed)
     PNL_WIDTH: 15,          // For PNL display
-    TP_SL_WIDTH: 22         // For Take Profit and Stop Loss
+    TP_SL_WIDTH: 22,        // For Take Profit and Stop Loss
+    VOLUME_5M_WIDTH: 25,    // For 5-minute volume display
+    LIQUIDITY_WIDTH: 25     // For liquidity display
 };
 
 /**
@@ -128,9 +130,9 @@ export const sectionConfigs: { [key: string]: SectionConfig } = {
         columns: [
             { header: 'Token Name', width: columnWidths.TOKEN_NAME_WIDTH },
             { header: 'Address', width: columnWidths.ADDRESS_WIDTH },
-            { header: 'Volume 5m ($)', width: columnWidths.USD_AMOUNT_WIDTH },
+            { header: 'Volume 5m ($)', width: columnWidths.VOLUME_5M_WIDTH },
             { header: 'Market Cap ($)', width: columnWidths.USD_AMOUNT_WIDTH },
-            { header: 'Liquidity ($)', width: columnWidths.USD_AMOUNT_WIDTH },
+            { header: 'Liquidity ($)', width: columnWidths.LIQUIDITY_WIDTH },
             { header: 'Position Size (Tk)', width: columnWidths.TOKEN_AMOUNT_WIDTH },
             { header: 'Buy Price (SOL)', width: columnWidths.SOL_PRICE_WIDTH },
             { header: 'Current Price (SOL)', width: columnWidths.CURRENT_PRICE_WIDTH },

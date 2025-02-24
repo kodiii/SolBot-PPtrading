@@ -2,6 +2,77 @@
 
 ## Architecture Overview
 
+### Visual Architecture
+
+```mermaid
+graph TD
+    A[App] --> B[Header]
+    A --> C[Trading Dashboard]
+    A --> D[Position Manager]
+    A --> E[Configuration Panel]
+    
+    B --> F[Mode Selector]
+    B --> G[Balance Display]
+    B --> H[Bot Controls]
+    
+    C --> I[Position List]
+    C --> J[Trade History]
+    C --> K[Performance Metrics]
+    
+    D --> L[Stop Loss Manager]
+    D --> M[Take Profit Manager]
+    D --> N[Position Controls]
+    
+    E --> O[Risk Settings]
+    E --> P[Trading Parameters]
+    E --> Q[Security Controls]
+```
+
+### Data Flow
+
+```mermaid
+sequenceDiagram
+    participant UI as User Interface
+    participant Store as Zustand Store
+    participant WS as WebSocket Service
+    participant API as REST API
+    
+    UI->>Store: Update Trading Mode
+    Store->>API: Send Mode Change Request
+    API-->>Store: Confirm Mode Change
+    Store-->>UI: Update UI State
+    
+    WS->>Store: Real-time Price Update
+    Store->>UI: Update Position Values
+    
+    UI->>Store: Modify Position Settings
+    Store->>API: Update Position
+    API-->>Store: Confirm Update
+    Store-->>UI: Refresh Position Display
+```
+
+### State Management
+
+```mermaid
+flowchart LR
+    A[Trading Store] --> B[Mode Management]
+    A --> C[Position Tracking]
+    A --> D[Trade History]
+    A --> E[Performance Metrics]
+    
+    B --> F[Paper/Real Mode]
+    B --> G[Balance Updates]
+    
+    C --> H[Active Positions]
+    C --> I[Position Updates]
+    
+    D --> J[Recent Trades]
+    D --> K[Historical Data]
+    
+    E --> L[PnL Calculation]
+    E --> M[Win Rate Tracking]
+```
+
 ### Core Technologies
 - React 18 with TypeScript
 - Vite for build tooling
