@@ -35,8 +35,8 @@ function getColorFunctions(style: DashboardStyle, title: string) {
         colorText: (str: string) => (chalk[colors.text] as ChalkFunction)(str),
         colorLabel: (str: string) => (chalk[colors.label || style.color_scheme.label] as ChalkFunction)(str),
         colorValue: (str: string) => (chalk[colors.value || colors.text] as ChalkFunction)(str),
-        colorProfit: (str: string) => (chalk[style.color_scheme.profit] as ChalkFunction)(str),
-        colorLoss: (str: string) => (chalk[style.color_scheme.loss] as ChalkFunction)(str),
+        colorProfit: (str: string) => (chalk[colors.profit || style.color_scheme.profit] as ChalkFunction)(str),
+        colorLoss: (str: string) => (chalk[colors.loss || style.color_scheme.loss] as ChalkFunction)(str),
         colorNeutral: (str: string) => (chalk[style.color_scheme.neutral] as ChalkFunction)(str),
     };
 }

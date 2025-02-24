@@ -28,6 +28,8 @@ export interface SectionColors {
     label?: keyof typeof chalk;
     value?: keyof typeof chalk;
     separator?: keyof typeof chalk;
+    profit?: keyof typeof chalk;
+    loss?: keyof typeof chalk;
 }
 
 /**
@@ -102,9 +104,9 @@ export const columnWidths = {
 export const sectionConfigs: { [key: string]: SectionConfig } = {
     virtualBalance: {
         title: '📊 Virtual Balance',
-        width: 74,
+        width: 52,
         columns: [
-            { header: 'Balance', width: 70 }
+            { header: 'Balance', width: 50 }
         ],
         colors: {
             border: "cyan",
@@ -135,12 +137,14 @@ export const sectionConfigs: { [key: string]: SectionConfig } = {
         ],
         colors: {
             border: "magenta",
-            text: "magentaBright",
+            text: "white",
             header: "magentaBright",
             title: "yellowBright",
             label: "yellow",
-            value: "magentaBright",
-            separator: "magenta"
+            value: "white",
+            separator: "magenta",
+            profit: "greenBright",
+            loss: "redBright"
         },
         order: 3
     },
@@ -179,12 +183,14 @@ export const sectionConfigs: { [key: string]: SectionConfig } = {
         ],
         colors: {
             border: "green",
-            text: "greenBright",
+            text: "white",
             header: "greenBright",
             title: "yellowBright",
             label: "red",
-            value: "greenBright",
-            separator: "green"
+            value: "white",
+            separator: "green",
+            profit: "greenBright",
+            loss: "redBright"
         },
         order: 4
     }
@@ -202,7 +208,7 @@ export const dashboardStyle: DashboardStyle = {
     align_numbers: "right",
     row_separator: true,
     color_scheme: {
-        profit: "blue",
+        profit: "greenBright",
         loss: "redBright",
         neutral: "white",
         header: "cyanBright",
@@ -210,8 +216,8 @@ export const dashboardStyle: DashboardStyle = {
         text: "white",
         label: "yellow",
         value: "white",
-        border: "blue",
-        separator: "blue"
+        border: "cyan",
+        separator: "cyan"
     }
 };
 
