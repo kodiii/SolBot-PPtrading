@@ -136,13 +136,18 @@ class Real,RW,RAP,RRT,RTS,RBuy,RSell,RTP,RSL real
 class PriceFeed,MarketStats,VOL,LP secondary
 ```
 
-## Trading Modes Integration
+## Trading Modes Implementation
 
-### Shared Infrastructure
-1. **Common Components**
-   - Market data services
-   - Trading charts
-   - Token search functionality
+### Shared Components
+1. **Core UI Elements**
+   - `<TokenSearch />`: Fuzzy search with dex liquidity indicators
+   - `<RiskCalculator />`: Uses config.rug_check thresholds
+   - `<ChartContainer />`: TradingView + custom indicators
+
+2. **Data Services**
+   - MarketDataService: DexScreener + CoinGecko
+   - ConfigSync: DB ↔ UI binding
+   - AlertService: WebSocket + push notifications
    - Alert system
    - Risk calculator
 
@@ -226,9 +231,82 @@ class PriceFeed,MarketStats,VOL,LP secondary
    - Multiple security checks
    - Risk management enforcement
 
-## Implementation Guidelines
+## Implementation Specifications
 
-### Frontend Structure
+### Component Technical Contracts
+
+1. **TradeHistoryGrid**
+```typescript
+interface TradeHistoryProps {
+  maxRows: number // From paper_trading.recent_trades_limit
+  columns: Array<'token'|'direction'|'price'|'size'|'timestamp'>
+  refreshInterval: number // paper_trading.dashboard_refresh
+  onRowClick: (tradeId: string) => void
+}
+```
+
+2. **BalanceHeader**
+```typescript
+type BalanceDisplay = {
+  solBalance: number
+  usdEquiv: string
+  lastUpdated: ISO8601
+  config: {
+    initialBalance: number // paper_trading.initial_balance
+    refreshRate: number // paper_trading.dashboard_refresh
+  }
+}
+```
+
+3. **RiskParameterControls**
+```typescript
+type RiskParams = {
+  stopLoss: number // sell.stop_loss_percent
+  takeProfit: number // sell.take_profit_percent
+  maxPositions: number // swap.max_open_positions
+  validationRules: {
+    minLiquidity: number // rug_check.min_total_market_Liquidity
+    maxDeviation: number // price_validation.max_deviation
+  }
+}
+```
+
+### Service Endpoints
+| Component | GET Endpoints | POST Endpoints |
+|-----------|---------------|----------------|
+| TradeHistoryGrid | /api/trades?limit= | - |
+| BalanceHeader | /api/balance | /api/reset-balance |
+| RiskParameterControls | - | /api/update-config |
+
+1. **BalanceHeader**
+   - Displays virtual SOL balance with USD conversion
+   - Updates every 500ms (config.paper_trading.dashboard_refresh)
+   - Reset button triggers DB reset to initial_balance
+
+2. **TradeHistoryGrid**
+   - Paginated display of simulated_trades
+   - Sortable by: token, price, size, timestamp
+   - Filterable by: buy/sell, time range
+
+3. **RiskParameterControls**
+   - Linked to config.sell settings
+   - Real-time validation against:
+     - config.swap.max_open_positions
+     - config.price_validation.window_size
+
+### Service Contracts
+interface TradingService {
+  executePaperTrade: (params: {
+    token: string;
+    amount: number;
+    direction: 'buy'|'sell';
+  }) => Promise<TradeResult>;
+  
+  updateConfig: <K extends keyof Config>(
+    key: K,
+    value: Config[K]
+  ) => Promise<void>;
+}
 ```typescript
 // Mode-specific interfaces
 interface TradingMode {
