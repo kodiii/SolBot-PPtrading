@@ -1,11 +1,3 @@
-/**
- * Paper Trading Dashboard
- * 
- * A real-time dashboard for monitoring paper trading activities on the Solana blockchain.
- * Provides visualization of virtual balance, active positions, trading statistics, and recent trades.
- * The dashboard auto-refreshes to show live updates of trading activities.
- */
-
 import chalk from "chalk";
 import dotenv from "dotenv";
 dotenv.config();
@@ -36,13 +28,16 @@ async function renderDashboardSections(
 
     // Render each section in order
     for (const [sectionKey, config] of orderedSections) {
-        // Create a style override with section-specific border color
+        // Create a style override with section-specific colors
         const sectionStyle = {
             ...STYLE,
             color_scheme: {
                 ...STYLE.color_scheme,
-                border: config.borderColor,
-                separator: config.borderColor
+                border: config.colors.border,
+                separator: config.colors.border,
+                text: config.colors.text,
+                header: config.colors.header,
+                title: config.colors.title
             }
         };
 

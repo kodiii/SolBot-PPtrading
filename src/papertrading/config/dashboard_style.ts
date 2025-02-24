@@ -9,13 +9,35 @@ export interface ColumnConfig {
 }
 
 /**
+ * Color configuration for sections and table elements
+ */
+export interface ColorConfig {
+    text: keyof typeof chalk;
+    background?: keyof typeof chalk;
+    modifier?: "bold" | "dim" | "italic" | "underline";
+}
+
+/**
+ * Section-specific color configuration
+ */
+export interface SectionColors {
+    border: keyof typeof chalk;
+    text: keyof typeof chalk;
+    header: keyof typeof chalk;
+    title: keyof typeof chalk;
+    label?: keyof typeof chalk;
+    value?: keyof typeof chalk;
+    separator?: keyof typeof chalk;
+}
+
+/**
  * Section configuration for different table types
  */
 export interface SectionConfig {
     title: string;
     width: number;
     columns: ColumnConfig[];
-    borderColor: keyof typeof chalk;
+    colors: SectionColors;
     order: number;  // Lower numbers display first
 }
 
@@ -33,6 +55,7 @@ export interface ColorScheme {
     title: keyof typeof chalk;
     text: keyof typeof chalk;
     label: keyof typeof chalk;
+    value: keyof typeof chalk;
     
     // Border colors
     border: keyof typeof chalk;
@@ -47,7 +70,7 @@ export interface DashboardStyle {
     border_style: "single" | "double";
     
     // Text styling
-    header_style: keyof typeof chalk;
+    header_style: "normal" | "bold" | "dim";
     text_style: "normal" | "bold" | "dim";
     
     // Colors
@@ -79,12 +102,20 @@ export const columnWidths = {
 export const sectionConfigs: { [key: string]: SectionConfig } = {
     virtualBalance: {
         title: '📊 Virtual Balance',
-        width: 70,
+        width: 74,
         columns: [
-            { header: 'Balance', width: 68 }
+            { header: 'Balance', width: 70 }
         ],
-        borderColor: "blue",
-        order: 1  // Show first
+        colors: {
+            border: "cyan",
+            text: "white",
+            header: "cyanBright",
+            title: "yellowBright",
+            label: "yellow",
+            value: "white",
+            separator: "cyan"
+        },
+        order: 1
     },
     activePositions: {
         title: '🎯 Active Positions',
@@ -102,8 +133,16 @@ export const sectionConfigs: { [key: string]: SectionConfig } = {
             { header: 'Take Profit (SOL)', width: columnWidths.SOL_PRICE_WIDTH },
             { header: 'Stop Loss (SOL)', width: columnWidths.SOL_PRICE_WIDTH }
         ],
-        borderColor: "redBright",
-        order: 3  // Show third
+        colors: {
+            border: "magenta",
+            text: "magentaBright",
+            header: "magentaBright",
+            title: "yellowBright",
+            label: "yellow",
+            value: "magentaBright",
+            separator: "magenta"
+        },
+        order: 3
     },
     tradingStats: {
         title: '📈 Trading Statistics',
@@ -111,8 +150,16 @@ export const sectionConfigs: { [key: string]: SectionConfig } = {
         columns: [
             { header: 'Stats', width: 50 }
         ],
-        borderColor: "yellow",
-        order: 2  // Show second
+        colors: {
+            border: "yellow",
+            text: "yellowBright",
+            header: "yellowBright",
+            title: "yellowBright",
+            label: "yellow",
+            value: "white",
+            separator: "yellow"
+        },
+        order: 2
     },
     recentTrades: {
         title: '📈 Recent Trades',
@@ -130,8 +177,16 @@ export const sectionConfigs: { [key: string]: SectionConfig } = {
             { header: 'Liquidity/sell ($)', width: columnWidths.USD_AMOUNT_WIDTH },
             { header: 'PNL (SOL)', width: columnWidths.SOL_PRICE_WIDTH }
         ],
-        borderColor: "whiteBright",
-        order: 4  // Show last
+        colors: {
+            border: "green",
+            text: "greenBright",
+            header: "greenBright",
+            title: "yellowBright",
+            label: "red",
+            value: "greenBright",
+            separator: "green"
+        },
+        order: 4
     }
 };
 
@@ -139,33 +194,22 @@ export const sectionConfigs: { [key: string]: SectionConfig } = {
  * Dashboard style configuration
  */
 export const dashboardStyle: DashboardStyle = {
-    // Border appearance
     border_style: "double",
-    
-    // Text styling
     header_style: "bold",
     text_style: "normal",
-    
-    // Spacing and layout
     section_spacing: 0,
-    section_width: 100,  // Default width for sections
+    section_width: 100,
     align_numbers: "right",
     row_separator: true,
-    
-    // Color scheme
     color_scheme: {
-        // Value colors
-        profit: "greenBright",
+        profit: "blue",
         loss: "redBright",
         neutral: "white",
-        
-        // Text colors
         header: "cyanBright",
         title: "yellowBright",
-        text: "yellowBright",
+        text: "white",
         label: "yellow",
-        
-        // Border colors
+        value: "white",
         border: "blue",
         separator: "blue"
     }

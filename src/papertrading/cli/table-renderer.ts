@@ -23,17 +23,59 @@ export function getEffectiveTableWidth(title: string, columnWidths: number[], st
 /**
  * Creates color functions for table borders and text
  */
-function getColorFunctions(style: DashboardStyle) {
+function getColorFunctions(style: DashboardStyle, title: string) {
+    const sectionConfig = getSectionConfig(title);
+    const colors = sectionConfig?.colors || style.color_scheme;
+
     return {
-        colorBorder: (str: string) => (chalk[style.color_scheme.border] as ChalkFunction)(str),
-        colorSeparator: (str: string) => (chalk[style.color_scheme.separator] as ChalkFunction)(str),
-        colorHeader: (str: string) => (chalk[style.color_scheme.header] as ChalkFunction)(str),
-        colorTitle: (str: string) => (chalk[style.color_scheme.title] as ChalkFunction)(str),
-        colorText: (str: string) => (chalk[style.color_scheme.text] as ChalkFunction)(str),
+        colorBorder: (str: string) => (chalk[colors.border] as ChalkFunction)(str),
+        colorSeparator: (str: string) => (chalk[colors.separator || colors.border] as ChalkFunction)(str),
+        colorHeader: (str: string) => (chalk[colors.header] as ChalkFunction)(str),
+        colorTitle: (str: string) => (chalk[colors.title] as ChalkFunction)(str),
+        colorText: (str: string) => (chalk[colors.text] as ChalkFunction)(str),
+        colorLabel: (str: string) => (chalk[colors.label || style.color_scheme.label] as ChalkFunction)(str),
+        colorValue: (str: string) => (chalk[colors.value || colors.text] as ChalkFunction)(str),
         colorProfit: (str: string) => (chalk[style.color_scheme.profit] as ChalkFunction)(str),
         colorLoss: (str: string) => (chalk[style.color_scheme.loss] as ChalkFunction)(str),
         colorNeutral: (str: string) => (chalk[style.color_scheme.neutral] as ChalkFunction)(str),
     };
+}
+
+/**
+ * Format cell content with appropriate color based on content type and section
+ */
+function formatCell(content: string, style: DashboardStyle, title: string): string {
+    const colors = getColorFunctions(style, title);
+    
+    // Split label and value if the content has a label pattern
+    const labelMatch = content.match(/^([^:]+:)(.*)$/);
+    if (labelMatch) {
+        const [, label, value] = labelMatch;
+        
+        // Check if value is numeric
+        const numMatch = value.trim().match(/^[-+]?\d*\.?\d+/);
+        if (numMatch) {
+            const num = parseFloat(numMatch[0]);
+            const coloredValue = num > 0 ? colors.colorProfit(value) :
+                               num < 0 ? colors.colorLoss(value) :
+                               colors.colorValue(value);
+            return colors.colorLabel(label) + coloredValue;
+        }
+        
+        // Non-numeric value
+        return colors.colorLabel(label) + colors.colorValue(value);
+    }
+    
+    // If no label pattern, handle as regular content
+    const numMatch = content.match(/^[-+]?\d*\.?\d+/);
+    if (numMatch) {
+        const num = parseFloat(numMatch[0]);
+        if (num > 0) return colors.colorProfit(content);
+        if (num < 0) return colors.colorLoss(content);
+    }
+    
+    // Default text coloring
+    return colors.colorText(content);
 }
 
 /**
@@ -46,7 +88,7 @@ export function renderTableHeader(
     style: DashboardStyle,
     boxChars = getBoxChars(style.border_style)
 ): void {
-    const colors = getColorFunctions(style);
+    const colors = getColorFunctions(style, title);
     const tableWidth = getEffectiveTableWidth(title, columnWidths, style);
     
     // Draw title
@@ -60,7 +102,8 @@ export function renderTableHeader(
     // Draw headers
     const headerRow = headers.map((header, i) => {
         const width = columnWidths[i];
-        return colors.colorHeader(padStringToWidth(header, width));
+        const paddedHeader = padStringToWidth(header, width);
+        return colors.colorHeader(paddedHeader);
     }).join(colors.colorSeparator(boxChars.vertical));
 
     console.log(
@@ -85,13 +128,14 @@ export function renderTableRow(
     row: string[],
     columnWidths: number[],
     style: DashboardStyle,
+    title: string,
     boxChars = getBoxChars(style.border_style)
 ): void {
-    const colors = getColorFunctions(style);
+    const colors = getColorFunctions(style, title);
 
     const formattedRow = row.map((cell, i) => {
-        // Content is already formatted and padded by the display component
-        return cell;
+        const width = columnWidths[i];
+        return formatCell(padStringToWidth(cell, width), style, title);
     });
 
     console.log(
@@ -107,9 +151,10 @@ export function renderTableRow(
 export function renderTableSeparator(
     tableWidth: number,
     style: DashboardStyle,
+    title: string,
     boxChars = getBoxChars(style.border_style)
 ): void {
-    const colors = getColorFunctions(style);
+    const colors = getColorFunctions(style, title);
     const separator = boxChars.horizontal.repeat(tableWidth);
     console.log(
         colors.colorBorder(boxChars.leftT) +
@@ -124,9 +169,10 @@ export function renderTableSeparator(
 export function renderTableFooter(
     tableWidth: number,
     style: DashboardStyle,
+    title: string,
     boxChars = getBoxChars(style.border_style)
 ): void {
-    const colors = getColorFunctions(style);
+    const colors = getColorFunctions(style, title);
     const separator = boxChars.horizontal.repeat(tableWidth);
     console.log(
         colors.colorBorder(boxChars.bottomLeft) +

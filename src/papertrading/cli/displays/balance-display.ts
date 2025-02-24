@@ -1,9 +1,7 @@
-import chalk from "chalk";
 import { DashboardStyle, sectionConfigs } from '../../config/dashboard_style';
 import { SimulationService } from "../../services";
 import { Decimal } from "../../../utils/decimal";
 import { displayTable } from './table-display';
-import { getStringWidth } from '../utils/string-width';
 
 interface VirtualBalance {
     balance_sol: Decimal;
@@ -26,46 +24,21 @@ function formatDateTime(timestamp: number): string {
 }
 
 /**
- * Pads a string of text with spaces to match the target width
+ * Creates a cell with label and content
  */
-function padToWidth(text: string, targetWidth: number): string {
-    const visibleLength = getStringWidth(text.replace(/\u001b\[\d+m|\u001b\[0m/g, ''));
-    return text + ' '.repeat(Math.max(0, targetWidth - visibleLength));
+function createCell(label: string, content: string): string {
+    return `${label}${content}`;
 }
 
 /**
- * Creates a table cell with proper width and styling
+ * Formats the balance with SOL and USD values
  */
-function createTableCell(label: string, value: string, targetWidth: number): string {
-    const coloredLabel = chalk.yellow(label);
-    const plainContent = `${label}${value}`;
+function formatBalance(balance: Decimal, solPrice: Decimal | null): string {
+    const solBalance = balance.toString();
+    if (!solPrice) return solBalance;
     
-    // If content fits within width, just pad it
-    if (getStringWidth(plainContent) <= targetWidth) {
-        return padToWidth(coloredLabel + value, targetWidth);
-    }
-    
-    // If content is too long, truncate it
-    const maxContentWidth = targetWidth - 3; // Account for '...'
-    const labelWidth = getStringWidth(label);
-    let truncated = '';
-    let currentWidth = 0;
-    
-    // Add label first
-    truncated = coloredLabel;
-    currentWidth = labelWidth;
-    
-    // Add as much of the value as will fit
-    let valueChars = Array.from(value);
-    for (let char of valueChars) {
-        const charWidth = getStringWidth(char);
-        if (currentWidth + charWidth > maxContentWidth) break;
-        truncated += char;
-        currentWidth += charWidth;
-    }
-    
-    // Add ellipsis and padding
-    return padToWidth(truncated + '...', targetWidth);
+    const usdValue = balance.multiply(solPrice).toString(2);
+    return `${solBalance} (≈ $${usdValue} USD)`;
 }
 
 /**
@@ -76,21 +49,16 @@ export function displayVirtualBalance(balance: VirtualBalance | null, style: Das
 
     const config = sectionConfigs.virtualBalance;
     const simulationService = SimulationService.getInstance();
-    const solUsdPrice = simulationService.getSolUsdPrice();
-    const columnWidth = config.columns[0].width;
-
-    // Prepare balance content
-    const balanceValue = chalk.green(balance.balance_sol.toString());
-    const usdPart = solUsdPrice ? 
-        chalk.gray(` (≈ $${balance.balance_sol.multiply(new Decimal(solUsdPrice)).toString(2)} USD)`) : 
-        '';
+    const solUsdPrice = simulationService.getSolUsdPrice() ? 
+                        new Decimal(simulationService.getSolUsdPrice()!) : 
+                        null;
     
-    // Create formatted rows
+    // Create rows without applying colors
     const headers = config.columns.map(col => col.header);
     const columnWidths = config.columns.map(col => col.width);
     const rows = [
-        [createTableCell('SOL Balance: ', balanceValue + usdPart, columnWidth)],
-        [createTableCell('Last Updated: ', chalk.white(formatDateTime(balance.updated_at)), columnWidth)]
+        [createCell('SOL Balance: ', formatBalance(balance.balance_sol, solUsdPrice))],
+        [createCell('Last Updated: ', formatDateTime(balance.updated_at))]
     ];
 
     // Display the table
