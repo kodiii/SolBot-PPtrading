@@ -1,6 +1,6 @@
 import chalk, { ChalkFunction } from "chalk";
 import { DashboardStyle, getBoxChars, SectionConfig, sectionConfigs } from '../config/dashboard_style';
-import { getStringWidth, padStringToWidth } from './utils/string-width';
+import { getStringWidth, padStringToWidth, truncateToWidth } from './utils/string-width';
 
 /**
  * Calculates the width of a table based on its columns
@@ -59,24 +59,23 @@ export function renderTableHeader(
     const separator = boxChars.horizontal.repeat(tableWidth);
     const colors = getColorFunctions(style);
 
-    // Draw title with proper width handling
+    // Calculate title padding considering Unicode characters
     const titleVisualWidth = getStringWidth(title);
+    const titleWithPadding = ` ${title} `;
+    const remainingWidth = Math.max(0, tableWidth - titleVisualWidth - 4);
+
+    // Draw title with proper width handling
     console.log(
         colors.colorBorder(boxChars.topLeft + boxChars.horizontal.repeat(2)) +
-        colors.colorTitle(` ${title} `) +
-        colors.colorBorder(boxChars.horizontal.repeat(Math.max(0, tableWidth - titleVisualWidth - 4)) + boxChars.topRight)
+        colors.colorTitle(titleWithPadding) +
+        colors.colorBorder(boxChars.horizontal.repeat(remainingWidth) + boxChars.topRight)
     );
 
     // Draw headers using configured widths and proper character width handling
     const headerRow = headers.map((header, i) => {
-        let width;
-        const sectionConfig = getSectionConfig(title);
-        if (sectionConfig) {
-            width = sectionConfig.columns[i]?.width || columnWidths[i];
-        } else {
-            width = columnWidths[i];
-        }
-        return colors.colorHeader(padStringToWidth(header, width));
+        const width = columnWidths[i];
+        const truncatedHeader = truncateToWidth(header, width);
+        return colors.colorHeader(padStringToWidth(truncatedHeader, width));
     }).join(colors.colorSeparator(boxChars.vertical));
 
     console.log(
@@ -105,16 +104,14 @@ export function renderTableRow(
     const colors = getColorFunctions(style);
 
     const formattedRow = row.map((cell, i) => {
-        const maxWidth = columnWidths[i];
-        
-        // Handle number alignment
+        const width = columnWidths[i];
+        const truncatedCell = truncateToWidth(cell, width);
         const shouldRightAlign = style.align_numbers === "right" && 
             !isNaN(Number(cell.replace(/[^0-9.-]/g, '')));
-        
-        // Use proper width handling for padding
+
         const alignedCell = shouldRightAlign ?
-            padStringToWidth(cell, maxWidth, 'right') :
-            padStringToWidth(cell, maxWidth, 'left');
+            padStringToWidth(truncatedCell, width, 'right') :
+            padStringToWidth(truncatedCell, width, 'left');
 
         // Color the cell based on whether it's a number and its value
         if (!isNaN(Number(cell.replace(/[^0-9.-]/g, '')))) {
@@ -173,8 +170,9 @@ export function renderTableFooter(
 export function createEmptyRow(headers: string[], message: string, columnWidths: number[]): string[] {
     return headers.map((_, index) => {
         if (index === Math.floor(headers.length / 2)) {
-            return padStringToWidth(message, columnWidths[index]);
+            const truncatedMessage = truncateToWidth(message, columnWidths[index]);
+            return padStringToWidth(truncatedMessage, columnWidths[index]);
         }
-        return padStringToWidth('', columnWidths[index]);
+        return ''.padEnd(columnWidths[index]);
     });
 }

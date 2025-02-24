@@ -1,5 +1,12 @@
 import { DashboardStyle } from '../../config/dashboard_style';
-import { renderTableHeader, renderTableRow, renderTableSeparator, renderTableFooter, calculateTableWidth, getEffectiveTableWidth } from '../table-renderer';
+import { 
+    renderTableHeader, 
+    renderTableRow, 
+    renderTableSeparator, 
+    renderTableFooter, 
+    calculateTableWidth,
+    getEffectiveTableWidth 
+} from '../table-renderer';
 
 /**
  * Displays a table with the given content and styling
@@ -15,7 +22,7 @@ export function displayTable(
     // Add spacing based on configuration
     console.log('\n'.repeat(style.section_spacing));
 
-    // Calculate total table width for this section
+    // Calculate total table width using section configuration if available
     const tableWidth = getEffectiveTableWidth(title, columnWidths, style);
 
     // Render header
@@ -29,6 +36,6 @@ export function displayTable(
         }
     });
 
-    // Render footer with the section's width
+    // Render footer
     renderTableFooter(tableWidth, style);
 }

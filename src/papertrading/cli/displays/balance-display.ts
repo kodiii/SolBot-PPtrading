@@ -1,7 +1,8 @@
 import chalk from "chalk";
-import { DashboardStyle, getBoxChars, sectionConfigs } from '../../config/dashboard_style';
+import { DashboardStyle, sectionConfigs } from '../../config/dashboard_style';
 import { SimulationService } from "../../services";
 import { Decimal } from "../../../utils/decimal";
+import { displayTable } from './table-display';
 
 interface VirtualBalance {
     balance_sol: Decimal;
@@ -9,7 +10,7 @@ interface VirtualBalance {
 }
 
 /**
- * Displays the virtual balance information in a formatted box
+ * Displays the virtual balance information in a formatted table
  */
 export function displayVirtualBalance(balance: VirtualBalance | null, style: DashboardStyle): void {
     if (!balance) return;
@@ -17,40 +18,22 @@ export function displayVirtualBalance(balance: VirtualBalance | null, style: Das
     const config = sectionConfigs.virtualBalance;
     const simulationService = SimulationService.getInstance();
     const solUsdPrice = simulationService.getSolUsdPrice();
-    const boxChars = getBoxChars(style.border_style);
 
-    const content = [
-        `${chalk.yellow('SOL Balance:')} ${chalk.green(balance.balance_sol.toString())} ${
-            solUsdPrice ?
-            ` (≈ $${balance.balance_sol.multiply(new Decimal(solUsdPrice)).toString(2)} USD)` : ''
-        }`,
-        `${chalk.yellow('Last Updated:')} ${new Date(balance.updated_at).toLocaleString()}`
+    // Create balance content
+    const balanceStr = `${chalk.yellow('SOL Balance:')} ${chalk.green(balance.balance_sol.toString())} ${
+        solUsdPrice ?
+        ` (≈ $${balance.balance_sol.multiply(new Decimal(solUsdPrice)).toString(2)} USD)` : ''
+    }`;
+    const updatedStr = `${chalk.yellow('Last Updated:')} ${new Date(balance.updated_at).toLocaleString()}`;
+
+    // Format as rows for the table
+    const headers = config.columns.map(col => col.header);
+    const columnWidths = config.columns.map(col => col.width);
+    const rows = [
+        [balanceStr],
+        [updatedStr]
     ];
 
-    // Draw box with configured width
-    const contentWidth = Math.min(
-        Math.max(...content.map(line => line.length)) + 2,
-        config.width
-    );
-
-    console.log('\n'.repeat(style.section_spacing));
-    
-    // Box top with title
-    console.log(
-        chalk.blue(boxChars.topLeft + boxChars.horizontal.repeat(2)) +
-        chalk.yellowBright(config.title) +
-        chalk.blue(boxChars.horizontal.repeat(contentWidth - config.title.length - 4) + boxChars.topRight)
-    );
-
-    // Box content
-    content.forEach(line => {
-        console.log(
-            chalk.blue(boxChars.vertical) + ' ' +
-            line.padEnd(contentWidth - 2) + ' ' +
-            chalk.blue(boxChars.vertical)
-        );
-    });
-
-    // Box bottom
-    console.log(chalk.blue(boxChars.bottomLeft + boxChars.horizontal.repeat(contentWidth) + boxChars.bottomRight));
+    // Use table display for consistent rendering
+    displayTable(config.title, headers, rows, columnWidths, style);
 }

@@ -67,7 +67,7 @@ export const columnWidths = {
     TOKEN_NAME_WIDTH: 15,      // For token names
     ADDRESS_WIDTH: 47,        // For token addresses
     TIME_WIDTH: 20,          // For timestamps
-    SOL_PRICE_WIDTH: 17,     // For SOL prices (8 decimals)
+    SOL_PRICE_WIDTH: 18,     // For SOL prices (8 decimals)
     USD_AMOUNT_WIDTH: 20,    // For USD amounts
     TOKEN_AMOUNT_WIDTH: 20,   // For token amounts
     PERCENT_WIDTH: 20        // For percentage values
@@ -79,9 +79,9 @@ export const columnWidths = {
 export const sectionConfigs: { [key: string]: SectionConfig } = {
     virtualBalance: {
         title: '📊 Virtual Balance',
-        width: 110,
+        width: 70,
         columns: [
-            { header: 'Balance', width: 100 }
+            { header: 'Balance', width: 70 }
         ],
         borderColor: "blue",
         order: 1  // Show first
@@ -102,7 +102,7 @@ export const sectionConfigs: { [key: string]: SectionConfig } = {
             { header: 'Take Profit (SOL)', width: columnWidths.SOL_PRICE_WIDTH },
             { header: 'Stop Loss (SOL)', width: columnWidths.SOL_PRICE_WIDTH }
         ],
-        borderColor: "green",
+        borderColor: "redBright",
         order: 3  // Show third
     },
     tradingStats: {
@@ -116,7 +116,7 @@ export const sectionConfigs: { [key: string]: SectionConfig } = {
     },
     recentTrades: {
         title: '📈 Recent Trades',
-        width: 245,
+        width: 248,
         columns: [
             { header: 'Token Name', width: columnWidths.TOKEN_NAME_WIDTH },
             { header: 'Address', width: columnWidths.ADDRESS_WIDTH },
@@ -130,7 +130,7 @@ export const sectionConfigs: { [key: string]: SectionConfig } = {
             { header: 'Liquidity/sell ($)', width: columnWidths.USD_AMOUNT_WIDTH },
             { header: 'PNL (SOL)', width: columnWidths.SOL_PRICE_WIDTH }
         ],
-        borderColor: "magenta",
+        borderColor: "whiteBright",
         order: 4  // Show last
     }
 };
@@ -147,8 +147,8 @@ export const dashboardStyle: DashboardStyle = {
     text_style: "normal",
     
     // Spacing and layout
-    section_spacing: 1,
-    section_width: 214,  // Default width for sections
+    section_spacing: 0,
+    section_width: 100,  // Default width for sections
     align_numbers: "right",
     row_separator: true,
     
@@ -162,7 +162,7 @@ export const dashboardStyle: DashboardStyle = {
         // Text colors
         header: "cyanBright",
         title: "yellowBright",
-        text: "white",
+        text: "yellowBright",
         label: "yellow",
         
         // Border colors
