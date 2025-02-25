@@ -1,4 +1,4 @@
-import { ConnectionManager } from '../connection_manager';
+import { ConnectionManager } from '../db/connection_manager';
 import { Database } from 'sqlite';
 import { EventEmitter } from 'events';
 
@@ -144,7 +144,7 @@ describe('ConnectionManager', () => {
     it('should handle explicit transaction rollback', async () => {
       await connectionManager.initialize();
 
-      const result = await connectionManager.transaction(async (transaction) => {
+      const result = await connectionManager.transaction(async (transaction: { rollback: () => Promise<void> }) => {
         await transaction.rollback();
         return true;
       });

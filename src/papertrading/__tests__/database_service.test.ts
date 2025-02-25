@@ -1,9 +1,9 @@
-import { DatabaseService } from '..';
-import { ConnectionManager } from '../connection_manager';
-import { HoldingRecord, NewTokenRecord } from '../../../types';
+import { DatabaseService } from '../db';
+import { ConnectionManager } from '../db/connection_manager';
+import { HoldingRecord, NewTokenRecord } from '../../types';
 import { Database } from 'sqlite';
 import { EventEmitter } from 'events';
-import { Decimal } from '../../../utils/decimal';
+import { Decimal } from '../../utils/decimal';
 
 // Mock the ConnectionManager
 jest.mock('../connection_manager', () => ({
@@ -65,7 +65,7 @@ describe('DatabaseService', () => {
 
   describe('initialization', () => {
     it('should create tables and indices', async () => {
-      mockConnectionManager.executeWithRetry.mockImplementation(callback => callback(mockDb));
+      mockConnectionManager.executeWithRetry.mockImplementation((callback: (db: Database) => Promise<unknown>) => callback(mockDb));
 
       await dbService.initialize();
 
@@ -76,7 +76,7 @@ describe('DatabaseService', () => {
     });
 
     it('should handle existing tables gracefully', async () => {
-      mockConnectionManager.executeWithRetry.mockImplementation(async (callback) => {
+      mockConnectionManager.executeWithRetry.mockImplementation(async (callback: (db: Database) => Promise<unknown>) => {
         // First call succeeds (tables)
         if (execMock.mock.calls.length === 0) {
           return callback(mockDb);
@@ -114,11 +114,11 @@ describe('DatabaseService', () => {
     };
 
     beforeEach(() => {
-      mockConnectionManager.transaction.mockImplementation(async (callback) => {
+      mockConnectionManager.transaction.mockImplementation(async (callback: (transaction: { commit: () => Promise<void>, rollback: () => Promise<void> }) => Promise<unknown>) => {
         await callback({ commit: jest.fn(), rollback: jest.fn() });
       });
 
-      mockConnectionManager.executeWithRetry.mockImplementation(callback => callback(mockDb));
+      mockConnectionManager.executeWithRetry.mockImplementation((callback: (db: Database) => Promise<unknown>) => callback(mockDb));
     });
 
     it('should insert holding', async () => {
@@ -135,7 +135,7 @@ describe('DatabaseService', () => {
       const error = new Error('Insert failed');
       runMock.mockRejectedValueOnce(error);
 
-      mockConnectionManager.transaction.mockImplementation(async (callback) => {
+      mockConnectionManager.transaction.mockImplementation(async (callback: (transaction: { commit: () => Promise<void>, rollback: () => Promise<void> }) => Promise<unknown>) => {
         const mockTransaction = {
           commit: jest.fn(),
           rollback: jest.fn().mockResolvedValue(undefined)
@@ -226,7 +226,7 @@ describe('DatabaseService', () => {
     };
 
     beforeEach(() => {
-      mockConnectionManager.transaction.mockImplementation(async (callback) => {
+      mockConnectionManager.transaction.mockImplementation(async (callback: (transaction: { commit: () => Promise<void>, rollback: () => Promise<void> }) => Promise<unknown>) => {
         await callback({ commit: jest.fn(), rollback: jest.fn() });
       });
 
@@ -244,7 +244,7 @@ describe('DatabaseService', () => {
     });
 
     it('should handle nested transactions', async () => {
-      mockConnectionManager.transaction.mockImplementation(async (callback) => {
+      mockConnectionManager.transaction.mockImplementation(async (callback: (transaction: { commit: () => Promise<void>, rollback: () => Promise<void> }) => Promise<unknown>) => {
         const mockTransaction = {
           commit: jest.fn().mockResolvedValue(undefined),
           rollback: jest.fn().mockResolvedValue(undefined)
