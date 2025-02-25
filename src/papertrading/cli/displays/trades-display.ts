@@ -1,5 +1,5 @@
 import chalk from "chalk";
-import { DashboardStyle, sectionConfigs } from '../../config/dashboard_style';
+import { DashboardStyle, sectionConfigs } from '../config/dashboard_style';
 import { SimulatedTrade } from '../types';
 import { createEmptyRow } from '../table-renderer';
 import { displayTable } from './table-display';

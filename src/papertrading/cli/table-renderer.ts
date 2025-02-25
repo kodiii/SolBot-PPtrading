@@ -1,5 +1,5 @@
 import chalk, { ChalkFunction } from "chalk";
-import { DashboardStyle, getBoxChars, SectionConfig, sectionConfigs } from '../config/dashboard_style';
+import { DashboardStyle, getBoxChars, SectionConfig, sectionConfigs } from './config/dashboard_style';
 import { getStringWidth, padStringToWidth } from './utils/string-width';
 
 /**

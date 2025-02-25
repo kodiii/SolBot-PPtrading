@@ -1,4 +1,4 @@
-import { DashboardStyle } from '../config/dashboard_style';
+import { DashboardStyle } from './config/dashboard_style';
 import { renderTableHeader, renderTableRow, renderTableSeparator, renderTableFooter, calculateTableWidth, getEffectiveTableWidth } from './table-renderer';
 
 /**

@@ -1,5 +1,5 @@
 import chalk from "chalk";
-import { DashboardStyle, sectionConfigs } from '../../config/dashboard_style';
+import { DashboardStyle, sectionConfigs } from '../config/dashboard_style';
 import { TokenPosition } from '../types';
 import { createEmptyRow } from '../table-renderer';
 import { Decimal } from "../../../utils/decimal";

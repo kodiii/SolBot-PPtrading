@@ -5,7 +5,7 @@ dotenv.config();
 import { config } from "../../config";
 import { ConnectionManager } from "../db/connection_manager";
 import { getVirtualBalance } from "../paper_trading";
-import { dashboardStyle, sectionConfigs } from '../config/dashboard_style';
+import { dashboardStyle, sectionConfigs } from './config/dashboard_style';
 import { displayVirtualBalance, displayActivePositions, displayRecentTrades, displayTradingStats } from './displays';
 import { resetPaperTrading } from './dashboard-operations';
 import { fetchActivePositions, fetchRecentTrades, fetchTradingStats } from './services/dashboard-data';

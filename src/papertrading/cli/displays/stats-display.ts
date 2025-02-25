@@ -1,4 +1,4 @@
-import { DashboardStyle, sectionConfigs } from '../../config/dashboard_style';
+import { DashboardStyle, sectionConfigs } from '../config/dashboard_style';
 import { TradingStats } from '../types';
 import { displayTable } from './table-display';
 import { Decimal } from "../../../utils/decimal";
