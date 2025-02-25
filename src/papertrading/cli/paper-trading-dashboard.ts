@@ -34,10 +34,14 @@ async function renderDashboardSections(
             color_scheme: {
                 ...STYLE.color_scheme,
                 border: config.colors.border,
-                separator: config.colors.border,
+                separator: config.colors.separator || config.colors.border,
                 text: config.colors.text,
                 header: config.colors.header,
-                title: config.colors.title
+                title: config.colors.title,
+                label: config.colors.label || STYLE.color_scheme.label,
+                value: config.colors.value || STYLE.color_scheme.value,
+                profit: config.colors.profit || STYLE.color_scheme.profit,
+                loss: config.colors.loss || STYLE.color_scheme.loss
             }
         };
 

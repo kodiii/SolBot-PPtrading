@@ -47,9 +47,17 @@ function getColorFunctions(style: DashboardStyle, title: string) {
 function formatCell(content: string, style: DashboardStyle, title: string): string {
     const colors = getColorFunctions(style, title);
     
+    // Debug info - uncomment to debug color issues
+    /*
+    const sectionConfig = getSectionConfig(title);
+    console.log(`Formatting cell: "${content}" in section "${title}"`);
+    console.log(`Section colors - text: ${sectionConfig?.colors.text}, label: ${sectionConfig?.colors.label}, value: ${sectionConfig?.colors.value}`);
+    */
+    
     // Split label and value if the content has a label pattern
     const labelMatch = content.match(/^([^:]+:)(.*)$/);
     if (labelMatch) {
+        // console.log(`Label pattern matched! Label: "${labelMatch[1]}", Value: "${labelMatch[2]}"`);
         const [, label, value] = labelMatch;
         
         // Check if value is numeric
@@ -71,8 +79,9 @@ function formatCell(content: string, style: DashboardStyle, title: string): stri
         return colors.colorText(content);
     }
 
-    // Special case for timestamps
-    if (content.trim().match(/^\d{1,2}:\d{2}:\d{2}$/)) {
+    // Special case for timestamps (now with date info)
+    if (content.trim().match(/^\d{2}\/\d{2}\/\d{2}\s\d{1,2}:\d{2}:\d{2}/) ||
+        content.trim().match(/^\d{1,2}:\d{2}:\d{2}$/)) {
         return colors.colorText(content);
     }
 
@@ -85,13 +94,55 @@ function formatCell(content: string, style: DashboardStyle, title: string): stri
         return colors.colorNeutral(content);
     }
 
-    // Check for numeric values (only in numeric columns)
-    const numMatch = content.trim().match(/^[-+]?\d*\.?\d+$/);
-    if (numMatch) {
-        const num = parseFloat(numMatch[0]);
+    // Only specific percentage fields or explicit PNL fields should receive profit/loss coloring
+    // First, check if this is a Buy Price, Sell Price, Position Size, etc. that should use regular text color
+    
+    // First, handle cases that should NEVER use profit/loss coloring:
+    // 1. Values with 8 decimal places (SOL prices)
+    const solPricePattern = /^\s*\d+\.\d{8}\s*$/;
+    if (solPricePattern.test(content)) {
+        return colors.colorText(content);
+    }
+    
+    // 2. Values with commas (formatted monetary values)
+    const monetaryValuePattern = /^\s*[\d,]+\.\d{2}\s*$/;
+    if (monetaryValuePattern.test(content)) {
+        return colors.colorText(content);
+    }
+    
+    // 3. Values that are token amounts
+    const tokenAmountPattern = /^\s*\d+\.\d{1,2}\s*$/;
+    if (tokenAmountPattern.test(content)) {
+        return colors.colorText(content);
+    }
+    
+    // Only after all the above checks, check for percentage patterns or other numeric values that may get colored
+    
+    // Check for percentage values with proper coloring
+    const pnlPercentPattern = /^\s*([-+]?\d*\.\d+)%\s*$/;
+    const pnlPercentMatch = content.trim().match(pnlPercentPattern);
+    if (pnlPercentMatch) {
+        const num = parseFloat(pnlPercentMatch[1]);
         if (num > 0) return colors.colorProfit(content);
         if (num < 0) return colors.colorLoss(content);
         return colors.colorNeutral(content);
+    }
+    
+    // Check if it's a PNL value that should be colored
+    const isPnlField = content.includes("PNL:") || content.includes("+") || content.includes("-");
+    
+    // For other numeric values, only color if they're in a specific PNL field
+    const numMatch = content.trim().match(/^[-+]?\d*\.?\d+$/);
+    if (numMatch) {
+        const num = parseFloat(numMatch[0]);
+        
+        // Only apply profit/loss coloring if this is a PNL field
+        if (isPnlField) {
+            if (num > 0) return colors.colorProfit(content);
+            if (num < 0) return colors.colorLoss(content);
+        }
+        
+        return colors.colorText(content);
     }
     
     // Default text coloring

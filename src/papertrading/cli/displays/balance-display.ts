@@ -3,6 +3,20 @@ import { SimulationService } from "../../services";
 import { Decimal } from "../../../utils/decimal";
 import { displayTable } from './table-display';
 
+/**
+ * Formats a number with thousand separators for better readability
+ */
+function formatNumberWithCommas(value: number | string): string {
+    const num = typeof value === 'string' ? parseFloat(value) : value;
+    if (isNaN(num)) return '0';
+    
+    // Format with commas and limit to 2 decimal places for monetary values
+    return num.toLocaleString('en-US', {
+        maximumFractionDigits: 2,
+        minimumFractionDigits: 2
+    });
+}
+
 interface VirtualBalance {
     balance_sol: Decimal;
     updated_at: number;
@@ -34,10 +48,10 @@ function createCell(label: string, content: string): string {
  * Formats the balance with SOL and USD values
  */
 function formatBalance(balance: Decimal, solPrice: Decimal | null): string {
-    const solBalance = balance.toString();
+    const solBalance = formatNumberWithCommas(balance.toString());
     if (!solPrice) return solBalance;
     
-    const usdValue = balance.multiply(solPrice).toString(2);
+    const usdValue = formatNumberWithCommas(balance.multiply(solPrice).toString());
     return `${solBalance} (≈ $${usdValue} USD)`;
 }
 
