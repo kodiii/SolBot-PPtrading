@@ -11,6 +11,8 @@
     "build": "tsc",
     "start": "node dist/index.js",
     "dev": "ts-node src/index.ts",
+    "start:tracker": "node dist/tracker/index.js",
+    "tracker": "ts-node src/tracker/index.ts",
     "dashboard": "ts-node src/papertrading/cli/paper-trading-dashboard.ts",
     "reset-paper": "ts-node src/papertrading/cli/paper-trading-dashboard.ts --reset",
     "lint": "eslint . --ext .ts"
