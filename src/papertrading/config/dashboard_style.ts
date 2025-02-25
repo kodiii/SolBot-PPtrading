@@ -89,20 +89,21 @@ export interface DashboardStyle {
  * Base column widths for different data types
  */
 export const columnWidths = {
-    TOKEN_NAME_WIDTH: 20,      // For token names including "Name:" label
+    TOKEN_NAME_WIDTH: 15,      // For token names including "Name:" label
     ADDRESS_WIDTH: 52,        // For token addresses including "Addr:" label
-    TIME_WIDTH: 35,          // For timestamps including "Time:" label
-    SOL_PRICE_WIDTH: 25,     // For SOL prices including "Price:" label (8 decimals)
+    TIME_WIDTH: 25,          // For timestamps including "Time:" label
+    SOL_PRICE_WIDTH: 18,     // For SOL prices including "Price:" label (8 decimals)
     USD_AMOUNT_WIDTH: 25,    // For USD amounts (volume, market cap, liquidity)
-    TOKEN_AMOUNT_WIDTH: 25,   // For token amounts including "Size:" label
+    TOKEN_AMOUNT_WIDTH: 20,   // For token amounts including "Size:" label
     PERCENT_WIDTH: 20,       // For percentage values
-    CURRENT_PRICE_WIDTH: 25, // For current price in SOL (more precision needed)
+    CURRENT_PRICE_WIDTH: 20, // For current price in SOL (more precision needed)
     PNL_WIDTH: 25,          // For PNL display including "PNL:" label
+    PNL_PERCENT_WIDTH: 15,  // For PNL display including "PNL:" label
     TP_SL_WIDTH: 25,        // For Take Profit and Stop Loss
-    VOLUME_5M_WIDTH: 21,    // For 5-minute volume display
-    MARKETCAP_WIDTH: 25,    // For market cap display including "MCap:" label
-    LIQUIDITY_WIDTH: 25     // For liquidity display including "Liq:" label
-    LIQUIDITY_BS_WIDTH: 25     // For liquidity display including "Liq:" label
+    VOLUME_5M_WIDTH: 17,    // For 5-minute volume display
+    MARKETCAP_WIDTH: 20,    // For market cap display including "MCap:" label
+    LIQUIDITY_WIDTH: 20,     // For liquidity display including "Liq:" label
+    LIQUIDITY_BS_WIDTH: 18     // For liquidity display including "Liq:" label
 };
 
 /**
@@ -116,19 +117,19 @@ export const sectionConfigs: { [key: string]: SectionConfig } = {
             { header: 'Balance', width: 50 }
         ],
         colors: {
-            border: "cyan",
+            border: "gray",
             text: "white",
-            header: "cyanBright",
-            title: "yellowBright",
-            label: "yellow",
+            header: "gray",
+            title: "magentaBright",
+            label: "white",
             value: "white",
-            separator: "cyan"
+            separator: "gray"
         },
         order: 1
     },
     activePositions: {
         title: '🎯 Active Positions',
-        width: 302,  // Match the width used for Recent Trades to maintain consistency
+        width: 250,  // Match the width used for Recent Trades to maintain consistency
         columns: [
             { header: 'Token Name', width: columnWidths.TOKEN_NAME_WIDTH },
             { header: 'Address', width: columnWidths.ADDRESS_WIDTH },
@@ -138,18 +139,18 @@ export const sectionConfigs: { [key: string]: SectionConfig } = {
             { header: 'Position Size (Tk)', width: columnWidths.TOKEN_AMOUNT_WIDTH },
             { header: 'Buy Price (SOL)', width: columnWidths.SOL_PRICE_WIDTH },
             { header: 'Current Price (SOL)', width: columnWidths.CURRENT_PRICE_WIDTH },
-            { header: 'PNL', width: columnWidths.PNL_WIDTH },
+            { header: 'PNL', width: columnWidths.PNL_PERCENT_WIDTH },
             { header: 'Take Profit (SOL)', width: columnWidths.TP_SL_WIDTH },
             { header: 'Stop Loss (SOL)', width: columnWidths.TP_SL_WIDTH }
         ],
         colors: {
-            border: "magentaBright",
+            border: "yellowBright",
             text: "white",
-            header: "magentaBright",
+            header: "yellowBright",
             title: "magentaBright",
             label: "magenta",      // Changed from yellow to magenta to match border theme
             value: "white",
-            separator: "magenta",
+            separator: "yellowBright",
             profit: "greenBright",
             loss: "redBright"
         },
@@ -162,19 +163,19 @@ export const sectionConfigs: { [key: string]: SectionConfig } = {
             { header: 'Stats', width: 50 }
         ],
         colors: {
-            border: "redBright",
-            text: "redBright",
-            header: "redBright",
-            title: "redBright",
+            border: "gray",
+            text: "white",
+            header: "gray",
+            title: "magentaBright",
             label: "white",
-            value: "white",
-            separator: "redBright"
+            value: "greenBright",
+            separator: "gray"
         },
         order: 2
     },
     recentTrades: {
         title: '📈 Recent Trades',
-        width: 302,  // Adjusted for new column widths with labels
+        width: 250,  // Adjusted for new column widths with labels
         columns: [
             { header: 'Token Name', width: columnWidths.TOKEN_NAME_WIDTH },
             { header: 'Address', width: columnWidths.ADDRESS_WIDTH },
@@ -189,13 +190,13 @@ export const sectionConfigs: { [key: string]: SectionConfig } = {
             { header: 'PNL (SOL)', width: columnWidths.SOL_PRICE_WIDTH }
         ],
         colors: {
-            border: "green",
+            border: "gray",
             text: "white",
-            header: "greenBright",
-            title: "yellowBright",
+            header: "gray",
+            title: "magentaBright",
             label: "green",      // Changed from red to green to match the section theme
             value: "white",      // Values remain white
-            separator: "green",
+            separator: "gray",
             profit: "greenBright",
             loss: "redBright"
         },
@@ -212,7 +213,7 @@ export const dashboardStyle: DashboardStyle = {
     text_style: "normal",
     section_spacing: 0,
     section_width: 100,
-    align_numbers: "left",
+    align_numbers: "right",
     row_separator: true,
     color_scheme: {
         profit: "greenBright",

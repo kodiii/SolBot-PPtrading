@@ -49,12 +49,12 @@ export function displayRecentTrades(trades: SimulatedTrade[], style: DashboardSt
             `${trade.buy_price.toString(8)}`.padStart(columnWidths[2]),
             `${trade.sell_price ? trade.sell_price.toString(8) : '-'}`.padStart(columnWidths[3]),
             `${trade.amount_token.toString(2)}`.padStart(columnWidths[4]),
-            `${timeFormat(trade.time_buy)}`.padEnd(columnWidths[5]),
-            `${trade.time_sell ? timeFormat(trade.time_sell) : '-'}`.padEnd(columnWidths[6]),
+            `${timeFormat(trade.time_buy)}`.padStart(columnWidths[5]),
+            `${trade.time_sell ? timeFormat(trade.time_sell) : '-'}`.padStart(columnWidths[6]),
             `${formatNumberWithCommas(trade.dex_data?.marketCap || 0)}`.padStart(columnWidths[7]),
             `${formatNumberWithCommas(trade.dex_data?.liquidity_buy_usd || 0)}`.padStart(columnWidths[8]),
             `${trade.time_sell ? formatNumberWithCommas(trade.dex_data?.liquidity_sell_usd || 0) : '-'}`.padStart(columnWidths[9]),
-            `${trade.pnl ? (trade.pnl.greaterThan(0) ? '+' + trade.pnl.toString(8) : trade.pnl.toString(8)) : '-'}`.padEnd(columnWidths[10])
+            `${trade.pnl ? (trade.pnl.greaterThan(0) ? '+' + trade.pnl.toString(8) : trade.pnl.toString(8)) : '-'}`.padStart(columnWidths[10])
         ];
     });
 
