@@ -25,13 +25,13 @@ export const config = {
     verbose_log: false, // Enable/disable detailed logging of DexScreener API responses
     initial_balance: 5, // Starting balance in SOL for paper trading
     dashboard_refresh: 1000, // Dashboard update interval (ms)
-    recent_trades_limit: 18, // Number of recent trades to display in dashboard
-    real_data_update: 5000, // Update real monitoring data (ms) for Volume, MarketCap, Liquidity, Price
+    recent_trades_limit: 5, // Number of recent trades to display in dashboard
     price_check: {
       max_retries: 15, // Maximum attempts to fetch token price from dex
       initial_delay: 3000, // Initial delay between price check attempts (ms)
       max_delay: 5000, // Maximum delay between Dex price retries (ms) from dex
-    }
+    },
+    real_data_update: 1500, // Update real monitoring data (ms) for Volume, MarketCap, Liquidity, Price 
   },
 
   // Price validation settings for paper trading
@@ -47,8 +47,15 @@ export const config = {
   swap: {
     verbose_log: false, // Enable/disable detailed swap operation logging
     prio_fee_max_lamports: 10000000, // Maximum priority fee (0.01 SOL)
+    // Transaction priority level:
+    // Min (0th percentile)
+    // Low (25th percentile)
+    // Medium (50th percentile)
+    // High (75th percentile)
+    // VeryHigh (95th percentile)
+    // UnsafeMax (100th percentile)
     prio_level: "medium", // Transaction priority level (medium/high/veryHigh)
-    amount: "500000000", // Swap amount in lamports (1000000000 = 0.01 SOL)
+    amount: "1000000000", // Swap amount in lamports (0.01 SOL)
     slippageBps: "200", // Maximum allowed slippage in basis points (2%)
     db_name_tracker_holdings: "src/tracker/holdings.db", // Database path for tracking holdings
     max_open_positions: 3, // Maximum number of concurrent swap positions
@@ -60,18 +67,36 @@ export const config = {
   sell: {
     price_source: "dex", // Price source preference (dex=DexScreener, jup=Jupiter)
     prio_fee_max_lamports: 10000000, // Maximum priority fee for sell transactions (0.01 SOL)
+    // Transaction priority level:
+    // Min (0th percentile)
+    // Low (25th percentile)
+    // Medium (50th percentile)
+    // High (75th percentile)
+    // VeryHigh (95th percentile)
+    // UnsafeMax (100th percentile)
     prio_level: "medium", // Sell transaction priority level
     slippageBps: "200", // Maximum allowed slippage for sells (2%)
     auto_sell: true, // Enable/disable automated sell triggers
     stop_loss_percent: 30, // Stop loss trigger percentage
-    take_profit_percent: 20, // Take profit trigger percentage
+    take_profit_percent: 26, // Take profit trigger percentage
     track_public_wallet: "", // Public wallet tracking address (optional)
   },
 
   // Rug pull protection and token validation settings
+  // Trading strategies configuration
+  strategies: {
+    liquidity_drop: {
+      enabled: true, // Enable/disable liquidity drop strategy
+      threshold_percent: 30, // Sell if liquidity drops by 20%
+      // Using paper_trading.real_data_update interval for consistency
+    }
+  },
+
   rug_check: {
     verbose_log: false, // Enable/disable detailed rug check logging
-    simulation_mode: true, // Enable paper trading simulation mode
+    simulation_mode: true, // Controls paper trading (true) vs real trading (false) mode
+    // When true, trades are simulated with virtual balance
+    // When false, real transactions are executed on-chain
     
     // High-risk security checks
     allow_mint_authority: false, // Allow tokens with active mint authority (high risk)
@@ -81,11 +106,13 @@ export const config = {
     
     // Critical security parameters
     allow_mutable: true, // Allow tokens with mutable metadata
-    block_returning_token_names: true, // Block tokens with previously seen names
+    block_returning_token_names: false, // Block tokens with previously seen names
     block_returning_token_creators: false, // Block tokens from known creators
     block_symbols: ["XXX"], // Blocked token symbols
     block_names: ["XXX"], // Blocked token names
-    only_contain_string: false, // Enable token name content filtering
+    // Enable token name content filtering, 
+    // if the token as this string it will skip the rugcheck filters and be sniped
+    only_contain_string: false, 
     contain_string: ["AI", "GPT", "AGENT"], // Required strings in token names
     
     // Holder distribution checks
@@ -97,7 +124,7 @@ export const config = {
     // Market validation thresholds
     min_total_markets: 0, // Minimum required trading markets
     min_total_lp_providers: 0, // Minimum required liquidity providers
-    min_total_market_Liquidity: 5000, // Minimum required market liquidity
+    min_total_market_Liquidity: 10000, // Minimum required market liquidity
     
     // Miscellaneous settings
     ignore_pump_fun: false, // Ignore Pump.fun tokens
