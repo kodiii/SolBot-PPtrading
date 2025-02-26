@@ -18,6 +18,8 @@ import {
   TokenTracking
 } from '../paper_trading';
 import { Decimal } from '../../utils/decimal';
+import { LiquidityDropStrategy } from '../strategies/liquidity-drop';
+import { IStrategy, MarketData } from '../strategies/types';
 
 /**
  * Interface representing the structure of a trading pair from DexScreener API
@@ -86,8 +88,45 @@ export class SimulationService {
   private LOG_THROTTLE_MS = 10000; // Only log once every 10 seconds per token
   private db: any; // Database connection instance
   private connectionManager: ConnectionManager;
+  private strategies: IStrategy[] = [];
+
+  /**
+   * Initialize trading strategies based on configuration
+   */
+  private initializeStrategies(): void {
+    if (config.strategies?.liquidity_drop?.enabled) {
+      this.strategies.push(new LiquidityDropStrategy(config.strategies.liquidity_drop));
+      console.log('📊 Liquidity Drop Strategy initialized');
+    }
+  }
+
+  /**
+   * Check all active strategies with current market data
+   * @param marketData Current market data for the token
+   */
+  private async checkStrategies(marketData: MarketData): Promise<void> {
+    for (const strategy of this.strategies) {
+      if (strategy.isEnabled()) {
+        try {
+          const result = await strategy.onMarketData(marketData);
+          if (result.shouldSell) {
+            const token = await getTrackedTokens().then(tokens =>
+              tokens.find(t => t.token_mint === marketData.token_mint)
+            );
+            if (token) {
+              await this.executeSell(token, result.reason || 'Strategy triggered sell');
+            }
+          }
+        } catch (error) {
+          console.error(`❌ Error in strategy ${strategy.getName()}:`, error);
+        }
+      }
+    }
+  }
 
   private constructor() {
+    // Initialize strategies
+    this.initializeStrategies();
     this.coinDeskUri = process.env.COINDESK_HTTPS_URI || "";
     this.updateSolPrice(); // Initial SOL price fetch
     setInterval(() => this.updateSolPrice(), 60000); // Update SOL price every minute
@@ -138,12 +177,13 @@ export class SimulationService {
               console.log(`📊 Market Data for ${token.token_name}:`);
               console.log(`   Volume (5m): $${priceData.dexData.volume_m5.toLocaleString()}`);
               console.log(`   Market Cap: $${priceData.dexData.marketCap.toLocaleString()}`);
+              console.log(`   Liquidity: $${priceData.dexData.liquidity_usd.toLocaleString()}`);
             }
           }
 
-          // Store market data in database
+          // Store market data and update price, then check strategies
           await this.db.run(
-            `UPDATE token_tracking 
+            `UPDATE token_tracking
              SET volume_m5 = ?,
                  market_cap = ?,
                  liquidity_usd = ?
@@ -158,7 +198,19 @@ export class SimulationService {
 
           const updatedToken = await updateTokenPrice(token.token_mint, priceData.price);
           if (updatedToken) {
+            // Check standard price targets (stop loss/take profit)
             await this.checkPriceTargets(updatedToken);
+
+            // Feed market data to active strategies
+            await this.checkStrategies({
+              token_mint: token.token_mint,
+              token_name: token.token_name,
+              current_price: priceData.price,
+              volume_m5: priceData.dexData?.volume_m5 || 0,
+              marketCap: priceData.dexData?.marketCap || 0,
+              liquidity_usd: priceData.dexData?.liquidity_usd || 0,
+              timestamp: Date.now()
+            });
           }
         }
       }
