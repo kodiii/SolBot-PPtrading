@@ -43,3 +43,4 @@ config.ts
 !README.md
 !Instructions.md
 !cline_docs/*.md
+!Strategies_Docs/**/*.md
