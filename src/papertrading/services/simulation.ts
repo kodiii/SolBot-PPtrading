@@ -510,9 +510,11 @@ export class SimulationService {
         { timeout: config.tx.get_timeout }
       );
 
-      if (response.data?.Data?.['SOL-USD']?.VALUE) {
-        const solPrice = response.data.Data['SOL-USD'].VALUE;
+      // Adjusted response parsing to match the actual Coindesk format
+      if (response.data?.solana?.usd) {
+        const solPrice = response.data.solana.usd;
         this.solUsdPrice = new Decimal(solPrice);
+        
         if (config.paper_trading.verbose_log) {
           console.log(`💰 Updated SOL price: $${this.solUsdPrice.toString()}`);
         }
@@ -531,7 +533,7 @@ export class SimulationService {
         console.error('❌ Error fetching SOL price:', error);
       }
     }
-  }
+}
 
   public getSolUsdPrice(): Decimal | null {
     return this.solUsdPrice;
