@@ -3,7 +3,7 @@ import dotenv from "dotenv";
 dotenv.config();
 
 import { config } from "../../config";
-import { ConnectionManager } from "../db/connection_manager";
+//import { ConnectionManager } from "../db/connection_manager";
 import { dashboardStyle, sectionConfigs } from './config/dashboard_style';
 import { displayVirtualBalance, displayActivePositions, displayRecentTrades, displayTradingStats } from './displays';
 import { resetPaperTrading, fetchDashboardData, validateConnection } from './dashboard-operations';

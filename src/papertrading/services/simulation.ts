@@ -21,6 +21,11 @@ import { Decimal } from '../../utils/decimal';
 import { LiquidityDropStrategy } from '../strategies/liquidity-drop';
 import { IStrategy, MarketData } from '../strategies/types';
 
+// Debug helper function to format timestamps consistently
+function formatTimestamp(timestamp: number): string {
+  return new Date(timestamp).toISOString();
+}
+
 /**
  * Interface representing the structure of a trading pair from DexScreener API
  * Contains detailed information about the trading pair including price, volume,
@@ -89,6 +94,14 @@ export class SimulationService {
   private db: any; // Database connection instance
   private connectionManager: ConnectionManager;
   private strategies: IStrategy[] = [];
+  private serviceId: string = `sim_service_${Date.now()}`;
+  private strategyCallCount: number = 0;
+  
+  // Check if debug is enabled for the simulation service
+  private isDebugEnabled(): boolean {
+    // Use global strategies debug setting
+    return config.strategies.debug || false;
+  }
 
   /**
    * Initialize trading strategies based on configuration
@@ -96,7 +109,7 @@ export class SimulationService {
   private initializeStrategies(): void {
     if (config.strategies?.liquidity_drop?.enabled) {
       this.strategies.push(new LiquidityDropStrategy(config.strategies.liquidity_drop));
-      console.log('📊 Liquidity Drop Strategy initialized');
+      console.log(`📊 [${this.serviceId}] Liquidity Drop Strategy initialized`);
     }
   }
 
@@ -105,11 +118,29 @@ export class SimulationService {
    * @param marketData Current market data for the token
    */
   private async checkStrategies(marketData: MarketData): Promise<void> {
+    const callId = ++this.strategyCallCount;
+    if (this.isDebugEnabled()) {
+      console.log(`🔍 [DEBUG][${this.serviceId}][Call:${callId}] Checking strategies for ${marketData.token_name} at ${formatTimestamp(marketData.timestamp)}`);
+    }
+    
     for (const strategy of this.strategies) {
       if (strategy.isEnabled()) {
         try {
+          if (this.isDebugEnabled()) {
+            console.log(`🔍 [DEBUG][${this.serviceId}][Call:${callId}] Calling strategy: ${strategy.getName()}`);
+          }
+          const startTime = Date.now();
           const result = await strategy.onMarketData(marketData);
+          const duration = Date.now() - startTime;
+          
+          if (this.isDebugEnabled()) {
+            console.log(`🔍 [DEBUG][${this.serviceId}][Call:${callId}] Strategy execution took ${duration}ms`);
+          }
+          
           if (result.shouldSell) {
+            if (this.isDebugEnabled()) {
+              console.log(`🔍 [DEBUG][${this.serviceId}][Call:${callId}] Strategy triggered sell signal: ${result.reason}`);
+            }
             const token = await getTrackedTokens().then(tokens =>
               tokens.find(t => t.token_mint === marketData.token_mint)
             );
@@ -118,9 +149,12 @@ export class SimulationService {
             }
           }
         } catch (error) {
-          console.error(`❌ Error in strategy ${strategy.getName()}:`, error);
+          console.error(`❌ [ERROR][${this.serviceId}][Call:${callId}] Error in strategy ${strategy.getName()}:`, error);
         }
       }
+    }
+    if (this.isDebugEnabled()) {
+      console.log(`🔍 [DEBUG][${this.serviceId}][Call:${callId}] Strategy checks completed for ${marketData.token_name}`);
     }
   }
 
@@ -141,10 +175,10 @@ export class SimulationService {
     // Get database connection
     this.connectionManager.getConnection().then(db => {
       this.db = db;
-      console.log('🎮 Paper Trading Service initialized successfully');
+      console.log(`🎮 [${this.serviceId}] Paper Trading Service initialized successfully`);
       this.startPriceTracking();
     }).catch(error => {
-      console.error('❌ Failed to get database connection:', error);
+      console.error(`❌ [ERROR][${this.serviceId}] Failed to get database connection:`, error);
     });
   }
 
@@ -164,9 +198,27 @@ export class SimulationService {
    * Polls prices every 5 seconds and triggers price target checks
    */
   private async startPriceTracking(): Promise<void> {
+    if (this.isDebugEnabled()) {
+      console.log(`🔍 [DEBUG][${this.serviceId}] Starting price tracking with interval: ${config.paper_trading.real_data_update}ms`);
+    }
+    
     this.priceCheckInterval = setInterval(async () => {
+      const startTime = Date.now();
+      if (this.isDebugEnabled()) {
+        console.log(`🔍 [DEBUG][${this.serviceId}] Price check cycle started at ${formatTimestamp(startTime)}`);
+      }
+      
       const tokens = await getTrackedTokens();
+      if (this.isDebugEnabled()) {
+        console.log(`🔍 [DEBUG][${this.serviceId}] Checking prices for ${tokens.length} tokens`);
+      }
+      
       for (const token of tokens) {
+        const tokenStartTime = Date.now();
+        if (this.isDebugEnabled()) {
+          console.log(`🔍 [DEBUG][${this.serviceId}] Processing token: ${token.token_name} (${token.token_mint.substring(0, 8)}...)`);
+        }
+        
         const priceData = await this.getTokenPrice(token.token_mint);
         if (priceData && priceData.price) {
           // Log market metrics only when there are significant changes
@@ -182,6 +234,11 @@ export class SimulationService {
           }
 
           // Store market data and update price, then check strategies
+          if (this.isDebugEnabled()) {
+            console.log(`🔍 [DEBUG][${this.serviceId}] Updating market data in database for ${token.token_name}`);
+          }
+          const dbUpdateStart = Date.now();
+          
           await this.db.run(
             `UPDATE token_tracking
              SET volume_m5 = ?,
@@ -195,6 +252,10 @@ export class SimulationService {
               token.token_mint
             ]
           );
+          
+          if (this.isDebugEnabled()) {
+            console.log(`🔍 [DEBUG][${this.serviceId}] Database update took ${Date.now() - dbUpdateStart}ms`);
+          }
 
           const updatedToken = await updateTokenPrice(token.token_mint, priceData.price);
           if (updatedToken) {
@@ -202,6 +263,9 @@ export class SimulationService {
             await this.checkPriceTargets(updatedToken);
 
             // Feed market data to active strategies
+            if (this.isDebugEnabled()) {
+              console.log(`🔍 [DEBUG][${this.serviceId}] Feeding market data to strategies for ${token.token_name}`);
+            }
             await this.checkStrategies({
               token_mint: token.token_mint,
               token_name: token.token_name,
@@ -213,7 +277,23 @@ export class SimulationService {
             });
           }
         }
+        
+        const tokenProcessingTime = Date.now() - tokenStartTime;
+        if (this.isDebugEnabled()) {
+          console.log(`🔍 [DEBUG][${this.serviceId}] Token ${token.token_name} processing took ${tokenProcessingTime}ms`);
+        }
       }
+      
+      const cycleDuration = Date.now() - startTime;
+      if (this.isDebugEnabled()) {
+        console.log(`🔍 [DEBUG][${this.serviceId}] Price check cycle completed in ${cycleDuration}ms`);
+      }
+      
+      // Check if processing is taking longer than the interval
+      if (cycleDuration > config.paper_trading.real_data_update) {
+        console.warn(`⚠️ [WARN][${this.serviceId}] Price check cycle took longer than update interval: ${cycleDuration}ms > ${config.paper_trading.real_data_update}ms`);
+      }
+      
     }, config.paper_trading.real_data_update);
   }
 
@@ -241,7 +321,7 @@ export class SimulationService {
       // Only log if enough time has passed since last log
       if (now - lastLog > this.LOG_THROTTLE_MS) {
         if (attempt > 1) {
-          console.log(`🔍 Fetching price (Attempt ${attempt}/${config.paper_trading.price_check.max_retries}) for token: ${tokenMint}`);
+          console.log(`🔍 [${this.serviceId}] Fetching price (Attempt ${attempt}/${config.paper_trading.price_check.max_retries}) for token: ${tokenMint}`);
         }
         this.lastLogTime.set(tokenMint, now);
       }
@@ -269,10 +349,10 @@ export class SimulationService {
             }
           };
         }
-        console.log('⚠️ No Raydium pair found');
+        console.log(`⚠️ [${this.serviceId}] No Raydium pair found`);
       }
 
-      // If we haven't exceeded max retries and response indicates no pairs yet
+      // If we haven't exceeded max retries
       if (retryCount < config.paper_trading.price_check.max_retries - 1) {
         const delayMs = Math.min(
           config.paper_trading.price_check.initial_delay * Math.pow(1.5, retryCount),

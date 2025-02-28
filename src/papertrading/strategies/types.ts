@@ -12,6 +12,7 @@ export interface BaseStrategyConfig {
  */
 export interface LiquidityDropStrategyConfig extends BaseStrategyConfig {
   threshold_percent: number;
+  debug?: boolean; // Optional debug flag that overrides global setting
 }
 
 /**
