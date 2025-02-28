@@ -1,3 +1,4 @@
+import chalk, { ChalkFunction } from 'chalk';
 import { DashboardStyle, sectionConfigs } from '../config/dashboard_style';
 import { TradingStats } from '../types';
 import { displayTable } from './table-display';
@@ -36,7 +37,7 @@ export function displayTradingStats(stats: TradingStats, style: DashboardStyle):
         rows.push([`Best Trade: ${stats.bestTrade.token} (${formatNumberWithCommas(stats.bestTrade.profit.toString())} SOL)`]);
     }
     if (!stats.worstTrade.profit.equals(new Decimal(Infinity))) {
-        rows.push([`Worst Trade: ${stats.worstTrade.token} (${formatNumberWithCommas(stats.worstTrade.profit.toString())} SOL)`]);
+        rows.push([`Worst Trade: ${chalk.redBright(`${stats.worstTrade.token} (${formatNumberWithCommas(stats.worstTrade.profit.toString())} SOL)`)}`]);
     }
 
     // Format rows to match column width
