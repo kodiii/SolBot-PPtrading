@@ -27,6 +27,7 @@
   "dependencies": {
     "@project-serum/anchor": "^0.26.0",
     "@solana/web3.js": "^1.87.6",
+    "@triton-one/yellowstone-grpc": "^3.0.0",
     "@types/axios": "^0.14.4",
     "@types/bignumber.js": "^5.0.4",
     "@types/sqlite3": "^3.1.11",

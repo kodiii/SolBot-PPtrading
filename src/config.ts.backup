@@ -81,7 +81,6 @@ export const config = {
     take_profit_percent: 26, // Take profit trigger percentage
     track_public_wallet: "", // Public wallet tracking address (optional)
   },
-
   // Rug pull protection and token validation settings
   // Trading strategies configuration
   strategies: {
