@@ -375,7 +375,7 @@ export async function getRugCheckConfirmed(tokenMint: string, retryCount = 0): P
     if (!rugResponse.data) return false;
 
     if (config.rug_check.verbose_log && config.rug_check.verbose_log === true) {
-      console.log(rugResponse.data);
+      console.log("Full token report:", rugResponse.data);
     }
 
     // Extract information
@@ -392,8 +392,33 @@ export async function getRugCheckConfirmed(tokenMint: string, retryCount = 0): P
     let topHolders = tokenReport.topHolders;
     const marketsLength = tokenReport.markets ? tokenReport.markets.length : 0;
     const totalLPProviders = tokenReport.totalLPProviders;
-    const totalMarketLiquidity = tokenReport.totalMarketLiquidity;
+    const totalMarketLiquidity = Number(tokenReport.totalMarketLiquidity) || 0;
+    const price = Number(tokenReport.price) || 0;
+    const supply = tokenReport.token.supply / Math.pow(10, tokenReport.token.decimals);
+    const marketCap = price * supply;
     const isRugged = tokenReport.rugged;
+
+    // Validate market liquidity values and economics
+    if (config.rug_check.verbose_log) {
+      console.log("Economic Data Check:");
+      console.log("- Market Liquidity:", {
+        raw: tokenReport.totalMarketLiquidity,
+        parsed: totalMarketLiquidity,
+        max: config.rug_check.max_total_market_Liquidity
+      });
+      console.log("- Token Price:", {
+        raw: tokenReport.price,
+        parsed: price,
+        max: config.rug_check.max_price_token
+      });
+      console.log("- Market Cap:", {
+        supply: tokenReport.token.supply,
+        decimals: tokenReport.token.decimals,
+        calculatedSupply: supply,
+        calculatedMarketCap: marketCap,
+        max: config.rug_check.max_marketcap
+      });
+    }
     const rugScore = tokenReport.score;
     const rugRisks = tokenReport.risks
       ? tokenReport.risks
@@ -406,6 +431,12 @@ export async function getRugCheckConfirmed(tokenMint: string, retryCount = 0): P
             level: "good",
           },
         ];
+
+    if (config.rug_check.verbose_log && config.rug_check.verbose_log === true) {
+      console.log("Extracted values:");
+      console.log("- Total market liquidity:", totalMarketLiquidity);
+      console.log("- Max market liquidity:", config.rug_check.max_total_market_Liquidity);
+    }
 
     // Update topholders if liquidity pools are excluded
     if (config.rug_check.exclude_lp_from_topholders) {
@@ -479,6 +510,18 @@ export async function getRugCheckConfirmed(tokenMint: string, retryCount = 0): P
       {
         check: totalMarketLiquidity < rugCheckConfig.min_total_market_Liquidity,
         message: "🚫 Not enough Market Liquidity.",
+      },
+      {
+        check: totalMarketLiquidity > rugCheckConfig.max_total_market_Liquidity,
+        message: `🚫 Market Liquidity (${totalMarketLiquidity}) exceeds maximum limit (${rugCheckConfig.max_total_market_Liquidity}).`,
+      },
+      {
+        check: marketCap > rugCheckConfig.max_marketcap,
+        message: `🚫 Market Cap ($${marketCap.toFixed(2)}) exceeds maximum limit ($${rugCheckConfig.max_marketcap}).`,
+      },
+      {
+        check: price > rugCheckConfig.max_price_token,
+        message: `🚫 Token price (${price.toFixed(9)} SOL) exceeds maximum limit (${rugCheckConfig.max_price_token} SOL).`,
       },
       {
         check: !rugCheckConfig.allow_rugged && isRugged, //true

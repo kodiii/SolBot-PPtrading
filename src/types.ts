@@ -105,6 +105,7 @@ export interface RugResponseExtended {
   totalMarketLiquidity: number;  // Total liquidity across all markets
   totalLPProviders: number;      // Total number of LP providers
   rugged: boolean;               // Whether token is considered rugged
+  price: number;                 // Token price in SOL
 }
 
 /**

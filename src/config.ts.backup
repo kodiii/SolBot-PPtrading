@@ -25,7 +25,7 @@ export const config = {
     verbose_log: false, // Enable/disable detailed logging of DexScreener API responses
     initial_balance: 5, // Starting balance in SOL for paper trading
     dashboard_refresh: 2000, // Faster refresh rate for more responsive UI
-    recent_trades_limit: 5, // Number of recent trades to display in dashboard
+    recent_trades_limit: 12, // Number of recent trades to display in dashboard
     price_check: {
       max_retries: 15, // Maximum attempts to fetch token price from dex
       initial_delay: 3000, // Initial delay between price check attempts (ms)
@@ -55,7 +55,7 @@ export const config = {
     // VeryHigh (95th percentile)
     // UnsafeMax (100th percentile)
     prio_level: "medium", // Transaction priority level (medium/high/veryHigh)
-    amount: "1000000000", // Swap amount in lamports (0.01 SOL)
+    amount: "500000000", // Swap amount in lamports (0.01 SOL)
     slippageBps: "200", // Maximum allowed slippage in basis points (2%)
     db_name_tracker_holdings: "src/tracker/holdings.db", // Database path for tracking holdings
     max_open_positions: 3, // Maximum number of concurrent swap positions
@@ -114,13 +114,14 @@ export const config = {
     block_returning_token_creators: false, // Block tokens from known creators
     block_symbols: ["XXX"], // Blocked token symbols
     block_names: ["XXX"], // Blocked token names
+    
     // Enable token name content filtering, 
     // if the token as this string it will skip the rugcheck filters and be sniped
     only_contain_string: false, 
     contain_string: ["AI", "GPT", "AGENT"], // Required strings in token names
     
     // Holder distribution checks
-    allow_insider_topholders: false, // Allow insider accounts in top holders
+    allow_insider_topholders: true, // Allow insider accounts in top holders
     max_alowed_pct_topholders: 50, // Maximum percentage for single top holder
     max_alowed_pct_all_topholders: 50, // Maximum total percentage for all top holders
     exclude_lp_from_topholders: true, // Exclude LP accounts from holder calculations
@@ -128,7 +129,10 @@ export const config = {
     // Market validation thresholds
     min_total_markets: 0, // Minimum required trading markets
     min_total_lp_providers: 0, // Minimum required liquidity providers
-    min_total_market_Liquidity: 5000, // Minimum required market liquidity
+    min_total_market_Liquidity: 30000, // Minimum required market liquidity
+    max_total_market_Liquidity: 100000, // Maximum required market liquidity
+    max_marketcap: 25000000, // Maximum allowed market cap in $
+    max_price_token: 0.0001, // Maximum allowed token price in $
     
     // Miscellaneous settings
     ignore_pump_fun: false, // Ignore Pump.fun tokens
