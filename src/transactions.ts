@@ -435,7 +435,7 @@ export async function getRugCheckConfirmed(tokenMint: string, retryCount = 0): P
     const conditions = [
       // Token name content filtering
       {
-        check: rugCheckConfig.only_contain_string && !rugCheckConfig.contain_string.some((str: string) =>
+        check: rugCheckConfig.only_contain_string && !rugCheckConfig.contain_string.some(str =>
           tokenName.toUpperCase().includes(str.toUpperCase())
         ),
         message: `🚫 Token name must contain one of: ${rugCheckConfig.contain_string.join(", ")}`,
