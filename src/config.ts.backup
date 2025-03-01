@@ -24,14 +24,14 @@ export const config = {
   paper_trading: {
     verbose_log: false, // Enable/disable detailed logging of DexScreener API responses
     initial_balance: 5, // Starting balance in SOL for paper trading
-    dashboard_refresh: 1000, // Dashboard update interval (ms)
+    dashboard_refresh: 2000, // Faster refresh rate for more responsive UI
     recent_trades_limit: 5, // Number of recent trades to display in dashboard
     price_check: {
       max_retries: 15, // Maximum attempts to fetch token price from dex
       initial_delay: 3000, // Initial delay between price check attempts (ms)
       max_delay: 5000, // Maximum delay between Dex price retries (ms) from dex
     },
-    real_data_update: 1500, // Update real monitoring data (ms) for Volume, MarketCap, Liquidity, Price 
+    real_data_update: 5000, // Market data & strategy update interval (ms)
   },
 
   // Price validation settings for paper trading
@@ -85,10 +85,14 @@ export const config = {
   // Rug pull protection and token validation settings
   // Trading strategies configuration
   strategies: {
+    // Global debug setting for all strategies
+    debug: false, // When true, enables debug logging for all strategies unless overridden
+    
     liquidity_drop: {
       enabled: true, // Enable/disable liquidity drop strategy
-      threshold_percent: 30, // Sell if liquidity drops by 20%
+      threshold_percent: 20, // Sell if liquidity drops by 20%
       // Using paper_trading.real_data_update interval for consistency
+      debug: false, // Strategy-specific debug setting (overrides global setting)
     }
   },
 
@@ -124,11 +128,11 @@ export const config = {
     // Market validation thresholds
     min_total_markets: 0, // Minimum required trading markets
     min_total_lp_providers: 0, // Minimum required liquidity providers
-    min_total_market_Liquidity: 10000, // Minimum required market liquidity
+    min_total_market_Liquidity: 5000, // Minimum required market liquidity
     
     // Miscellaneous settings
     ignore_pump_fun: false, // Ignore Pump.fun tokens
-    max_score: 15000, // Maximum allowed rug pull risk score (0 to disable)
+    max_score: 30000, // Maximum allowed rug pull risk score (0 to disable)
     
     // Legacy risk checks to enforce
     legacy_not_allowed: [
