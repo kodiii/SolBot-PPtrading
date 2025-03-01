@@ -1,4 +1,4 @@
-import chalk, { ChalkFunction } from 'chalk';
+//import chalk, { ChalkFunction } from 'chalk';
 import { DashboardStyle, sectionConfigs } from '../config/dashboard_style';
 import { TradingStats } from '../types';
 import { displayTable } from './table-display';
