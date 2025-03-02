@@ -497,13 +497,14 @@ export class SimulationService {
     });
 
     if (success) {
-      console.log(`🎯 Simulated slippage: ${randomSlippage.multiply(100).toString(4)}%`);
-      console.log(`🎮 Paper Trade: Bought ${amountTokens.toString(8)} ${tokenName} tokens`);
-      console.log(`💰 Original price: ${currentPrice.toString(8)} SOL`);
-      console.log(`💰 Price with slippage: ${priceWithSlippage.toString(8)} SOL`);
-      console.log(`🏦 Total spent: ${amountInSol.toString(8)} SOL (+ ${fees.toString(8)} SOL fees)`);
-      return true;
-    }
+     console.log(`🎯 Simulated slippage: ${randomSlippage.multiply(100).toString(4)}%`);
+     console.log(`🎮 Paper Trade: Bought ${amountTokens.toString(8)} ${tokenName} tokens`);
+     console.log(`💰 Final price after ${randomSlippage.multiply(100).toString(4)}% slippage:`);
+     console.log(`   Original: ${currentPrice.toString(8)} SOL`);
+     console.log(`   Adjusted w/slippage: ${priceWithSlippage.toString(8)} SOL`);
+     console.log(`🏦 Total spent: ${amountInSol.toString(8)} SOL (+ ${fees.toString(8)} SOL fees)`);
+     return true;
+   }
 
     return false;
   }
@@ -565,8 +566,9 @@ export class SimulationService {
     if (success) {
       console.log(`🎮 Paper Trade: ${reason}`);
       console.log(`📈 Sold ${token.amount.toString(8)} ${token.token_name} tokens`);
-      console.log(`💰 Original price: ${token.current_price.toString(8)} SOL`);
-      console.log(`💰 Price with slippage: ${priceWithSlippage.toString(8)} SOL`);
+      console.log(`💰 Final price after ${randomSlippage.multiply(100).toString(4)}% slippage:`);
+      console.log(`   Original: ${token.current_price.toString(8)} SOL`);
+      console.log(`   Adjusted w/slippage: ${priceWithSlippage.toString(8)} SOL`);
       console.log(`🏦 Total received: ${amountInSol.toString(8)} SOL (- ${fees.toString(8)} SOL fees)`);
       return true;
     }
