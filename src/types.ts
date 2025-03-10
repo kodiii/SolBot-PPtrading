@@ -416,5 +416,118 @@ export interface RollingAverageConfig {
   minDataPoints: number;  // Minimum required data points
 }
 
+export type PriorityLevel = "min" | "low" | "medium" | "high" | "veryHigh" | "custom" | "unsafeMax";
+
 // Update to reflect an array of transactions
 export type TransactionDetailsResponseArray = TransactionDetailsResponse[];
+
+export interface FeeConfig {
+  mode: "dynamic" | "fixed";
+  dynamicOptions: {
+    percentile: number;     // 0-100, typically 75 for 75th percentile
+    multiplier: number;     // e.g., 1.1 for 10% safety margin
+    maxAgeSec: number;      // Maximum age of fees to consider
+    minFee: number;        // Minimum fee in lamports
+  };
+  fixedOptions: {
+    prio_fee_max_lamports: number;
+    prio_level: PriorityLevel;
+  };
+}
+
+/**
+ * Configuration interface for the complete system
+ * @interface Config
+ */
+export interface Config {
+  liquidity_pool: {
+    radiyum_program_id: string;
+    wsol_pc_mint: string;
+  };
+  tx: {
+    fetch_tx_max_retries: number;
+    fetch_tx_initial_delay: number;
+    swap_tx_initial_delay: number;
+    get_timeout: number;
+    concurrent_transactions: number;
+    retry_delay: number;
+  };
+  paper_trading: {
+    verbose_log: boolean;
+    initial_balance: number;
+    dashboard_refresh: number;
+    recent_trades_limit: number;
+    price_check: {
+      max_retries: number;
+      initial_delay: number;
+      max_delay: number;
+    };
+    real_data_update: number;
+  };
+  price_validation: {
+    enabled: boolean;
+    window_size: number;
+    max_deviation: number;
+    min_data_points: number;
+    fallback_to_single_source: boolean;
+  };
+  swap: {
+    verbose_log: boolean;
+    prio_fee_max_lamports: number;
+    prio_level: PriorityLevel;
+    amount: string;
+    slippageBps: string;
+    db_name_tracker_holdings: string;
+    max_open_positions: number;
+    token_not_tradable_400_error_retries: number;
+    token_not_tradable_400_error_delay: number;
+    fees: FeeConfig;
+  };
+  sell: {
+    price_source: "dex" | "jup";
+    prio_fee_max_lamports: number;
+    prio_level: PriorityLevel;
+    slippageBps: string;
+    auto_sell: boolean;
+    stop_loss_percent: number;
+    take_profit_percent: number;
+    track_public_wallet: string;
+    fees: FeeConfig;
+  };
+  strategies: {
+    debug: boolean;
+    liquidity_drop: {
+      enabled: boolean;
+      threshold_percent: number;
+      debug: boolean;
+    };
+  };
+  rug_check: {
+    verbose_log: boolean;
+    simulation_mode: boolean;
+    allow_mint_authority: boolean;
+    allow_not_initialized: boolean;
+    allow_freeze_authority: boolean;
+    allow_rugged: boolean;
+    allow_mutable: boolean;
+    block_returning_token_names: boolean;
+    block_returning_token_creators: boolean;
+    block_symbols: string[];
+    block_names: string[];
+    only_contain_string: boolean;
+    contain_string: string[];
+    allow_insider_topholders: boolean;
+    max_alowed_pct_topholders: number;
+    max_alowed_pct_all_topholders: number;
+    exclude_lp_from_topholders: boolean;
+    min_total_markets: number;
+    min_total_lp_providers: number;
+    min_total_market_Liquidity: number;
+    max_total_market_Liquidity: number;
+    max_marketcap: number;
+    max_price_token: number;
+    max_score: number;
+    ignore_pump_fun: boolean;
+    legacy_not_allowed: string[];
+  };
+}

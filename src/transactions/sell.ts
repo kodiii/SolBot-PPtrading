@@ -14,6 +14,7 @@ import {
   createSellTransactionResponse
 } from "../types";
 import { removeHolding } from "../tracker/db";
+import { calculateTransactionFee } from "../utils/fees";
 
 export async function createSellTransaction(
   solMint: string,
@@ -36,11 +37,16 @@ export async function createSellTransaction(
     // Get sell quote
     const quoteResponse = await getSellQuote(quoteUrl, tokenMint, solMint, amount);
     
+    // Calculate transaction fee based on mode (dynamic/fixed)
+    const feeInfo = await calculateTransactionFee(connection, config);
+    console.log(`Using ${config.sell.fees.mode} fee calculation:`, feeInfo);
+
     // Create and serialize swap transaction
     const swapTransaction = await createSwapTransaction(
       swapUrl,
       quoteResponse,
-      myWallet.publicKey.toString()
+      myWallet.publicKey.toString(),
+      feeInfo
     );
 
     // Process and send transaction
@@ -120,7 +126,8 @@ async function getSellQuote(
 async function createSwapTransaction(
   url: string,
   quoteResponse: QuoteResponse,
-  publicKey: string
+  publicKey: string,
+  feeInfo: { maxLamports: number; priorityLevel: string }
 ): Promise<SerializedQuoteResponse> {
   const response = await axios.post<SerializedQuoteResponse>(
     url,
@@ -132,10 +139,7 @@ async function createSwapTransaction(
         maxBps: 300,
       },
       prioritizationFeeLamports: {
-        priorityLevelWithMaxLamports: {
-          maxLamports: config.sell.prio_fee_max_lamports,
-          priorityLevel: config.sell.prio_level,
-        },
+        priorityLevelWithMaxLamports: feeInfo,
       },
     }),
     {
