@@ -3,9 +3,14 @@
  * Handles validation and execution of transactions
  */
 
+import { Connection, Keypair } from "@solana/web3.js";
+import { Wallet } from "@project-serum/anchor";
+import bs58 from "bs58";
 import { config } from "../config";
 import { SimulationService } from "../papertrading/services";
 import { fetchTransactionDetails, createSwapTransaction, getRugCheckConfirmed, fetchAndSaveSwapDetails } from "../transactions";
+import { checkWalletBalance } from "../utils/wallet-checks";
+import { TRADING_MODE } from "../system/initializer";
 
 // Initialize paper trading simulation service if enabled in config
 const simulationService = config.rug_check.simulation_mode ? SimulationService.getInstance() : null;
@@ -16,6 +21,7 @@ const simulationService = config.rug_check.simulation_mode ? SimulationService.g
  * @param signature - Transaction signature to process
  */
 export async function processTransaction(signature: string): Promise<void> {
+  console.log("\n[" + TRADING_MODE + "] Processing new transaction...");
   console.log("=============================================");
   console.log("🔎 New Liquidity Pool found.");
   console.log("🔃 Fetching transaction details ...");
@@ -83,20 +89,43 @@ async function handlePaperTrading(tokenMint: string): Promise<void> {
  * @param tokenMint - Token mint address
  */
 async function handleRealTrading(solMint: string, tokenMint: string): Promise<void> {
-  await new Promise((resolve) => setTimeout(resolve, config.tx.swap_tx_initial_delay));
+  try {
+    // Add initial delay
+    await new Promise((resolve) => setTimeout(resolve, config.tx.swap_tx_initial_delay));
 
-  const tx = await createSwapTransaction(solMint, tokenMint);
-  if (!tx) {
-    console.log("⛔ Transaction aborted.");
+    // Initialize connection and wallet
+    const rpcUrl = process.env.HELIUS_HTTPS_URI || "";
+    const connection = new Connection(rpcUrl);
+    const wallet = new Wallet(Keypair.fromSecretKey(bs58.decode(process.env.PRIV_KEY_WALLET || "")));
+
+    // Always check balance before proceeding with real trades
+    const balance = await connection.getBalance(wallet.publicKey);
+    const balanceInSOL = balance / 1_000_000_000;
+    console.log(`\n💰 Current wallet balance: ${balanceInSOL.toFixed(4)} SOL`);
+
+    // Verify sufficient balance
+    if (!await checkWalletBalance(connection, wallet)) {
+      console.log("⛔ Transaction aborted due to insufficient balance.");
+      console.log("🟢 Resuming looking for new tokens...\n");
+      return;
+    }
+
+    const tx = await createSwapTransaction(solMint, tokenMint);
+    if (!tx) {
+      console.log("⛔ Transaction aborted.");
+      console.log("🟢 Resuming looking for new tokens...\n");
+      return;
+    }
+
+    console.log("🚀 Swapping SOL for Token.");
+    console.log("Swap Transaction: ", "https://solscan.io/tx/" + tx);
+
+    const saveConfirmation = await fetchAndSaveSwapDetails(tx);
+    if (!saveConfirmation) {
+      console.log("❌ Warning: Transaction not saved for tracking! Track Manually!");
+    }
+  } catch (error) {
+    console.error("[Real Trading Mode] Error:", error);
     console.log("🟢 Resuming looking for new tokens...\n");
-    return;
-  }
-
-  console.log("🚀 Swapping SOL for Token.");
-  console.log("Swap Transaction: ", "https://solscan.io/tx/" + tx);
-
-  const saveConfirmation = await fetchAndSaveSwapDetails(tx);
-  if (!saveConfirmation) {
-    console.log("❌ Warning: Transaction not saved for tracking! Track Manually!");
   }
 }

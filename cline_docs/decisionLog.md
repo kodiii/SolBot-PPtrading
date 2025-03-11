@@ -1,62 +1,100 @@
 # Decision Log
 
-## Trading Mode Implementation (2025-03-10)
+## Enhanced Wallet Balance Validation (2025-03-11)
 
 ### Decision
-Implemented clear visual distinction between Paper Trading and Real Trading modes with consistent UI feedback throughout the application.
+Implemented comprehensive wallet balance validation at multiple levels to prevent transactions without sufficient funds.
 
 ### Context
-- Users needed clear indication of trading mode to prevent accidental real trades
-- System required consistent mode indicators across all operations
-- Safety warnings needed for real trading mode
-
-### Options Considered
-1. Simple console log at startup
-2. Continuous mode indicator in logs
-3. **Chosen: Comprehensive mode indication system** ✅
-   - Banner at startup
-   - Mode indicator in logs
-   - Warning messages for real trading
-   - Mode context in error messages
+- System was processing transactions without proper balance checks
+- Real trading mode needed stricter validation
+- Balance information wasn't clearly visible
 
 ### Implementation Details
-1. Code Structure:
-   - Split into modular components
-   - Separated concerns for better maintainability
-   - Improved type safety
+1. System Initialization Check:
+   - Validates wallet at startup
+   - Shows current balance
+   - Prevents system start if balance insufficient
 
-2. User Interface:
-   - Clear mode banner at startup
-   - Consistent mode indicators in logs
-   - Mode-specific warnings and instructions
+2. Transaction Processing Check:
+   - Re-validates balance before each trade
+   - Shows current balance with transaction
+   - Includes fee estimation
 
-3. Technical Implementation:
-   - Added global TRADING_MODE constant
-   - Enhanced error handling with mode context
-   - Improved type definitions
+3. Error Handling:
+   - Clear error messages
+   - Balance display in logs
+   - Mode-specific feedback
 
 ### Benefits
-- Prevents mode confusion
-- Reduces risk of accidental real trades
-- Improves user experience
-- Better code organization
-
-### Risks Mitigated
-- Accidental real trading in test environment
-- Mode confusion during operation
-- Unclear error context
+- Prevents failed transactions
+- Clear user feedback
+- Better error prevention
+- Consistent validation
 
 ### Future Considerations
-1. Add mode switch command for testing
-2. Enhance UI indicators in dashboard
-3. Add mode persistence between sessions
+- Add periodic balance checks
+- Implement balance alerts
+- Add auto-retry mechanism
+
+## Modular System Architecture (2025-03-11)
+
+### Decision
+Split system initialization and wallet validation into separate modules for better organization and maintainability.
+
+### Context
+- Code was becoming too complex
+- Files exceeded line limits
+- Needed better separation of concerns
+
+### Implementation
+1. Created new modules:
+   - src/system/initializer.ts
+   - src/utils/wallet-checks.ts
+
+2. Functionality split:
+   - System initialization logic
+   - Wallet validation
+   - Balance checking
+
+3. Benefits:
+   - Better code organization
+   - Improved maintainability
+   - Clearer responsibilities
+
+### Technical Details
+1. Initialization Flow:
+   ```typescript
+   validateEnv() -> initializeSystem() -> initializeWallet()
+   ```
+
+2. Balance Checks:
+   ```typescript
+   checkWalletBalance() -> calculateRequiredAmount()
+   ```
+
+3. Trading Flow:
+   ```typescript
+   processTransaction() -> handleRealTrading() -> checkWalletBalance()
+   ```
+
+### Risks Mitigated
+- System starting without funds
+- Failed transactions
+- Unclear error states
 
 ## Next Steps
-1. Implement liquidity monitoring strategy
-2. Enhance price validation
-3. Update dashboard with new features
+1. Transaction Fee Enhancement
+   - Improve fee estimation
+   - Dynamic fee adjustment
+   - Better fee logging
 
-## Notes
-- All code changes are backward compatible
-- Documentation updated
-- Tests passing
+2. Balance Monitoring
+   - Add periodic checks
+   - Implement alerts
+   - Configure thresholds
+
+3. Error Recovery
+   - Add retry mechanism
+   - Improve error handling
+   - Better error feedback

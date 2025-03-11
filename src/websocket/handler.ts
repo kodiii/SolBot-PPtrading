@@ -4,18 +4,15 @@
  */
 
 import WebSocket from "ws";
-import { config } from "../config";
-import { WebSocketRequest } from "../types";
 import { validateEnv } from "../utils/env-validator";
-import { SimulationService } from "../papertrading/services";
-import { ConnectionManager } from "../papertrading/db/connection_manager";
-import { initializePaperTradingDB } from "../papertrading/paper_trading";
+import { WebSocketRequest } from "../types";
+import { config } from "../config";
 import { processTransaction } from "./transaction-processor";
+import { initializeSystem, TRADING_MODE } from "../system/initializer";
 
 // Transaction concurrency management
 let activeTransactions = 0;
 const MAX_CONCURRENT = config.tx.concurrent_transactions;
-const TRADING_MODE = config.rug_check.simulation_mode ? "Paper Trading" : "Real Trading";
 
 /**
  * Sends a subscription request to the WebSocket to monitor Raydium program logs
@@ -38,47 +35,16 @@ function sendSubscribeRequest(ws: WebSocket): void {
 }
 
 /**
- * Initializes the trading system
- * Sets up database connections and logs the current trading mode
- */
-async function initializeSystem(): Promise<void> {
-  // Display trading mode banner
-  console.clear();
-  console.log('=============================================');
-  console.log(`             ${TRADING_MODE} Mode`);
-  console.log('=============================================');
-
-  const connectionManager = ConnectionManager.getInstance("src/papertrading/db/paper_trading.db");
-  await connectionManager.initialize();
-  
-  const dbSuccess = await initializePaperTradingDB();
-  if (!dbSuccess) {
-    console.error('Failed to initialize paper trading database');
-    process.exit(1);
-  }
-  
-  // Log trading mode details
-  if (config.rug_check.simulation_mode) {
-    console.log('\n🎮 Operating in Paper Trading Mode (Simulation)');
-    console.log('💡 All trades will be simulated with no real transactions');
-    SimulationService.getInstance();
-    console.log('🎯 Paper Trading Simulation Mode initialized');
-  } else {
-    console.log('\n🚀 Operating in Real Trading Mode');
-    console.log('⚠️  WARNING: Real transactions will be executed with actual SOL');
-    console.log('💰 Make sure you have sufficient funds in your wallet');
-  }
-  console.log('=============================================\n');
-}
-
-let init = false;
-
-/**
  * Main WebSocket handler that manages the connection lifecycle
  */
 export async function websocketHandler(): Promise<void> {
   const env = validateEnv();
-  await initializeSystem();
+  const systemInitialized = await initializeSystem();
+  
+  if (!systemInitialized) {
+    console.error('System initialization failed. Exiting...');
+    process.exit(1);
+  }
 
   let ws: WebSocket | null = new WebSocket(env.HELIUS_WSS_URI);
 
@@ -86,7 +52,6 @@ export async function websocketHandler(): Promise<void> {
   ws.on("open", () => {
     if (ws) sendSubscribeRequest(ws);
     console.log(`\n🔓 WebSocket is open and listening (${TRADING_MODE} Mode)`);
-    init = true;
   });
 
   // Handle incoming messages
@@ -122,9 +87,6 @@ export async function websocketHandler(): Promise<void> {
       }
 
       activeTransactions++;
-
-      // Log new transaction with mode indicator
-      console.log(`\n[${TRADING_MODE} Mode] Processing new transaction...\n`);
 
       processTransaction(signature)
         .catch((error: Error) => {
