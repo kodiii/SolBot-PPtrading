@@ -20,6 +20,12 @@ export const config = {
     retry_delay: 500, // Delay between retry attempts (ms)
   },
 
+  // DexScreener API configuration
+  dexscreener: {
+    api_url: "https://api.dexscreener.com/token-pairs/v1/solana", // DexScreener API endpoint
+    timeout: 10000, // API request timeout (ms)
+  },
+
   // Paper trading simulation settings
   paper_trading: {
     verbose_log: false, // Enable/disable detailed logging of DexScreener API responses
@@ -46,43 +52,66 @@ export const config = {
   // Token swap configuration
   swap: {
     verbose_log: false, // Enable/disable detailed swap operation logging
-    prio_fee_max_lamports: 10000000, // Maximum priority fee (0.01 SOL)
-    // Transaction priority level:
-    // Min (0th percentile)
-    // Low (25th percentile)
-    // Medium (50th percentile)
-    // High (75th percentile)
-    // VeryHigh (95th percentile)
-    // UnsafeMax (100th percentile)
-    prio_level: "medium", // Transaction priority level (medium/high/veryHigh)
+    prio_fee_max_lamports: 10000000, // Default max fee if dynamic fees fail
+    prio_level: "medium" as const, // Default priority level if dynamic fees fail
     amount: "500000000", // Swap amount in lamports (0.01 SOL)
     slippageBps: "200", // Maximum allowed slippage in basis points (2%)
-    db_name_tracker_holdings: "src/tracker/holdings.db", // Database path for tracking holdings
-    max_open_positions: 3, // Maximum number of concurrent swap positions
-    token_not_tradable_400_error_retries: 5, // Retries for token not tradable error
-    token_not_tradable_400_error_delay: 2000, // Delay between retries for token not tradable error (ms)
+    db_name_tracker_holdings: "src/tracker/holdings.db",
+    max_open_positions: 3,
+    token_not_tradable_400_error_retries: 5,
+    token_not_tradable_400_error_delay: 2000,
+    
+    // Fee calculation configuration
+    fees: {
+      mode: "fixed" as const, // "fixed" or "dynamic"
+      
+      // Options for dynamic fee calculation
+      dynamicOptions: {
+        percentile: 75,       // Use 75th percentile of recent fees
+        multiplier: 1.1,      // Add 10% safety margin
+        maxAgeSec: 60,        // Consider fees from last minute
+        minFee: 5000,        // Minimum fee (in lamports)
+      },
+      
+      // Options for fixed fee calculation
+      fixedOptions: {
+        prio_fee_max_lamports: 10000000, // Maximum priority fee (0.01 SOL)
+        prio_level: "medium" as const,    // Transaction priority level
+      }
+    }
   },
 
   // Sell configuration and automation
   sell: {
-    price_source: "dex", // Price source preference (dex=DexScreener, jup=Jupiter)
-    prio_fee_max_lamports: 10000000, // Maximum priority fee for sell transactions (0.01 SOL)
-    // Transaction priority level:
-    // Min (0th percentile)
-    // Low (25th percentile)
-    // Medium (50th percentile)
-    // High (75th percentile)
-    // VeryHigh (95th percentile)
-    // UnsafeMax (100th percentile)
-    prio_level: "medium", // Sell transaction priority level
+    price_source: "dex" as const, // Price source preference (dex=DexScreener, jup=Jupiter)
+    prio_fee_max_lamports: 10000000, // Default max fee if dynamic fees fail
+    prio_level: "medium" as const, // Default priority level if dynamic fees fail
     slippageBps: "200", // Maximum allowed slippage for sells (2%)
     auto_sell: true, // Enable/disable automated sell triggers
     stop_loss_percent: 30, // Stop loss trigger percentage
     take_profit_percent: 26, // Take profit trigger percentage
     track_public_wallet: "", // Public wallet tracking address (optional)
+    
+    // Fee calculation configuration (mirrors swap fee configuration)
+    fees: {
+      mode: "fixed" as const, // "fixed" or "dynamic"
+      
+      // Options for dynamic fee calculation
+      dynamicOptions: {
+        percentile: 75,       // Use 75th percentile of recent fees
+        multiplier: 1.1,      // Add 10% safety margin
+        maxAgeSec: 60,        // Consider fees from last minute
+        minFee: 5000,        // Minimum fee (in lamports)
+      },
+      
+      // Options for fixed fee calculation
+      fixedOptions: {
+        prio_fee_max_lamports: 10000000, // Maximum priority fee (0.01 SOL)
+        prio_level: "medium" as const,    // Transaction priority level
+      }
+    }
   },
 
-  // Rug pull protection and token validation settings
   // Trading strategies configuration
   strategies: {
     // Global debug setting for all strategies
@@ -91,16 +120,14 @@ export const config = {
     liquidity_drop: {
       enabled: true, // Enable/disable liquidity drop strategy
       threshold_percent: 20, // Sell if liquidity drops by 20%
-      // Using paper_trading.real_data_update interval for consistency
       debug: false, // Strategy-specific debug setting (overrides global setting)
     }
   },
 
+  // Rug pull protection and token validation settings
   rug_check: {
     verbose_log: false, // Enable/disable detailed rug check logging
     simulation_mode: true, // Controls paper trading (true) vs real trading (false) mode
-    // When true, trades are simulated with virtual balance
-    // When false, real transactions are executed on-chain
     
     // High-risk security checks
     allow_mint_authority: false, // Allow tokens with active mint authority (high risk)
@@ -115,9 +142,8 @@ export const config = {
     block_symbols: ["XXX"], // Blocked token symbols
     block_names: ["XXX"], // Blocked token names
     
-    // Enable token name content filtering, 
-    // if the token as this string it will skip the rugcheck filters and be sniped
-    only_contain_string: false, 
+    // Token name content filtering
+    only_contain_string: false,
     contain_string: ["AI", "GPT", "AGENT"], // Required strings in token names
     
     // Holder distribution checks
@@ -150,4 +176,4 @@ export const config = {
       //"Low amount of LP Providers",
     ],
   },
-}
+};
