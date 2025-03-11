@@ -20,6 +20,12 @@ export const config = {
     retry_delay: 500, // Delay between retry attempts (ms)
   },
 
+  // DexScreener API configuration
+  dexscreener: {
+    api_url: "https://api.dexscreener.com/token-pairs/v1/solana", // DexScreener API endpoint
+    timeout: 10000, // API request timeout (ms)
+  },
+
   // Paper trading simulation settings
   paper_trading: {
     verbose_log: false, // Enable/disable detailed logging of DexScreener API responses

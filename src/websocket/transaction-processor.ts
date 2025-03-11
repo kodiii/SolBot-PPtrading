@@ -9,6 +9,7 @@ import bs58 from "bs58";
 import { config } from "../config";
 import { SimulationService } from "../papertrading/services";
 import { fetchTransactionDetails, createSwapTransaction, getRugCheckConfirmed, fetchAndSaveSwapDetails } from "../transactions";
+import { MintsDataReponse } from "../transactions/types";
 import { checkWalletBalance } from "../utils/wallet-checks";
 import { TRADING_MODE } from "../system/initializer";
 
@@ -26,14 +27,18 @@ export async function processTransaction(signature: string): Promise<void> {
   console.log("🔎 New Liquidity Pool found.");
   console.log("🔃 Fetching transaction details ...");
 
-  const data = await fetchTransactionDetails(signature);
+  const data: MintsDataReponse | null = await fetchTransactionDetails(signature);
   if (!data) {
     console.log("⛔ Transaction aborted. No data returned.");
     console.log("🟢 Resuming looking for new tokens...\n");
     return;
   }
 
-  if (!data.solMint || !data.tokenMint) return;
+  if (!data.solMint || !data.tokenMint) {
+    console.log("⛔ Transaction aborted. Missing mint addresses.");
+    console.log("🟢 Resuming looking for new tokens...\n");
+    return;
+  }
 
   const isRugCheckPassed = await getRugCheckConfirmed(data.tokenMint);
   if (!isRugCheckPassed) {

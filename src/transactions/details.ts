@@ -5,15 +5,15 @@
 
 import axios from "axios";
 import { config } from "../config";
+import { HoldingRecord, NewTokenRecord } from "../types";
+import { Decimal } from "../utils/decimal";
+import { insertHolding, selectTokenByMint } from "../tracker/db";
 import {
   TransactionDetailsResponseArray,
   MintsDataReponse,
   SwapEventDetailsResponse,
-  HoldingRecord,
-  NewTokenRecord,
-} from "../types";
-import { Decimal } from "../utils/decimal";
-import { insertHolding, selectTokenByMint } from "../tracker/db";
+  TransactionInstruction
+} from "./types";
 
 export async function fetchTransactionDetails(signature: string): Promise<MintsDataReponse | null> {
   const txUrl = process.env.HELIUS_HTTPS_URI_TX || "";
@@ -58,7 +58,9 @@ export async function fetchTransactionDetails(signature: string): Promise<MintsD
         throw new Error("No instructions found in transaction");
       }
 
-      const instruction = instructions.find((ix) => ix.programId === config.liquidity_pool.radiyum_program_id);
+      const instruction = instructions.find((ix: TransactionInstruction) => 
+        ix.programId === config.liquidity_pool.radiyum_program_id
+      );
       if (!instruction?.accounts || instruction.accounts.length < 10) {
         throw new Error("Invalid market maker instruction");
       }
@@ -104,7 +106,6 @@ export async function fetchAndSaveSwapDetails(tx: string): Promise<boolean> {
   const priceUrl = process.env.JUP_HTTPS_PRICE_URI || "";
 
   try {
-    // Fetch transaction details
     const response = await axios.post<TransactionDetailsResponseArray>(
       txUrl,
       { transactions: [tx] },
@@ -120,12 +121,9 @@ export async function fetchAndSaveSwapDetails(tx: string): Promise<boolean> {
     }
 
     const swapTransactionData: SwapEventDetailsResponse = extractSwapData(response.data[0]);
-
-    // Get SOL price for calculations
     const solPrice = await getSolPrice(priceUrl);
     if (!solPrice) return false;
 
-    // Calculate values
     const {
       solAmount,
       tokenAmount,
@@ -135,20 +133,19 @@ export async function fetchAndSaveSwapDetails(tx: string): Promise<boolean> {
       perTokenUsdcPrice
     } = calculateSwapValues(swapTransactionData, solPrice);
 
-    // Get token name
     const tokenName = await getTokenName(swapTransactionData.tokenOutputs[0].mint);
 
-    // Create and save holding record
+    // Create holding record with proper string conversions
     const newHolding: HoldingRecord = {
       Time: swapTransactionData.timestamp,
       Token: swapTransactionData.tokenOutputs[0].mint,
       TokenName: tokenName,
-      Balance: tokenAmount,
-      SolPaid: solAmount,
-      SolFeePaid: feeInSol,
-      SolPaidUSDC: solPaidUsdc,
-      SolFeePaidUSDC: solFeePaidUsdc,
-      PerTokenPaidUSDC: perTokenUsdcPrice,
+      Balance: tokenAmount.toString(),
+      SolPaid: solAmount.toString(),
+      SolFeePaid: feeInSol.toString(),
+      SolPaidUSDC: solPaidUsdc.toString(),
+      SolFeePaidUSDC: solFeePaidUsdc.toString(),
+      PerTokenPaidUSDC: perTokenUsdcPrice.toString(),
       Slot: swapTransactionData.slot,
       Program: swapTransactionData.programInfo?.source || "N/A",
     };

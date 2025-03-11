@@ -1,56 +1,53 @@
 # Active Context
 
-## Current Status
-Implemented wallet balance checking for real trading mode. The system now:
-1. Uses the private key wallet consistently
-2. Validates balance before transactions
-3. Provides clear feedback on insufficient funds
+## Current Work (2025-03-11)
+- Refactored SimulationService into smaller, focused services
+- Created PriceTracker, TradeExecutor, and StrategyManager services
+- Improved separation of concerns and maintainability
+- Added proper exports and type definitions
 
 ## Recent Changes
-1. Added wallet-checks.ts utility:
-   - Balance checking functionality
-   - Clear error messaging
-   - Reusable wallet validation
+1. Created new service modules:
+   - PriceTracker: Price monitoring and updates
+   - TradeExecutor: Buy/sell operations
+   - StrategyManager: Strategy coordination
+   - SimulationService: Service orchestration
 
-2. Updated transaction-processor.ts:
-   - Integrated balance checks
-   - Improved error handling
-   - Better mode separation
-
-3. Documentation Updates:
-   - Added implementation decisions
-   - Updated progress tracking
-   - Documented next steps
+2. Added proper type exports
+3. Updated documentation in decisionLog.md
 
 ## Next Steps
-Based on priority, the next tasks are:
+1. Unit Tests
+   - Write tests for PriceTracker
+   - Write tests for TradeExecutor
+   - Write tests for StrategyManager
+   - Update SimulationService tests
 
-1. Transaction Fee Enhancement
-   - Add fee estimation to balance check
-   - Include transaction costs in required amount
-   - Consider gas price fluctuations
+2. Service Improvements
+   - Add service interfaces
+   - Consider strategy-specific configuration
+   - Add error handling for service coordination
+   - Add logging for service interactions
 
-2. Retry Mechanism
-   - Implement balance retry logic
-   - Add exponential backoff
-   - Set maximum retry attempts
+3. Documentation
+   - Create sequence diagrams for service interactions
+   - Document service APIs
+   - Update technical documentation
 
-3. Balance Notification System
-   - Add low balance warnings
-   - Implement alert thresholds
-   - Configure notification channels
-
-## Current Tasks
-- [ ] Review transaction fee calculation in handleRealTrading
-- [ ] Design retry mechanism for balance checks
-- [ ] Plan notification system architecture
+4. Code Quality
+   - Add input validation for all services
+   - Add monitoring hooks for service health
+   - Consider adding service metrics
 
 ## Open Questions
-1. Should we include gas estimation in balance checks?
-2. What should be the retry limits and backoff strategy?
-3. What notification methods should we implement?
+1. Should we add more granular error handling for each service?
+2. Do we need explicit interfaces for future service implementations?
+3. Should we add service health monitoring?
+4. Should strategy configuration be moved to its own file?
 
-## Notes
-- All wallet operations use PRIV_KEY_WALLET
-- Balance checks occur before transaction creation
-- Error messages include current and required balance
+## Current Status
+✅ Basic service separation complete
+✅ Core functionality preserved
+🚧 Tests needed
+🚧 Documentation updates needed
+🚧 Interface definitions needed
