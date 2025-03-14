@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button"
  * Theme toggle component
  * Switches between light and dark mode
  */
-export function ModeToggle() {
+export function ModeToggle(): React.ReactElement {
   const { theme, setTheme } = useTheme()
   const [mounted, setMounted] = React.useState(false)
 

@@ -19,7 +19,7 @@ interface TradesTableProps {
 /**
  * Displays recent trades history in a table format
  */
-export function TradesTable({ trades, isLoading }: TradesTableProps) {
+export function TradesTable({ trades, isLoading }: TradesTableProps): React.ReactElement {
   if (isLoading) {
     return (
       <Card>
@@ -109,7 +109,7 @@ export function TradesTable({ trades, isLoading }: TradesTableProps) {
 /**
  * Get color class based on PnL value
  */
-function getPnLColor(pnl?: string) {
+function getPnLColor(pnl?: string): string {
   if (!pnl) return ''
   const value = parseFloat(pnl)
   if (value > 0) return 'text-green-500'

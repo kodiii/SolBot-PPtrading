@@ -28,7 +28,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
     return { error }
   }
 
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo): void {
     // Log error to monitoring service
     console.error("Frontend error:", {
       error,
@@ -36,11 +36,11 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
     })
   }
 
-  handleReset() {
+  handleReset(): void {
     this.setState({ error: null })
   }
 
-  render() {
+  render(): React.ReactNode {
     const { error } = this.state
     const { children, fallback: Fallback } = this.props
 
@@ -70,7 +70,7 @@ export function withErrorBoundary<P extends object>(
   Component: React.ComponentType<P>,
   ErrorComponent?: React.ComponentType<{ error: Error; reset: () => void }>
 ) {
-  return function WithErrorBoundary(props: P) {
+  return function WithErrorBoundary(props: P): React.ReactElement {
     return (
       <ErrorBoundary fallback={ErrorComponent}>
         <Component {...props} />
@@ -90,7 +90,7 @@ export function AsyncBoundary({
   children: React.ReactNode
   fallback?: React.ComponentType<{ error: Error; reset: () => void }>
   loading?: React.ReactNode
-}) {
+}): React.ReactElement {
   return (
     <React.Suspense fallback={loading || null}>
       <ErrorBoundary fallback={fallback}>

@@ -43,7 +43,7 @@ class MonitoringService {
   /**
    * Track error events
    */
-  public trackError(error: Error, componentStack?: string, context?: Record<string, unknown>) {
+  public trackError(error: Error, componentStack?: string, context?: Record<string, unknown>): void {
     if (!this.isEnabled) return;
 
     const event: ErrorEvent = {
@@ -64,7 +64,7 @@ class MonitoringService {
   /**
    * Track performance metrics
    */
-  public trackPerformance(name: string, duration: number, context?: Record<string, unknown>) {
+  public trackPerformance(name: string, duration: number, context?: Record<string, unknown>): void {
     if (!this.isEnabled) return;
 
     const event: PerformanceEvent = {
@@ -84,7 +84,7 @@ class MonitoringService {
   /**
    * Enable/disable monitoring
    */
-  public setEnabled(enabled: boolean) {
+  public setEnabled(enabled: boolean): void {
     this.isEnabled = enabled;
   }
 
@@ -98,18 +98,18 @@ class MonitoringService {
   /**
    * Clear event buffer
    */
-  public clearBuffer() {
+  public clearBuffer(): void {
     this.buffer = [];
   }
 
-  private addToBuffer(event: MonitoringEvent) {
+  private addToBuffer(event: MonitoringEvent): void {
     this.buffer.push(event);
     if (this.buffer.length > this.bufferSize) {
       this.buffer.shift();
     }
   }
 
-  private logEvent(event: MonitoringEvent) {
+  private logEvent(event: MonitoringEvent): void {
     if (this.isDevelopment) {
       if (event.type === 'error') {
         console.error('[Monitoring]', event);
@@ -120,7 +120,7 @@ class MonitoringService {
     // TODO: Send to external monitoring service
   }
 
-  private setupErrorListeners() {
+  private setupErrorListeners(): void {
     if (typeof window !== 'undefined') {
       window.onerror = (message, source, lineno, colno, error) => {
         this.trackError(error || new Error(String(message)), undefined, {

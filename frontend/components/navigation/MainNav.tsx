@@ -16,7 +16,7 @@ const navigationLinks = [
  * Main navigation component
  * Handles active state and responsive design
  */
-export function MainNav() {
+export function MainNav(): React.ReactElement {
   const pathname = usePathname()
 
   return (
@@ -43,7 +43,7 @@ export function MainNav() {
  * Mobile navigation component
  * Only shows on smaller screens
  */
-export function MobileNav() {
+export function MobileNav(): React.ReactElement {
   const pathname = usePathname()
 
   return (

@@ -1,10 +1,21 @@
 /**
  * Standard API error interface
  */
+/**
+ * Type for JSON-serializable values
+ */
+export type JsonValue = 
+  | string
+  | number
+  | boolean
+  | null
+  | JsonValue[]
+  | { [key: string]: JsonValue };
+
 export interface ApiErrorData {
   message: string;
   code?: string;
-  details?: Record<string, any>;
+  details?: Record<string, JsonValue>;
   status: number;
 }
 
@@ -13,14 +24,14 @@ export interface ApiErrorData {
  */
 export class ApiError extends Error implements ApiErrorData {
   public readonly code?: string;
-  public readonly details?: Record<string, any>;
+  public readonly details?: Record<string, JsonValue>;
   public readonly status: number;
 
   constructor(
     message: string, 
     status = 500, 
     code?: string, 
-    details?: Record<string, any>
+    details?: Record<string, JsonValue>
   ) {
     super(message);
     this.name = 'ApiError';
@@ -85,7 +96,7 @@ export async function handleApiError(error: unknown): Promise<ApiError> {
     'An unexpected error occurred',
     500,
     'UNKNOWN_ERROR',
-    { originalError: error }
+    { originalError: String(error) }
   );
 }
 

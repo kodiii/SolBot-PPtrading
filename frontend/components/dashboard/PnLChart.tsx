@@ -35,7 +35,7 @@ interface ChartData {
 /**
  * Chart component for displaying trade PnL history
  */
-export function PnLChart({ trades, isLoading }: PnLChartProps) {
+export function PnLChart({ trades, isLoading }: PnLChartProps): React.ReactElement {
   if (isLoading) {
     return (
       <Card>

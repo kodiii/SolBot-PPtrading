@@ -31,7 +31,7 @@ const REFRESH_INTERVALS = [
 /**
  * Settings page component
  */
-function SettingsPage() {
+function SettingsPage(): React.ReactElement {
   const { enabled: autoRefresh, interval, setEnabled: setAutoRefresh, setInterval } = useAutoRefresh()
   const { enabled: monitoringEnabled, setEnabled: setMonitoring } = useMonitoring()
   const { isDark, toggleTheme } = useThemeSettings()

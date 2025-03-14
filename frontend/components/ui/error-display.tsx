@@ -31,7 +31,7 @@ export function ErrorDisplay({
   fullPage = false,
   title = "An error occurred",
   showDetails = false,
-}: ErrorDisplayProps) {
+}: ErrorDisplayProps): React.ReactElement {
   const message = getErrorMessage(error)
   const isApiError = error instanceof ApiError
   
@@ -47,7 +47,7 @@ export function ErrorDisplay({
             </div>
             {isApiError && (
               <CardDescription>
-                Error {(error as ApiError).status}: {(error as ApiError).code}
+                Error {error instanceof ApiError ? error.status : ''}: {error instanceof ApiError ? error.code : ''}
               </CardDescription>
             )}
           </CardHeader>

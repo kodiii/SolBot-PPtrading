@@ -6,6 +6,9 @@ import { Button } from '@/components/ui/button'
 import { SkeletonCard, SkeletonStats } from '@/components/ui/skeleton'
 import { useDashboardData } from '@/hooks/useDashboardData'
 import { formatDecimal } from '@/lib/utils'
+import { BalanceChart } from '@/components/dashboard/BalanceChart'
+import { PnLChart } from '@/components/dashboard/PnLChart'
+import { CumulativePnLChart } from '@/components/dashboard/CumulativePnLChart'
 
 interface StatItemProps {
   label: string
@@ -16,7 +19,7 @@ interface StatItemProps {
 /**
  * Stats item component
  */
-function StatItem({ label, value, suffix }: StatItemProps) {
+function StatItem({ label, value, suffix }: StatItemProps): React.ReactElement {
   return (
     <div className="space-y-2">
       <p className="text-sm text-muted-foreground">{label}</p>
@@ -35,7 +38,7 @@ function StatItem({ label, value, suffix }: StatItemProps) {
  * - Active positions
  * - Recent trades
  */
-export function DashboardPage(): React.ReactElement {
+function DashboardPageContent(): React.ReactElement {
   const { data, isLoading, error, refresh } = useDashboardData()
 
   if (error) {
@@ -49,55 +52,66 @@ export function DashboardPage(): React.ReactElement {
 
   return (
     <div className="container mx-auto py-6 space-y-8">
-      {/* Balance Card */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Balance</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <SkeletonCard />
-          ) : (
-            <div className="text-4xl font-bold">
-              {formatDecimal(data?.balance.balance_sol || '0')} SOL
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      <div className="grid gap-8 grid-cols-1 lg:grid-cols-2">
+        {/* Balance Card */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Balance</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <SkeletonCard />
+            ) : (
+              <div className="text-4xl font-bold">
+                {formatDecimal(data?.balance.balance_sol || '0')} SOL
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
-      {/* Trading Stats */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Trading Statistics</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <SkeletonStats />
-          ) : (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <StatItem
-                label="Total Trades"
-                value={data?.stats.totalTrades.toString() || '0'}
-              />
-              <StatItem
-                label="Win Rate"
-                value={`${(data?.stats.winRate || 0).toFixed(1)}%`}
-              />
-              <StatItem
-                label="Total P/L"
-                value={formatDecimal(data?.stats.totalPnL || '0')}
-                suffix="SOL"
-              />
-              <StatItem
-                label="Active Positions"
-                value={data?.positions.length.toString() || '0'}
-              />
-            </div>
-          )}
-        </CardContent>
-      </Card>
+        {/* Trading Stats */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Trading Statistics</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <SkeletonStats />
+            ) : (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <StatItem
+                  label="Total Trades"
+                  value={data?.stats.totalTrades.toString() || '0'}
+                />
+                <StatItem
+                  label="Win Rate"
+                  value={`${(data?.stats.winRate || 0).toFixed(1)}%`}
+                />
+                <StatItem
+                  label="Total P/L"
+                  value={formatDecimal(data?.stats.totalPnL || '0')}
+                  suffix="SOL"
+                />
+                <StatItem
+                  label="Active Positions"
+                  value={data?.positions.length.toString() || '0'}
+                />
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Charts */}
+      <div className="grid gap-8 grid-cols-1 lg:grid-cols-2">
+        <BalanceChart data={data?.balance ? [data.balance] : []} isLoading={isLoading} />
+        <PnLChart trades={data?.trades || []} isLoading={isLoading} />
+        <CumulativePnLChart trades={data?.trades || []} isLoading={isLoading} />
+      </div>
+
+
     </div>
   )
 }
 
-export default DashboardPage
+export default DashboardPageContent

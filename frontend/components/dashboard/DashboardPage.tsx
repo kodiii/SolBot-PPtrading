@@ -15,7 +15,7 @@ import { formatDecimal } from "@/lib/utils"
  * - Active positions
  * - Recent trades
  */
-export function DashboardPage() {
+export function DashboardPage(): React.ReactElement {
   const { data, isLoading, error, refresh } = useDashboardData()
 
   if (error) {
@@ -88,7 +88,7 @@ interface StatItemProps {
   suffix?: string
 }
 
-function StatItem({ label, value, suffix }: StatItemProps) {
+function StatItem({ label, value, suffix }: StatItemProps): React.ReactElement {
   return (
     <div className="space-y-2">
       <p className="text-sm text-muted-foreground">{label}</p>

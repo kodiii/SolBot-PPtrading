@@ -18,7 +18,7 @@ interface PositionsTableProps {
 /**
  * Displays active trading positions in a table format
  */
-export function PositionsTable({ positions, isLoading }: PositionsTableProps) {
+export function PositionsTable({ positions, isLoading }: PositionsTableProps): React.ReactElement {
   if (isLoading) {
     return (
       <Card>

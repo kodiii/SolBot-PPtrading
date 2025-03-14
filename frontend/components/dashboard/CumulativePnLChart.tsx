@@ -36,7 +36,7 @@ interface ChartData {
 /**
  * Chart component for displaying cumulative PnL over time
  */
-export function CumulativePnLChart({ trades, isLoading }: CumulativePnLChartProps) {
+export function CumulativePnLChart({ trades, isLoading }: CumulativePnLChartProps): React.ReactElement {
   if (isLoading) {
     return (
       <Card>

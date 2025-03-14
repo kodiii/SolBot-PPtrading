@@ -39,8 +39,8 @@ describe('Skeleton Components', () => {
     })
 
     it('applies grid layout', () => {
-      const { container } = render(<SkeletonStats />)
-      const grid = container.firstChild as HTMLElement
+      render(<SkeletonStats />)
+      const grid = screen.getByTestId('stats-grid')
       expect(grid).toHaveClass('grid', 'grid-cols-2', 'md:grid-cols-4')
     })
   })
@@ -61,8 +61,8 @@ describe('Skeleton Components', () => {
     })
 
     it('applies responsive grid layout', () => {
-      const { container } = render(<SkeletonTable />)
-      const rows = container.querySelectorAll('.grid')
+      render(<SkeletonTable />)
+      const rows = screen.getAllByTestId('table-row')
       expect(rows[0]).toHaveClass('grid-cols-1', 'md:grid-cols-4')
     })
   })

@@ -1,16 +1,60 @@
 import sqlite3 from 'sqlite3';
 import { open, Database } from 'sqlite';
 
+interface Balance {
+  balance_sol: string;
+  updated_at: number;
+}
+
+interface Position {
+  token_mint: string;
+  token_name: string;
+  amount: string;
+  buy_price: string;
+  current_price: string;
+  stop_loss: string;
+  take_profit: string;
+  position_size_sol: string;
+  last_updated: number;
+}
+
+interface Trade {
+  token_name: string;
+  token_mint: string;
+  amount_sol: string;
+  amount_token: string;
+  buy_price: string;
+  buy_fees: string;
+  buy_slippage: string;
+  sell_price: string | null;
+  sell_fees: string | null;
+  time_buy: number;
+  time_sell: number | null;
+  pnl: string | null;
+  volume_m5: string;
+  market_cap: string;
+  liquidity_buy_usd: string;
+  liquidity_sell_usd: string;
+}
+
+interface TradingStats {
+  totalTrades: number;
+  successfulTrades: number;
+  failedTrades: number;
+  totalPnL: string;
+  winRate: number;
+}
+
 let db: Database | null = null;
 
 /**
  * Initialize database connection
  */
-async function getDb() {
+async function getDb(): Promise<Database> {
   if (db) return db;
   
   db = await open({
-    filename: '../src/papertrading/db/paper_trading.db',
+    filename: process.cwd() + '/../src/papertrading/db/paper_trading.db',
     driver: sqlite3.Database
   });
   
@@ -20,7 +64,7 @@ async function getDb() {
 /**
  * Get current virtual balance
  */
-export async function getBalance() {
+export async function getBalance(): Promise<Balance | undefined> {
   const db = await getDb();
   return db.get(`
     SELECT balance_sol, updated_at 
@@ -33,7 +77,7 @@ export async function getBalance() {
 /**
  * Get active trading positions
  */
-export async function getPositions() {
+export async function getPositions(): Promise<Position[]> {
   const db = await getDb();
   return db.all(`
     SELECT 
@@ -53,7 +97,7 @@ export async function getPositions() {
 /**
  * Get recent trades with limit
  */
-export async function getTrades(limit = 10) {
+export async function getTrades(limit = 10): Promise<Trade[]> {
   const db = await getDb();
   return db.all(`
     SELECT 
@@ -82,7 +126,7 @@ export async function getTrades(limit = 10) {
 /**
  * Get trading statistics
  */
-export async function getStats() {
+export async function getStats(): Promise<TradingStats | null> {
   const db = await getDb();
   const stats = await db.get(`
     SELECT 

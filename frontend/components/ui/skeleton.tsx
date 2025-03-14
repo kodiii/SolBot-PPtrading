@@ -40,7 +40,7 @@ export function SkeletonCard(): React.ReactElement {
  */
 export function SkeletonStats(): React.ReactElement {
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-4" data-testid="stats-grid">
       {[...Array(4)].map((_, i) => (
         <div key={i} className="space-y-2">
           <Skeleton className="h-4 w-20" />
@@ -80,6 +80,7 @@ export function SkeletonTable({
         <div
           key={`row-${rowIndex}`}
           className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 border-b"
+          data-testid="table-row"
         >
           {[...Array(columnCount)].map((_, colIndex) => (
             <Skeleton

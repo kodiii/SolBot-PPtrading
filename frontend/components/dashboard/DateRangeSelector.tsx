@@ -34,7 +34,7 @@ interface DateRangeSelectorProps {
 export function DateRangeSelector({
   onRangeChange,
   selectedRange = 24
-}: DateRangeSelectorProps) {
+}: DateRangeSelectorProps): React.ReactElement {
   const handleRangeSelect = React.useCallback((hours: number) => {
     const now = new Date()
     const startTime = subHours(now, hours).getTime()
@@ -63,7 +63,13 @@ export function DateRangeSelector({
 /**
  * Hook for managing date range state
  */
-export function useDateRange(initialRange = 24) {
+interface DateRangeHookResult {
+  range: number;
+  startTime: number;
+  onRangeChange: (hours: number) => void;
+}
+
+export function useDateRange(initialRange = 24): DateRangeHookResult {
   const [range, setRange] = React.useState(initialRange)
   const [startTime, setStartTime] = React.useState(() => {
     const now = new Date()

@@ -10,7 +10,7 @@ import { useRouter } from "next/navigation"
  * Application header component
  * Contains navigation and theme toggle
  */
-export function Header() {
+export function Header(): React.ReactElement {
   const router = useRouter()
 
   return (

@@ -14,7 +14,7 @@ interface LoadingStateProps {
  * Loading state component
  * Can be used as a full page loader or within components
  */
-export function LoadingState({ title, fullPage }: LoadingStateProps) {
+export function LoadingState({ title, fullPage }: LoadingStateProps): React.ReactElement {
   if (fullPage) {
     return (
       <div className="h-[50vh] w-full flex items-center justify-center">
@@ -50,7 +50,7 @@ export function withLoading<P extends object>(
   return function WithLoading({
     isLoading,
     ...props
-  }: P & { isLoading: boolean }) {
+  }: P & { isLoading: boolean }): React.ReactElement {
     if (isLoading) {
       return <LoadingComponent />
     }
@@ -62,7 +62,7 @@ export function withLoading<P extends object>(
 /**
  * Loading overlay for async operations
  */
-export function LoadingOverlay({ message }: { message?: string }) {
+export function LoadingOverlay({ message }: { message?: string }): React.ReactElement {
   return (
     <div className="fixed inset-0 bg-background/80 backdrop-blur-sm">
       <div className="flex h-full items-center justify-center">
@@ -86,7 +86,7 @@ export function LoadingSpinner({
 }: { 
   className?: string
   size?: string
-}) {
+}): React.ReactElement {
   return (
     <Loader2 
       className={`animate-spin ${size} ${className || ""}`}

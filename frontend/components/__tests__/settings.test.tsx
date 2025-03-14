@@ -117,7 +117,7 @@ describe("SettingsPage", () => {
     // Check if settings are persisted
     await waitFor(() => {
       expect(screen.getByLabelText(/Dark Mode/i)).toBeChecked()
-      expect(screen.getByLabelText(/Auto Refresh/i)).not.toBeChecked()
     })
+    expect(screen.getByLabelText(/Auto Refresh/i)).not.toBeChecked()
   })
 })
