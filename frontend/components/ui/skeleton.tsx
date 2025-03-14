@@ -1,85 +1,94 @@
-import { cn } from "@/lib/utils"
+import * as React from 'react'
+import { cn } from '@/lib/utils'
 
-interface SkeletonProps extends React.HTMLAttributes<HTMLDivElement> {}
+/**
+ * Base skeleton component props
+ */
+interface SkeletonProps {
+  className?: string
+  children?: React.ReactNode
+}
 
-export function Skeleton({ className, ...props }: SkeletonProps) {
+/**
+ * Base skeleton component for loading states
+ */
+export function Skeleton({ className, children }: SkeletonProps): React.ReactElement {
   return (
     <div
-      className={cn("animate-pulse rounded-md bg-muted/50", className)}
-      {...props}
-    />
-  )
-}
-
-export function SkeletonButton({ className, ...props }: SkeletonProps) {
-  return (
-    <Skeleton
-      className={cn("h-9 w-24", className)}
-      {...props}
-    />
-  )
-}
-
-export function SkeletonCard({ className, ...props }: SkeletonProps) {
-  return (
-    <Skeleton
-      className={cn("h-40 w-full", className)}
-      {...props}
-    />
-  )
-}
-
-export function SkeletonText({ className, ...props }: SkeletonProps) {
-  return (
-    <Skeleton
-      className={cn("h-4 w-full", className)}
-      {...props}
-    />
-  )
-}
-
-export function SkeletonCircle({ className, ...props }: SkeletonProps) {
-  return (
-    <Skeleton
-      className={cn("h-8 w-8 rounded-full", className)}
-      {...props}
-    />
-  )
-}
-
-export function SkeletonStats() {
-  return (
-    <div className="space-y-3">
-      <SkeletonText className="h-6 w-1/3" />
-      <div className="grid gap-2 grid-cols-3">
-        <SkeletonText className="h-10" />
-        <SkeletonText className="h-10" />
-        <SkeletonText className="h-10" />
-      </div>
+      className={cn('animate-pulse rounded-md bg-primary/10', className)}
+      role="status"
+      aria-label="Loading..."
+    >
+      {children}
     </div>
   )
 }
 
-export function SkeletonTable() {
+/**
+ * Skeleton for card content
+ */
+export function SkeletonCard(): React.ReactElement {
   return (
     <div className="space-y-4">
-      <div className="flex justify-between">
-        <SkeletonText className="h-8 w-[250px]" />
-        <SkeletonButton />
+      <Skeleton className="h-12 w-2/3" />
+    </div>
+  )
+}
+
+/**
+ * Skeleton for statistics grid
+ */
+export function SkeletonStats(): React.ReactElement {
+  return (
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      {[...Array(4)].map((_, i) => (
+        <div key={i} className="space-y-2">
+          <Skeleton className="h-4 w-20" />
+          <Skeleton className="h-8 w-24" />
+        </div>
+      ))}
+    </div>
+  )
+}
+
+/**
+ * Props for table skeleton
+ */
+interface SkeletonTableProps {
+  rowCount?: number
+  columnCount?: number
+}
+
+/**
+ * Skeleton for data tables
+ */
+export function SkeletonTable({
+  rowCount = 5,
+  columnCount = 4,
+}: SkeletonTableProps): React.ReactElement {
+  return (
+    <div className="w-full space-y-4">
+      {/* Header */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 border-b">
+        {[...Array(columnCount)].map((_, i) => (
+          <Skeleton key={`header-${i}`} className="h-6 w-24" />
+        ))}
       </div>
-      <div className="border rounded-lg p-4">
-        <div className="space-y-3">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="flex justify-between items-center">
-              <SkeletonText className="h-4 w-[200px]" />
-              <SkeletonText className="h-4 w-[100px]" />
-              <SkeletonText className="h-4 w-[100px]" />
-              <SkeletonText className="h-4 w-[100px]" />
-              <SkeletonText className="h-4 w-[100px]" />
-            </div>
+
+      {/* Rows */}
+      {[...Array(rowCount)].map((_, rowIndex) => (
+        <div
+          key={`row-${rowIndex}`}
+          className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 border-b"
+        >
+          {[...Array(columnCount)].map((_, colIndex) => (
+            <Skeleton
+              key={`cell-${rowIndex}-${colIndex}`}
+              className="h-6 w-full max-w-[200px]"
+            />
           ))}
         </div>
-      </div>
+      ))}
     </div>
   )
 }

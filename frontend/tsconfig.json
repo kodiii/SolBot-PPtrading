@@ -18,21 +18,36 @@
         "name": "next"
       }
     ],
+    "types": [
+      "node",
+      "jest",
+      "react",
+      "react-dom"
+    ],
     "paths": {
       "@/*": ["./*"]
     },
     "baseUrl": ".",
-    "types": ["react", "react-dom", "@types/node"],
-    "forceConsistentCasingInFileNames": true
+    "typeRoots": [
+      "./node_modules/@types",
+      "./test/types"
+    ],
+    "forceConsistentCasingInFileNames": true,
+    "noImplicitAny": true,
+    "noImplicitThis": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "strictNullChecks": true,
+    "strictFunctionTypes": true,
+    "strictPropertyInitialization": true
   },
   "include": [
     "next-env.d.ts",
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts",
-    "app",
-    "components",
-    "lib"
+    "jest.setup.js",
+    "test/types/**/*.d.ts"
   ],
   "exclude": ["node_modules"]
 }

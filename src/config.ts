@@ -127,7 +127,7 @@ export const config = {
   // Rug pull protection and token validation settings
   rug_check: {
     verbose_log: false, // Enable/disable detailed rug check logging
-    simulation_mode: false, // Controls paper trading (true) vs real trading (false) mode
+    simulation_mode: true, // Controls paper trading (true) vs real trading (false) mode
     
     // High-risk security checks
     allow_mint_authority: false, // Allow tokens with active mint authority (high risk)

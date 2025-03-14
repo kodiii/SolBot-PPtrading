@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { ThemeProvider as NextThemesProvider } from "next-themes";
+import { ThemeProvider as NextThemesProvider, useTheme as useNextTheme } from "next-themes";
 import { type ThemeProviderProps } from "next-themes/dist/types";
 
 /**
@@ -16,7 +16,7 @@ export function ThemeProvider({ children, ...props }: ThemeProviderProps) {
  * Hook to access current theme and theme changing functionality
  */
 export function useTheme() {
-  const { theme, setTheme } = React.useContext(NextThemesProvider);
+  const { theme, setTheme } = useNextTheme();
   
   const toggleTheme = React.useCallback(() => {
     setTheme(theme === "dark" ? "light" : "dark");

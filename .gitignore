@@ -30,3 +30,9 @@ Thumbs.db
 # Keep all documentation and cline_docs tracked
 !cline_docs/
 !cline_docs/*
+
+# Next.js
+frontend/.next/
+
+# VSCode
+frontend/.vscode/
