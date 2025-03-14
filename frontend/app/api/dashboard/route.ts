@@ -10,6 +10,9 @@ import { getBalance, getPositions, getTrades, getStats } from '@/lib/db';
  * - Trading statistics
  */
 export async function GET(): Promise<NextResponse> {
+  console.log('Dashboard API called');
+  console.log('Working directory:', process.cwd());
+  console.log('DB file exists:', require('fs').existsSync('./src/papertrading/db/paper_trading.db'));
   try {
     // Check DB connection first
     try {
