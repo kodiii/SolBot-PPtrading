@@ -4,65 +4,76 @@
 
 @layer base {
   :root {
-    --background: 134 55% 99%;
-    --foreground: 134 69% 4%;
-    --muted: 254 32% 93%;
-    --muted-foreground: 254 10% 29%;
-    --popover: 134 55% 99%;
-    --popover-foreground: 134 69% 4%;
-    --card: 134 55% 99%;
-    --card-foreground: 134 69% 4%;
-    --border: 220 13% 91%;
-    --input: 220 13% 91%;
-    --primary: 134 72% 52%;
-    --primary-foreground: 134 72% 12%;
-    --secondary: 254 72% 52%;
+    --background: 172 50% 0%;
+    --foreground: 172 12% 97%;
+    --muted: 292 25% 9%;
+    --muted-foreground: 292 15% 62%;
+    --popover: 172 50% 0%;
+    --popover-foreground: 172 12% 97%;
+    --card: 172 50% 0%;
+    --card-foreground: 172 12% 97%;
+    --border: 172 2% 12%;
+    --input: 172 2% 12%;
+    --primary: 172 66% 50%;
+    --primary-foreground: 172 66% 10%;
+    --secondary: 292 66% 50%;
     --secondary-foreground: 0 0% 100%;
-    --accent: 14 72% 52%;
-    --accent-foreground: 0 0% 100%;
-    --destructive: 18 86% 37%;
-    --destructive-foreground: 0 0% 100%;
-    --ring: 134 72% 52%;
-    --chart-1: 134 72% 52%;
-    --chart-2: 254 72% 52%;
-    --chart-3: 14 72% 52%;
-    --chart-4: 254 72% 55%;
-    --chart-5: 134 75% 52%;
+    --accent: 52.35 100% 49.22%;
+    --accent-foreground: 52 66% 10%;
+    --destructive: 343.02 100% 41.57%;
+    --destructive-foreground: 0 0% 0%;
+    --ring: 172 66% 50%;
     --radius: 0.5rem;
   }
+}
 
-  .dark {
-    --background: 134 30% 1%;
-    --foreground: 134 39% 100%;
-    --muted: 254 32% 7%;
-    --muted-foreground: 254 10% 71%;
-    --popover: 134 30% 1%;
-    --popover-foreground: 134 39% 100%;
-    --card: 134 30% 1%;
-    --card-foreground: 134 39% 100%;
-    --border: 215 27.9% 16.9%;
-    --input: 215 27.9% 16.9%;
-    --primary: 134 72% 52%;
-    --primary-foreground: 134 72% 12%;
-    --secondary: 254 72% 52%;
-    --secondary-foreground: 0 0% 100%;
-    --accent: 14 72% 52%;
-    --accent-foreground: 0 0% 100%;
-    --destructive: 18 86% 46%;
-    --destructive-foreground: 0 0% 100%;
-    --ring: 134 72% 52%;
-    --chart-1: 134 72% 52%;
-    --chart-2: 254 72% 52%;
-    --chart-3: 14 72% 52%;
-    --chart-4: 254 72% 55%;
-    --chart-5: 134 75% 52%;
-  }
-
+@layer base {
   * {
     @apply border-border;
   }
-
   body {
     @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
   }
+}
+
+.positive {
+  @apply text-positive;
+}
+
+.negative {
+  @apply text-negative;
+}
+
+/* Table Styles */
+.table-container {
+  @apply overflow-x-auto;
+}
+
+table {
+  @apply w-full border-collapse text-sm;
+}
+
+thead tr {
+  @apply bg-muted border-b border-border;
+}
+
+th {
+  @apply px-4 py-3 text-left font-medium text-muted-foreground;
+}
+
+td {
+  @apply px-4 py-2.5 border-b border-border;
+}
+
+tr:hover {
+  @apply bg-muted;
+}
+
+.token-cell {
+  @apply font-medium;
+}
+
+.address-cell {
+  @apply text-muted-foreground text-xs font-mono max-w-[200px] overflow-hidden text-ellipsis whitespace-nowrap;
 }

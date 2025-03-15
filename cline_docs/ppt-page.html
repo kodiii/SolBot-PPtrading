@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Paper Trading Dashboard</title>
+  <style>
+    :root {
+      --background: hsl(172, 50%, 0%);
+      --foreground: hsl(172, 12%, 97%);
+      --muted: hsl(292, 25%, 9%);
+      --muted-foreground: hsl(292, 15%, 62%);
+      --popover: hsl(172, 50%, 0%);
+      --popover-foreground: hsl(172, 12%, 97%);
+      --card: hsl(172, 50%, 0%);
+      --card-foreground: hsl(172, 12%, 97%);
+      --border: hsl(172, 2%, 12%);
+      --input: hsl(172, 2%, 12%);
+      --primary: hsl(172, 66%, 50%);
+      --primary-foreground: hsl(172, 66%, 10%);
+      --secondary: hsl(292, 66%, 50%);
+      --secondary-foreground: hsl(0, 0%, 100%);
+      --accent: hsl(52.35, 100%, 49.22%);
+      --accent-foreground: hsl(52, 66%, 10%);
+      --destructive: hsl(343.02, 100%, 41.57%);
+      --destructive-foreground: hsl(0, 0%, 0%);
+      --ring: hsl(172, 66%, 50%);
+      --chart-1: hsl(172, 66%, 50%);
+      --chart-2: hsl(292, 66%, 50%);
+      --chart-3: hsl(52.35, 100%, 49.22%);
+      --chart-4: hsl(292, 66%, 53%);
+      --chart-5: hsl(172, 69%, 50%);
+      --radius: 0.5rem;
+      --positive: hsl(142, 76%, 36%);
+      --negative: hsl(343.02, 100%, 41.57%);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    }
+
+    body {
+      background-color: var(--background);
+      color: var(--foreground);
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 1rem;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 0;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 1.5rem;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    
+    .logo h1 {
+      font-size: 1.5rem;
+      color: var(--primary);
+      font-weight: 600;
+    }
+
+    .account-info {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .wallet-id {
+      font-size: 0.875rem;
+      color: var(--muted-foreground);
+      background-color: var(--muted);
+      padding: 0.375rem 0.75rem;
+      border-radius: var(--radius);
+    }
+
+    .balance {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      background-color: var(--card);
+      padding: 0.5rem 1rem;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+    }
+    
+    .balance span {
+      font-weight: 600;
+    }
+
+    .amount {
+      color: var(--primary);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 2fr;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .card {
+      background-color: var(--card);
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      padding: 1.25rem;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .card-header h2 {
+      font-size: 1rem;       
+      font-weight: 600;
+      color: var(--primary);
+    }
+
+    .card-header .update {
+      font-size: 0.75rem;
+      color: var(--muted-foreground);
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 1rem;
+    }
+
+    .stat {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+
+    .stat-label {
+      font-size: 0.75rem;
+      color: var(--muted-foreground);
+    }
+
+    .stat-value {
+      font-size: 1.125rem;
+      font-weight: 600;
+    }
+
+    .best {
+      color: var(--positive);
+    }
+
+    .worst {
+      color: var(--negative);
+    }
+
+    .table-container {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.875rem;
+    }
+
+    thead tr {
+      background-color: var(--muted);
+      border-bottom: 1px solid var(--border);
+    }
+
+    th {
+      padding: 0.75rem 1rem;
+      text-align: left;
+      font-weight: 500;
+      color: var(--muted-foreground);
+    }
+
+    td {
+      padding: 0.625rem 1rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    tr:hover {
+      background-color: var(--muted);
+    }
+
+    .positive {
+      color: var(--positive);
+    }
+
+    .negative {
+      color: var(--negative);
+    }
+
+    .token-cell {
+      font-weight: 500;
+    }
+
+    .address-cell {
+      color: var(--muted-foreground);
+      font-size: 0.75rem;
+      font-family: monospace;
+      max-width: 200px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .tab-container {
+      margin-top: 1rem;
+    }
+
+    .tabs {
+      display: flex;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 1rem;
+    }
+
+    .tab {
+      padding: 0.75rem 1rem;
+      cursor: pointer;
+      font-weight: 500;
+      color: var(--muted-foreground);
+      border-bottom: 2px solid transparent;
+    }
+
+    .tab.active {
+      color: var(--primary);
+      border-bottom: 2px solid var(--primary);
+    }
+
+    .footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 2rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--border);
+      font-size: 0.75rem;
+      color: var(--muted-foreground);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="logo">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--primary);">
+          <path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 0-2 2zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"></path>
+          <path d="M18 14h-8"></path>
+          <path d="M15 18h-5"></path>
+          <path d="M10 6h8v4h-8V6z"></path>
+        </svg>
+        <h1>Paper Trading Dashboard</h1>
+      </div>
+      <div class="account-info">
+        <div class="wallet-id">3336664916988/13321480772534583585</div>
+        <div class="balance">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--accent);">
+            <circle cx="12" cy="12" r="10"></circle>
+            <path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"></path>
+            <path d="M12 18V6"></path>
+          </svg>
+          <span class="amount">256.11 SOL</span>
+          <span class="amount-usd">($34,581.40 USD)</span>
+        </div>
+      </div>
+    </header>
+
+    <div class="grid">
+      <div class="card">
+        <div class="card-header">
+          <h2>Virtual Balance</h2>
+          <div class="update">Last Updated: 03/25/2025, 04:00:52 PM</div>
+        </div>
+        <div class="stats-grid">
+          <div class="stat">
+            <div class="stat-label">SOL Balance</div>
+            <div class="stat-value amount">256.11</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">USD Value</div>
+            <div class="stat-value">$34,581.40</div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card">
+        <div class="card-header">
+          <h2>Trading Statistics</h2>
+        </div>
+        <div class="stats-grid">
+          <div class="stat">
+            <div class="stat-label">Total Trades</div>
+            <div class="stat-value">134.00</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">Win Rate</div>
+            <div class="stat-value">61.19%</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">Total P/L</div>
+            <div class="stat-value">248.35 SOL</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">Avg P/L per Trade</div>
+            <div class="stat-value">1.85 SOL</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">Best Trade</div>
+            <div class="stat-value best">cooker (+49.71 SOL)</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">Worst Trade</div>
+            <div class="stat-value worst">MR BEAST (-1.03 SOL)</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-container">
+      <div class="tabs">
+        <div class="tab active">Active Positions</div>
+        <div class="tab">Recent Trades</div>
+      </div>
+      
+      <div class="card">
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Token Name</th>
+                <th>Address</th>
+                <th>Volume</th>
+                <th>Market Cap</th>
+                <th>Liquidity</th>
+                <th>Position Size</th>
+                <th>Buy Price (SOL)</th>
+                <th>Current Price (SOL)</th>
+                <th>P/L (%)</th>
+                <th>Take Profit (SOL)</th>
+                <th>Stop Loss (SOL)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="token-cell">BORG</td>
+                <td class="address-cell">5uA24T1X3Ns9f6twjAfOiE1m81n32TcSZT5opump</td>
+                <td>0.00</td>
+                <td>2,611.00</td>
+                <td>4,859.25</td>
+                <td>17892805.06</td>
+                <td>0.00000001</td>
+                <td>0.00000001</td>
+                <td class="negative">-28.4280%</td>
+                <td>0.00000003</td>
+                <td>0.00000002</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-container">
+      <div class="tabs">
+        <div class="tab">Active Positions</div>
+        <div class="tab active">Recent Trades</div>
+      </div>
+      
+      <div class="card">
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Token Name</th>
+                <th>Address</th>
+                <th>Buy Price</th>
+                <th>Sell Price</th>
+                <th>Position Size</th>
+                <th>Time Buy</th>
+                <th>Time Sell</th>
+                <th>Market Cap</th>
+                <th>Liquidity Buy</th>
+                <th>Liquidity Sell</th>
+                <th>P/L</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="token-cell">QNTAI</td>
+                <td class="address-cell">5T3WTBBJAX56Zc3x7pcSVQSgzj8slbwSHVCJbdgw</td>
+                <td>0.01557798</td>
+                <td>0.01918167</td>
+                <td>32.10</td>
+                <td>02/25/25, 03:54:55 PM</td>
+                <td>02/25/25, 03:57

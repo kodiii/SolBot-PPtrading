@@ -1,101 +1,48 @@
-"use client"
+'use client'
 
-import * as React from "react"
-import { ErrorDisplay } from "@/components/ui/error-display"
-import { ApiError } from "@/lib/api-error"
+import * as React from 'react'
 
 interface ErrorBoundaryProps {
   children: React.ReactNode
-  fallback?: React.ComponentType<{ error: Error; reset: () => void }>
 }
 
 interface ErrorBoundaryState {
-  error: Error | ApiError | null
+  hasError: boolean
+  error?: Error
 }
 
-/**
- * Error boundary component to catch and handle runtime errors
- * Uses ErrorDisplay by default but can accept custom fallback
- */
 export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
   constructor(props: ErrorBoundaryProps) {
     super(props)
-    this.state = { error: null }
-    this.handleReset = this.handleReset.bind(this)
+    this.state = { hasError: false }
   }
 
   static getDerivedStateFromError(error: Error): ErrorBoundaryState {
-    return { error }
+    return { hasError: true, error }
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo): void {
-    // Log error to monitoring service
-    console.error("Frontend error:", {
-      error,
-      componentStack: errorInfo.componentStack
-    })
-  }
-
-  handleReset(): void {
-    this.setState({ error: null })
+    console.error('ErrorBoundary caught an error:', error, errorInfo)
   }
 
   render(): React.ReactNode {
-    const { error } = this.state
-    const { children, fallback: Fallback } = this.props
-
-    if (error) {
-      if (Fallback) {
-        return <Fallback error={error} reset={this.handleReset} />
-      }
-
+    if (this.state.hasError) {
       return (
-        <ErrorDisplay
-          error={error}
-          reset={this.handleReset}
-          fullPage
-          showDetails={process.env.NODE_ENV === "development"}
-        />
+        <div className="flex flex-col items-center justify-center min-h-[50vh] p-4">
+          <div className="space-y-4 text-center">
+            <h2 className="text-xl font-semibold text-destructive">Something went wrong</h2>
+            <p className="text-muted-foreground">{this.state.error?.message}</p>
+            <button
+              onClick={() => this.setState({ hasError: false })}
+              className="px-4 py-2 text-sm font-medium text-primary bg-primary/10 hover:bg-primary/20 rounded-md"
+            >
+              Try again
+            </button>
+          </div>
+        </div>
       )
     }
 
-    return children
+    return this.props.children
   }
-}
-
-/**
- * HOC to wrap components with error boundary
- */
-export function withErrorBoundary<P extends object>(
-  Component: React.ComponentType<P>,
-  ErrorComponent?: React.ComponentType<{ error: Error; reset: () => void }>
-) {
-  return function WithErrorBoundary(props: P): React.ReactElement {
-    return (
-      <ErrorBoundary fallback={ErrorComponent}>
-        <Component {...props} />
-      </ErrorBoundary>
-    )
-  }
-}
-
-/**
- * Create an async error boundary for handling promise rejections
- */
-export function AsyncBoundary({
-  children,
-  fallback,
-  loading
-}: {
-  children: React.ReactNode
-  fallback?: React.ComponentType<{ error: Error; reset: () => void }>
-  loading?: React.ReactNode
-}): React.ReactElement {
-  return (
-    <React.Suspense fallback={loading || null}>
-      <ErrorBoundary fallback={fallback}>
-        {children}
-      </ErrorBoundary>
-    </React.Suspense>
-  )
 }

@@ -1,5 +1,4 @@
-import { http } from 'msw'
-import { createServer, responseHelpers } from '../api-mocks'
+import { createServer, responseHelpers, HandlerInfo } from '../api-mocks'
 
 // Example API types
 interface User {
@@ -25,13 +24,11 @@ const testUsers: User[] = [
   { id: 2, name: 'Jane Doe', email: 'jane@example.com' },
 ]
 
-import type { RequestInfo } from '../api-mocks'
-
 // Example API handlers
 const handlers = {
   // List users
-  'GET /api/users': async ({ request }: { request: Request }) => {
-    const url = new URL(request.url)
+  'GET /api/users': async (info: HandlerInfo) => {
+    const url = new URL(info.request.url)
     const search = url.searchParams.get('search')
     if (search) {
       const filtered = testUsers.filter(user => 
@@ -44,7 +41,8 @@ const handlers = {
   },
 
   // Get user by ID
-  'GET /api/users/:id': ({ params }: { params: { id: string } }) => {
+  'GET /api/users/:id': async (info: HandlerInfo) => {
+    const params = (info as any).params
     const user = testUsers.find(u => u.id === Number(params.id))
     if (!user) {
       return responseHelpers.error('User not found', 404)()
@@ -53,8 +51,8 @@ const handlers = {
   },
 
   // Create user
-  'POST /api/users': async ({ request }: { request: Request }) => {
-    const body: CreateUserDto = await request.json()
+  'POST /api/users': async (info: HandlerInfo) => {
+    const body: CreateUserDto = await info.request.json()
     
     if (!body.name || !body.email) {
       return responseHelpers.error('Name and email are required', 400)()
@@ -70,8 +68,9 @@ const handlers = {
   },
 
   // Update user
-  'PUT /api/users/:id': async ({ request, params }: { request: Request, params: { id: string } }) => {
-    const body = await request.json()
+  'PUT /api/users/:id': async (info: HandlerInfo) => {
+    const params = (info as any).params
+    const body = await info.request.json()
     const index = testUsers.findIndex(u => u.id === Number(params.id))
     
     if (index === -1) {
@@ -83,7 +82,8 @@ const handlers = {
   },
 
   // Delete user
-  'DELETE /api/users/:id': ({ params }: { params: { id: string } }) => {
+  'DELETE /api/users/:id': async (info: HandlerInfo) => {
+    const params = (info as any).params
     const index = testUsers.findIndex(u => u.id === Number(params.id))
     
     if (index === -1) {
@@ -96,7 +96,7 @@ const handlers = {
 }
 
 // Create test server
-const server = createServer(handlers)
+export const server = createServer(handlers)
 
 describe('API Examples', () => {
   it('should list users', async () => {

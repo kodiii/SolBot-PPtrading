@@ -3,8 +3,8 @@ import { render as rtlRender, screen } from "@testing-library/react"
 import { act } from "react-dom/test-utils"
 import userEvent from "@testing-library/user-event"
 import type { RenderOptions } from "@testing-library/react"
-import { ThemeProvider } from "@/components/theme-provider"
-import { SettingsProvider } from "@/contexts/settings"
+import { ThemeProvider } from "../components/theme/theme-provider"
+import { SettingsProvider } from "../contexts/settings"
 
 /**
  * Test wrapper with providers

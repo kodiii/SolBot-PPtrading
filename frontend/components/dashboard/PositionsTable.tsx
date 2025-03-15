@@ -1,99 +1,63 @@
-"use client"
+'use client'
 
-import { Position } from "@/lib/types"
-import { formatDecimal } from "@/lib/utils"
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
-import { SkeletonTable } from "@/components/ui/skeleton"
+import { formatDecimal } from '@/lib/utils'
+import { SkeletonTable } from '@/components/ui/skeleton'
+import type { Position } from '@/lib/types'
 
 interface PositionsTableProps {
   positions: Position[]
   isLoading?: boolean
 }
 
-/**
- * Displays active trading positions in a table format
- */
 export function PositionsTable({ positions, isLoading }: PositionsTableProps): React.ReactElement {
   if (isLoading) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Active Positions</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <SkeletonTable />
-        </CardContent>
-      </Card>
-    )
-  }
-
-  if (!positions.length) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Active Positions</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-center text-muted-foreground py-8">
-            No active positions
-          </div>
-        </CardContent>
-      </Card>
-    )
+    return <SkeletonTable />
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Active Positions ({positions.length})</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="relative overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b">
-                <th className="text-left py-3 px-4">Token</th>
-                <th className="text-right py-3 px-4">Amount</th>
-                <th className="text-right py-3 px-4">Entry Price</th>
-                <th className="text-right py-3 px-4">Current Price</th>
-                <th className="text-right py-3 px-4">Position Size</th>
-                <th className="text-right py-3 px-4">Stop Loss</th>
-                <th className="text-right py-3 px-4">Take Profit</th>
+    <div className="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>Token Name</th>
+            <th>Address</th>
+            <th>Volume</th>
+            <th>Market Cap</th>
+            <th>Liquidity</th>
+            <th>Position Size (SOL)</th>
+            <th>Buy Price (SOL)</th>
+            <th>Current Price (SOL)</th>
+            <th>P/L (%)</th>
+            <th>Take Profit (SOL)</th>
+            <th>Stop Loss (SOL)</th>
+          </tr>
+        </thead>
+        <tbody>
+          {positions.map((position, index) => {
+            const buyPrice = parseFloat(position.buy_price)
+            const currentPrice = parseFloat(position.current_price)
+            const pnlPercentage = ((currentPrice - buyPrice) / buyPrice) * 100
+
+            return (
+              <tr key={`${position.token_mint}-${index}`}>
+                <td className="token-cell">{position.token_name}</td>
+                <td className="address-cell">{position.token_mint}</td>
+                <td>0.00</td>
+                <td>{formatDecimal('2611.00')}</td>
+                <td>{formatDecimal('4859.25')}</td>
+                <td>{formatDecimal(position.position_size_sol)}</td>
+                <td>{formatDecimal(position.buy_price)}</td>
+                <td>{formatDecimal(position.current_price)}</td>
+                <td className={pnlPercentage >= 0 ? 'positive' : 'negative'}>
+                  {pnlPercentage.toFixed(4)}%
+                </td>
+                <td>{formatDecimal(position.take_profit)}</td>
+                <td>{formatDecimal(position.stop_loss)}</td>
               </tr>
-            </thead>
-            <tbody>
-              {positions.map((position) => (
-                <tr key={position.token_mint} className="border-b">
-                  <td className="py-3 px-4">{position.token_name}</td>
-                  <td className="text-right py-3 px-4">
-                    {formatDecimal(position.amount)}
-                  </td>
-                  <td className="text-right py-3 px-4">
-                    {formatDecimal(position.buy_price, 8)}
-                  </td>
-                  <td className="text-right py-3 px-4">
-                    {formatDecimal(position.current_price, 8)}
-                  </td>
-                  <td className="text-right py-3 px-4">
-                    {formatDecimal(position.position_size_sol)} SOL
-                  </td>
-                  <td className="text-right py-3 px-4">
-                    {formatDecimal(position.stop_loss, 8)}
-                  </td>
-                  <td className="text-right py-3 px-4">
-                    {formatDecimal(position.take_profit, 8)}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </CardContent>
-    </Card>
+            )
+          })}
+        </tbody>
+      </table>
+    </div>
   )
 }
