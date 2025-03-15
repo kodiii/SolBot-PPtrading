@@ -3,7 +3,7 @@
 import { useDashboardData } from '@/hooks/useDashboardData'
 import { TradesTable } from '@/components/dashboard/TradesTable'
 
-export default function TradesPage() {
+export default function TradesPage(): React.ReactElement {
   const { data, isLoading, error, refresh } = useDashboardData()
 
   if (error) {

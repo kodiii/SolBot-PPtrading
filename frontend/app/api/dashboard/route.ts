@@ -12,7 +12,8 @@ import { getBalance, getPositions, getTrades, getStats } from '@/lib/db';
 export async function GET(): Promise<NextResponse> {
   console.log('Dashboard API called');
   console.log('Working directory:', process.cwd());
-  console.log('DB file exists:', require('fs').existsSync('./src/papertrading/db/paper_trading.db'));
+  // Skip direct filesystem check in route handler since we already handle DB errors
+  console.log('Working directory:', process.cwd());
   try {
     // Check DB connection first
     try {

@@ -5,7 +5,7 @@ import { PositionsTable } from '@/components/dashboard/PositionsTable'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { formatDecimal } from '@/lib/utils'
 
-export default function PositionsPage() {
+export default function PositionsPage(): React.ReactElement {
   const { data, isLoading, error, refresh } = useDashboardData()
 
   if (error) {
