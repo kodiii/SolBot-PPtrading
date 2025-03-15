@@ -6,7 +6,9 @@ const REFRESH_INTERVAL = 2000; // 2 seconds
 /**
  * Custom fetcher with error handling for dashboard data
  */
-const fetcher = async (url: string) => {
+import { API_ENDPOINTS } from '@/lib/api-config';
+
+const fetcher = async (url: string): Promise<DashboardData> => {
   console.log('Fetching dashboard data...'); // Provisional debug log
   const res = await fetch(url);
   
@@ -28,14 +30,20 @@ const fetcher = async (url: string) => {
  * - Error handling
  * - Manual refresh
  */
-export function useDashboardData() {
+export function useDashboardData(): {
+  data: DashboardData | undefined;
+  isLoading: boolean;
+  isRefreshing: boolean;
+  error: string | undefined;
+  refresh: () => Promise<DashboardData | undefined>;
+} {
   const {
     data,
     error,
     isValidating,
     mutate
   } = useSWR<DashboardData, Error>(
-    '/api/dashboard',
+    API_ENDPOINTS.dashboard,
     fetcher,
     {
       refreshInterval: REFRESH_INTERVAL,
@@ -64,7 +72,13 @@ export function useDashboardData() {
 /**
  * Hook for trading position data only
  */
-export function usePositions() {
+export function usePositions(): {
+  positions: DashboardData['positions'];
+  isLoading: boolean;
+  isRefreshing: boolean;
+  error: string | undefined;
+  refresh: () => Promise<DashboardData | undefined>;
+} {
   const { data, ...rest } = useDashboardData();
   return {
     positions: data?.positions || [],
@@ -75,7 +89,13 @@ export function usePositions() {
 /**
  * Hook for trading stats only
  */
-export function useStats() {
+export function useStats(): {
+  stats: DashboardData['stats'] | undefined;
+  isLoading: boolean;
+  isRefreshing: boolean;
+  error: string | undefined;
+  refresh: () => Promise<DashboardData | undefined>;
+} {
   const { data, ...rest } = useDashboardData();
   return {
     stats: data?.stats,

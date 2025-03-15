@@ -1,10 +1,14 @@
 import { Database, open } from 'sqlite';
 import * as sqlite3 from 'sqlite3';
 
+import path from 'path';
+
 /**
  * Default path for the SQLite database file
  */
-const DB_PATH = "src/papertrading/db/paper_trading.db";
+// Resolve path relative to this file's location
+const DB_PATH = path.resolve(__dirname, "../../../src/papertrading/db/paper_trading.db");
+console.log('Using database path:', DB_PATH); // Debug log
 
 /**
  * Interface representing a database transaction with commit and rollback capabilities.
