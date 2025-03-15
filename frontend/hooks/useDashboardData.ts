@@ -7,9 +7,11 @@ const REFRESH_INTERVAL = 2000; // 2 seconds
  * Custom fetcher with error handling for dashboard data
  */
 const fetcher = async (url: string) => {
+  console.log('Fetching dashboard data...'); // Provisional debug log
   const res = await fetch(url);
   
   if (!res.ok) {
+    console.error('Dashboard data fetch failed:', res.status, res.statusText); // Provisional debug log
     const errorData = await res.json() as ApiError;
     throw new Error(errorData.details || errorData.error || 'Failed to fetch data');
   }
@@ -37,12 +39,14 @@ export function useDashboardData() {
     fetcher,
     {
       refreshInterval: REFRESH_INTERVAL,
-      revalidateOnFocus: true,
-      revalidateOnReconnect: true,
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
       keepPreviousData: true,
-      dedupingInterval: 1000,
+      dedupingInterval: REFRESH_INTERVAL,
       errorRetryCount: 3,
+      isPaused: () => false,
       onError: (err) => {
+        console.error('SWR onError callback:', err); // Provisional debug log
         console.error('Dashboard data fetch error:', err);
       },
     }

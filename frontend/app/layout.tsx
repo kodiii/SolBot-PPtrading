@@ -5,11 +5,21 @@ import { ErrorBoundary } from '@/components/layout'
 
 const inter = Inter({ subsets: ['latin'] })
 
-export default function RootLayout({ children }: { children: React.ReactNode }): React.ReactElement {
+export const metadata = {
+  title: 'Paper Trading Dashboard',
+  description: 'A paper trading dashboard for simulating trades',
+}
+
+export default function RootLayout({ children }: { children: React.ReactNode }): React.JSX.Element {
   return (
-    <html lang="en" className="dark">
-      <body className={inter.className}>
-        <ThemeProvider>
+    <html lang="en" suppressHydrationWarning className="dark">
+      <head />
+      <body className={`${inter.className} antialiased`} suppressHydrationWarning>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+        >
           <ErrorBoundary>
             {children}
           </ErrorBoundary>

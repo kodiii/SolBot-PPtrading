@@ -155,10 +155,10 @@ export const config = {
     // Market validation thresholds
     min_total_markets: 0, // Minimum required trading markets
     min_total_lp_providers: 0, // Minimum required liquidity providers
-    min_total_market_Liquidity: 30000, // Minimum required market liquidity
+    min_total_market_Liquidity: 10000, // Minimum required market liquidity
     max_total_market_Liquidity: 100000, // Maximum required market liquidity
     max_marketcap: 25000000, // Maximum allowed market cap in $
-    max_price_token: 0.0001, // Maximum allowed token price in $
+    max_price_token: 0.001, // Maximum allowed token price in $
     
     // Miscellaneous settings
     ignore_pump_fun: false, // Ignore Pump.fun tokens

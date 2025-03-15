@@ -3,7 +3,7 @@ import { render as rtlRender, screen } from "@testing-library/react"
 import { act } from "react-dom/test-utils"
 import userEvent from "@testing-library/user-event"
 import type { RenderOptions } from "@testing-library/react"
-import { ThemeProvider } from "../components/theme/theme-provider"
+import { ThemeProvider } from "@/components/theme"
 import { SettingsProvider } from "../contexts/settings"
 
 /**

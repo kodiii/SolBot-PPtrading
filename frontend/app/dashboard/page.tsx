@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { SkeletonCard } from '@/components/ui/skeleton'
 import { useDashboardData } from '@/hooks/useDashboardData'
-import { formatDecimal } from '@/lib/utils'
+import { formatDecimal, formatDateTime } from '@/lib/utils'
 import { PositionsTable } from '@/components/dashboard/PositionsTable'
 import { TradesTable } from '@/components/dashboard/TradesTable'
 import { useState } from 'react'
@@ -98,7 +98,7 @@ export default function DashboardPage(): React.ReactElement {
                 />
                 <StatItem
                   label="Updated At"
-                  value={new Date(data?.balance.updated_at || 0).toLocaleString()}
+                  value={formatDateTime(data?.balance.updated_at || 0)}
                 />
               </div>
             )}
@@ -192,15 +192,7 @@ export default function DashboardPage(): React.ReactElement {
 
       {/* Footer */}
       <footer className="flex justify-between items-center pt-4 mt-8 border-t border-border text-sm text-muted-foreground">
-        <div>Last updated: {new Date().toLocaleString('en-US', { 
-          year: 'numeric',
-          month: 'numeric',
-          day: 'numeric',
-          hour: 'numeric',
-          minute: 'numeric',
-          second: 'numeric',
-          hour12: true
-        })}</div>
+        <div>Last updated: {formatDateTime(data?.balance.updated_at || Date.now())}</div>
         <div>Paper Trading System v1.0</div>
       </footer>
     </div>
