@@ -22,12 +22,29 @@ else
   fi
 fi
 
+# Install dependencies for API server
+echo "Installing API server dependencies..."
+(cd src/api-server && npm install)
+if [ $? -ne 0 ]; then
+    echo "Failed to install API server dependencies"
+    exit 1
+fi
+
 # Start API server from project root to maintain correct paths
-(cd src/api-server && NODE_PATH=.. npm run dev) &
+echo "Starting API server on port 3002..."
+(cd src/api-server && NODE_PATH=.. PORT=3002 npm run dev) &
 API_PID=$!
 
+# Wait a moment to ensure API server starts
+sleep 3
+
+# Clear port 3010 if it's in use
+echo "Ensuring port 3010 is available..."
+lsof -i :3010 | grep LISTEN | awk '{print $2}' | xargs kill -9 2>/dev/null || true
+
 # Start frontend
-(cd frontend && npm run dev) &
+echo "Starting frontend on port 3010..."
+(cd frontend && PORT=3010 npm run dev) &
 FRONTEND_PID=$!
 
 # Handle shutdown

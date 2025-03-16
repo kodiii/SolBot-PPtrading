@@ -38,11 +38,11 @@
 }
 
 .positive {
-  @apply text-positive;
+  color: #10b981; /* Green color for positive values */
 }
 
 .negative {
-  @apply text-negative;
+  color: #ef4444; /* Red color for negative values */
 }
 
 /* Table Styles */

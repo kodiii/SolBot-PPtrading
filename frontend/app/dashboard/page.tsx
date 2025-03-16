@@ -69,9 +69,6 @@ export default function DashboardPage(): React.ReactElement {
           <h1 className="text-2xl font-semibold text-primary">Paper Trading Dashboard</h1>
         </div>
         <div className="flex items-center gap-4">
-          <div className="text-sm text-muted-foreground bg-muted px-3 py-1.5 rounded">
-            3336664916988/13321480772534583585
-          </div>
           <Card className="inline-flex items-center gap-2 px-4 py-2">
             <span className="text-muted-foreground">Balance:</span>
             <span className="font-semibold">

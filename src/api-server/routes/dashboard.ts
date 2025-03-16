@@ -20,7 +20,20 @@ export function setupDashboardRoutes(app: Express, db: DatabaseService): void {
         take_profit: '0'   // Need to implement
       }));
 
+      // Get initial balance from config or use a default
+      const initialBalance = 100; // This should come from config later
+      
+      // Calculate current balance by subtracting position sizes
+      const totalInvested = positions.reduce((sum, pos) => 
+        sum + parseFloat(pos.position_size_sol), 0);
+      
+      const currentBalance = initialBalance - totalInvested;
+
       res.json({
+        balance: {
+          balance_sol: currentBalance.toString(),
+          updated_at: Date.now()
+        },
         positions,
         trades: [], // Need to implement trades endpoint
         stats: {

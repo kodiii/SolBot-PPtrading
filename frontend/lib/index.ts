@@ -4,19 +4,15 @@ export { cn, formatAddress, formatCurrency, formatDateTime, formatDecimal } from
 // Error handling
 export { ApiError } from './api-error'
 
-// Database and types
-export {
-  type Balance,
-  type Position,
-  type Trade,
-  getBalance,
-  getPositions,
-  getTrades,
-  getStats
+// Database types
+export type {
+  Balance,
+  Position,
+  Trade,
+  TradingStats as Stats
 } from './db'
 
 // Types
 export type {
-  DashboardData,
-  Stats
+  DashboardData
 } from './types'

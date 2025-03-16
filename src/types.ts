@@ -1,6 +1,34 @@
 import { Decimal } from "./utils/decimal";
 
 /**
+ * Price validation types
+ */
+export interface TokenPrice {
+  price: Decimal;
+  timestamp: number;
+  source: 'jupiter' | 'dexscreener';
+}
+
+export interface PriceHistory {
+  mint: string;
+  prices: TokenPrice[];
+  lastValidation: number;
+}
+
+export interface PriceValidationResult {
+  isValid: boolean;
+  confidence: number;
+  reason: string;
+  suggestedPrice?: Decimal;
+}
+
+export interface RollingAverageConfig {
+  windowSize: number;
+  maxDeviation: number;
+  minDataPoints: number;
+}
+
+/**
  * Token tracking information structure
  */
 export interface TokenTracking {
