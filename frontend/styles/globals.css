@@ -4,33 +4,62 @@
 
 @layer base {
   :root {
-    --background: 172 50% 0%;
-    --foreground: 172 12% 97%;
-    --muted: 292 25% 9%;
-    --muted-foreground: 292 15% 62%;
-    --popover: 172 50% 0%;
-    --popover-foreground: 172 12% 97%;
-    --card: 172 50% 0%;
-    --card-foreground: 172 12% 97%;
-    --border: 172 2% 12%;
-    --input: 172 2% 12%;
-    --primary: 172 66% 50%;
-    --primary-foreground: 172 66% 10%;
-    --secondary: 292 66% 50%;
-    --secondary-foreground: 0 0% 100%;
-    --accent: 52.35 100% 49.22%;
-    --accent-foreground: 52 66% 10%;
-    --destructive: 343.02 100% 41.57%;
-    --destructive-foreground: 0 0% 0%;
-    --ring: 172 66% 50%;
+    --background: 233 18% 25%;
+    --foreground: 173 30% 93%;
+    --muted: 233 12% 23%;
+    --muted-foreground: 233 12% 73%;
+    --popover: 233 18% 20%;
+    --popover-foreground: 0 0% 100%;
+    --card: 233 18% 23%;
+    --card-foreground: 173 24% 98%;
+    --border: 233 8% 24%;
+    --input: 233 8% 27%;
+    --primary: 44 100% 71%;
+    --primary-foreground: 44 100% 11%;
+    --secondary: 220 30% 25%;
+    --secondary-foreground: 220 30% 85%;
+    --accent: 120 60% 50%;
+    --accent-foreground: 120 60% 90%;
+    --destructive: 10 90% 57%;
+    --destructive-foreground: 0 0% 100%;
+    --ring: 44 100% 71%;
+    --chart-1: 44 100% 71%;
+    --chart-2: 220 30% 25%;
+    --chart-3: 120 60% 50%;
+    --chart-4: 220 30% 28%;
+    --chart-5: 44 103% 71%;
     --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 240 23.58% 24.12%;
+    --foreground: 185.66 24% 93%;
+    --muted: 233 10.2% 52.88%;
+    --muted-foreground: 233 12% 73%;
+    --popover: 242.73 25% 17.25%;
+    --popover-foreground: 0 0% 100%;
+    --card: 242.73 25% 20%;
+    --card-foreground: 173 24% 98%;
+    --border: 233 9.88% 23.8%;
+    --input: 240 27.02% 33.31%;
+    --primary: 29.43 100% 38.08%;
+    --primary-foreground: 180 22.22% 92.94%;
+    --secondary: 262.64 67.65% 47.26%;
+    --secondary-foreground: 180 22.22% 92.94%;
+    --accent: 120 60% 50%;
+    --accent-foreground: 120 60% 90%;
+    --destructive: 11.32 78.77% 52.89%;
+    --destructive-foreground: 0 0% 100%;
+    --ring: 31.7 91.3% 63.92%;
+    --chart-1: 29.43 100% 38.08%;
+    --chart-2: 262.64 67.65% 47.26%;
+    --chart-3: 120 60% 50%;
+    --chart-4: 262.64 67.65% 50.26%;
+    --chart-5: 29.43 103% 38.08%;
   }
 }
 
 @layer base {
-  * {
-    @apply border-border;
-  }
   body {
     @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;

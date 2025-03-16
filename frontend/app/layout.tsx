@@ -12,7 +12,7 @@ export const metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }): React.JSX.Element {
   return (
-    <html lang="en" suppressHydrationWarning className="dark">
+    <html lang="en" suppressHydrationWarning>
       <head />
       <body className={`${inter.className} antialiased`} suppressHydrationWarning>
         <ThemeProvider

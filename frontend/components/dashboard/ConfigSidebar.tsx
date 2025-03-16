@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -12,188 +12,387 @@ interface ConfigSidebarProps {
   onClose: () => void
 }
 
-export function ConfigSidebar({ isOpen, onClose }: ConfigSidebarProps): React.ReactElement {
-  const [activeTab, setActiveTab] = useState('paperTrading')
+// Define the configuration settings interface
+interface ConfigSettings {
+  paperTrading: {
+    initialBalance: number;
+    dashboardRefresh: number;
+    recentTradesLimit: number;
+    verboseLogging: boolean;
+  };
+  priceValidation: {
+    enabled: boolean;
+    windowSize: number;
+    maxDeviation: number;
+    minDataPoints: number;
+    fallbackToSingleSource: boolean;
+  };
+  swap: {
+    amount: number;
+    slippageBps: number;
+    maxOpenPositions: number;
+  };
+  strategies: {
+    liquidityDropEnabled: boolean;
+    threshold: number;
+  };
+}
 
-  if (!isOpen) return null
+export function ConfigSidebar({ isOpen, onClose }: ConfigSidebarProps): React.ReactElement {
+  // Initialize settings with default values
+  const [settings, setSettings] = useState<ConfigSettings>({
+    paperTrading: {
+      initialBalance: 5,
+      dashboardRefresh: 2000,
+      recentTradesLimit: 12,
+      verboseLogging: false
+    },
+    priceValidation: {
+      enabled: true,
+      windowSize: 12,
+      maxDeviation: 0.05,
+      minDataPoints: 6,
+      fallbackToSingleSource: true
+    },
+    swap: {
+      amount: 500000000,
+      slippageBps: 200,
+      maxOpenPositions: 3
+    },
+    strategies: {
+      liquidityDropEnabled: true,
+      threshold: 20
+    }
+  });
+
+  // Create a copy of settings for tracking changes
+  const [originalSettings, setOriginalSettings] = useState<ConfigSettings>({...settings});
+  const [hasChanges, setHasChanges] = useState(false);
+  const [activeTab, setActiveTab] = useState('paperTrading');
+
+  // Check for changes when settings are updated
+  useEffect(() => {
+    const checkChanges = () => {
+      const settingsStr = JSON.stringify(settings);
+      const originalStr = JSON.stringify(originalSettings);
+      setHasChanges(settingsStr !== originalStr);
+    };
+    
+    checkChanges();
+  }, [settings, originalSettings]);
+
+  // Update a specific setting
+  const updateSetting = (
+    category: keyof ConfigSettings, 
+    key: string, 
+    value: any
+  ) => {
+    setSettings(prev => ({
+      ...prev,
+      [category]: {
+        ...prev[category],
+        [key]: value
+      }
+    }));
+  };
+
+  // Handle saving changes
+  const saveChanges = () => {
+    // Here you would typically send the settings to an API
+    console.log('Saving settings:', settings);
+    
+    // Update original settings to match current settings
+    setOriginalSettings({...settings});
+    setHasChanges(false);
+    
+    // Close the modal
+    onClose();
+  };
+
+  // Handle canceling changes
+  const cancelChanges = () => {
+    // Reset settings to original values
+    setSettings({...originalSettings});
+    onClose();
+  };
+
+  // Handle ESC key press
+  useEffect(() => {
+    const handleEscapeKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && isOpen) {
+        onClose();
+      }
+    };
+
+    document.addEventListener('keydown', handleEscapeKey);
+    return () => document.removeEventListener('keydown', handleEscapeKey);
+  }, [isOpen, onClose]);
+
+  if (!isOpen) return <></>;
 
   return (
-    <div className="fixed inset-y-0 right-0 w-80 bg-card border-l border-border shadow-lg z-50 overflow-y-auto">
-      <div className="p-4 border-b border-border flex justify-between items-center">
-        <h2 className="text-lg font-semibold">Configuration</h2>
-        <Button variant="ghost" size="sm" onClick={onClose}>
-          <span className="sr-only">Close</span>
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className="h-4 w-4"
-          >
-            <path d="M18 6 6 18" />
-            <path d="m6 6 12 12" />
-          </svg>
-        </Button>
-      </div>
-
-      <div className="p-4">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid grid-cols-2 mb-4">
-            <TabsTrigger value="paperTrading">Paper Trading</TabsTrigger>
-            <TabsTrigger value="strategies">Strategies</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="paperTrading" className="space-y-4">
-            <div className="space-y-2">
-              <h3 className="text-sm font-medium">Paper Trading Settings</h3>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="verbose_log">Verbose Logging</Label>
-                  <Switch id="verbose_log" />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="initial_balance">Initial Balance (SOL)</Label>
-                  <Input id="initial_balance" type="number" defaultValue="5" />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="dashboard_refresh">Dashboard Refresh (ms)</Label>
-                  <Input id="dashboard_refresh" type="number" defaultValue="2000" />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="recent_trades_limit">Recent Trades Limit</Label>
-                  <Input id="recent_trades_limit" type="number" defaultValue="12" />
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <h3 className="text-sm font-medium">Price Validation</h3>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="price_validation_enabled">Enabled</Label>
-                  <Switch id="price_validation_enabled" defaultChecked />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="window_size">Window Size</Label>
-                  <Input id="window_size" type="number" defaultValue="12" />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="max_deviation">Max Deviation</Label>
-                  <Input id="max_deviation" type="number" step="0.01" defaultValue="0.05" />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="min_data_points">Min Data Points</Label>
-                  <Input id="min_data_points" type="number" defaultValue="6" />
-                </div>
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="fallback_to_single_source">Fallback to Single Source</Label>
-                  <Switch id="fallback_to_single_source" defaultChecked />
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <h3 className="text-sm font-medium">Swap Settings</h3>
-              <div className="space-y-2">
-                <div className="grid gap-2">
-                  <Label htmlFor="amount">Amount (lamports)</Label>
-                  <Input id="amount" type="text" defaultValue="500000000" />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="slippageBps">Slippage (basis points)</Label>
-                  <Input id="slippageBps" type="text" defaultValue="200" />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="max_open_positions">Max Open Positions</Label>
-                  <Input id="max_open_positions" type="number" defaultValue="3" />
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <h3 className="text-sm font-medium">Sell Settings</h3>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="auto_sell">Auto Sell</Label>
-                  <Switch id="auto_sell" defaultChecked />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="stop_loss_percent">Stop Loss (%)</Label>
-                  <Input id="stop_loss_percent" type="number" defaultValue="30" />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="take_profit_percent">Take Profit (%)</Label>
-                  <Input id="take_profit_percent" type="number" defaultValue="26" />
-                </div>
-              </div>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="strategies" className="space-y-4">
-            <div className="space-y-2">
-              <h3 className="text-sm font-medium">Global Strategy Settings</h3>
-              <div className="flex items-center justify-between">
-                <Label htmlFor="strategies_debug">Debug Mode</Label>
-                <Switch id="strategies_debug" />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <h3 className="text-sm font-medium">Liquidity Drop Strategy</h3>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="liquidity_drop_enabled">Enabled</Label>
-                  <Switch id="liquidity_drop_enabled" defaultChecked />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="threshold_percent">Threshold (%)</Label>
-                  <Input id="threshold_percent" type="number" defaultValue="20" />
-                </div>
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="liquidity_drop_debug">Debug Mode</Label>
-                  <Switch id="liquidity_drop_debug" />
+    <div 
+      className="fixed inset-0 z-[9999] flex items-center justify-center backdrop-blur-[40px] bg-black/70 transition-all duration-500" 
+      style={{ 
+        position: 'fixed', 
+        top: 0, 
+        left: 0, 
+        right: 0, 
+        bottom: 0,
+        WebkitBackdropFilter: 'blur(40px)',
+        backdropFilter: 'blur(40px)',
+      }}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) {
+          onClose();
+        }
+      }}
+    >
+      
+      {/* Modal */}
+      <div 
+        className="relative bg-card rounded-lg shadow-xl w-[90%] max-w-4xl max-h-[90vh] overflow-hidden flex flex-col transition-all duration-300 ease-out will-change-[opacity,transform]"
+        style={{ 
+          position: 'relative', 
+          zIndex: 10000,
+          opacity: isOpen ? 1 : 0,
+          transform: `scale(${isOpen ? 1 : 0.95}) translateY(${isOpen ? '0px' : '10px'})`
+        }}
+      >
+        {/* Header */}
+        <div className="bg-card p-4 border-b border-border flex justify-between items-center sticky top-0 z-10">
+          <div className="flex items-center space-x-2">
+            <h2 className="text-xl font-bold">Configuration</h2>
+            <span className="bg-primary/10 text-primary text-xs font-medium rounded px-2 py-1">Settings</span>
+          </div>
+          <Button onClick={onClose} variant="ghost" size="sm">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="h-4 w-4"
+            >
+              <path d="M18 6 6 18" />
+              <path d="m6 6 12 12" />
+            </svg>
+          </Button>
+        </div>
+        
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto p-6">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="inline-flex h-10 items-center justify-center rounded-md bg-muted/50 p-1">
+              <TabsTrigger value="paperTrading" className="inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
+                Paper Trading
+              </TabsTrigger>
+              <TabsTrigger value="priceValidation" className="inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
+                Price Validation
+              </TabsTrigger>
+              <TabsTrigger value="swapSettings" className="inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
+                Swap Settings
+              </TabsTrigger>
+              <TabsTrigger value="strategies" className="inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
+                Strategies
+              </TabsTrigger>
+            </TabsList>
+            
+            {/* Paper Trading Settings */}
+            <TabsContent value="paperTrading" className="mt-6">
+              <div className="bg-card/50 rounded-lg p-6">
+                <div className="max-w-2xl mx-auto space-y-6">
+                  <h3 className="text-lg font-semibold border-b pb-2">General Settings</h3>
+                  <div className="space-y-3">
+                    <div className="grid gap-2">
+                      <Label htmlFor="initialBalance">Initial Balance (SOL)</Label>
+                      <Input 
+                        id="initialBalance" 
+                        type="number" 
+                        value={settings.paperTrading.initialBalance}
+                        onChange={(e) => updateSetting('paperTrading', 'initialBalance', parseFloat(e.target.value))}
+                      />
+                    </div>
+                    
+                    <div className="grid gap-2">
+                      <Label htmlFor="dashboardRefresh">Dashboard Refresh (ms)</Label>
+                      <Input 
+                        id="dashboardRefresh" 
+                        type="number" 
+                        value={settings.paperTrading.dashboardRefresh}
+                        onChange={(e) => updateSetting('paperTrading', 'dashboardRefresh', parseInt(e.target.value))}
+                      />
+                    </div>
+                    
+                    <div className="grid gap-2">
+                      <Label htmlFor="recentTradesLimit">Recent Trades Limit</Label>
+                      <Input 
+                        id="recentTradesLimit" 
+                        type="number" 
+                        value={settings.paperTrading.recentTradesLimit}
+                        onChange={(e) => updateSetting('paperTrading', 'recentTradesLimit', parseInt(e.target.value))}
+                      />
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="verboseLogging">Verbose Logging</Label>
+                      <Switch 
+                        id="verboseLogging" 
+                        checked={settings.paperTrading.verboseLogging}
+                        onCheckedChange={(checked) => updateSetting('paperTrading', 'verboseLogging', checked)}
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
-
-            <div className="space-y-2">
-              <h3 className="text-sm font-medium">Rug Check Settings</h3>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="simulation_mode">Simulation Mode</Label>
-                  <Switch id="simulation_mode" defaultChecked />
-                </div>
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="allow_mint_authority">Allow Mint Authority</Label>
-                  <Switch id="allow_mint_authority" />
-                </div>
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="allow_freeze_authority">Allow Freeze Authority</Label>
-                  <Switch id="allow_freeze_authority" />
-                </div>
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="allow_mutable">Allow Mutable</Label>
-                  <Switch id="allow_mutable" defaultChecked />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="max_score">Max Risk Score</Label>
-                  <Input id="max_score" type="number" defaultValue="30000" />
+            </TabsContent>
+            
+            {/* Price Validation Settings */}
+            <TabsContent value="priceValidation" className="mt-6">
+              <div className="bg-card/50 rounded-lg p-6">
+                <div className="max-w-2xl mx-auto space-y-6">
+                  <h3 className="text-lg font-semibold border-b pb-2">Validation Settings</h3>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="priceValidationEnabled">Enabled</Label>
+                      <Switch 
+                        id="priceValidationEnabled" 
+                        checked={settings.priceValidation.enabled}
+                        onCheckedChange={(checked) => updateSetting('priceValidation', 'enabled', checked)}
+                      />
+                    </div>
+                    
+                    <div className="grid gap-2">
+                      <Label htmlFor="windowSize">Window Size</Label>
+                      <Input 
+                        id="windowSize" 
+                        type="number" 
+                        value={settings.priceValidation.windowSize}
+                        onChange={(e) => updateSetting('priceValidation', 'windowSize', parseInt(e.target.value))}
+                      />
+                    </div>
+                    
+                    <div className="grid gap-2">
+                      <Label htmlFor="maxDeviation">Max Deviation</Label>
+                      <Input 
+                        id="maxDeviation" 
+                        type="number" 
+                        step="0.01"
+                        value={settings.priceValidation.maxDeviation}
+                        onChange={(e) => updateSetting('priceValidation', 'maxDeviation', parseFloat(e.target.value))}
+                      />
+                    </div>
+                    
+                    <div className="grid gap-2">
+                      <Label htmlFor="minDataPoints">Min Data Points</Label>
+                      <Input 
+                        id="minDataPoints" 
+                        type="number" 
+                        value={settings.priceValidation.minDataPoints}
+                        onChange={(e) => updateSetting('priceValidation', 'minDataPoints', parseInt(e.target.value))}
+                      />
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="fallbackToSingleSource">Fallback to Single Source</Label>
+                      <Switch 
+                        id="fallbackToSingleSource" 
+                        checked={settings.priceValidation.fallbackToSingleSource}
+                        onCheckedChange={(checked) => updateSetting('priceValidation', 'fallbackToSingleSource', checked)}
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
-          </TabsContent>
-        </Tabs>
-
-        <div className="mt-6 flex justify-end space-x-2">
-          <Button variant="outline" onClick={onClose}>
+            </TabsContent>
+            
+            {/* Swap Settings */}
+            <TabsContent value="swapSettings" className="mt-6">
+              <div className="bg-card/50 rounded-lg p-6">
+                <div className="max-w-2xl mx-auto space-y-6">
+                  <h3 className="text-lg font-semibold border-b pb-2">Swap Configuration</h3>
+                  <div className="space-y-3">
+                    <div className="grid gap-2">
+                      <Label htmlFor="amount">Amount (lamports)</Label>
+                      <Input 
+                        id="amount" 
+                        type="number" 
+                        value={settings.swap.amount}
+                        onChange={(e) => updateSetting('swap', 'amount', parseInt(e.target.value))}
+                      />
+                    </div>
+                    
+                    <div className="grid gap-2">
+                      <Label htmlFor="slippageBps">Slippage (basis points)</Label>
+                      <Input 
+                        id="slippageBps" 
+                        type="number" 
+                        value={settings.swap.slippageBps}
+                        onChange={(e) => updateSetting('swap', 'slippageBps', parseInt(e.target.value))}
+                      />
+                    </div>
+                    
+                    <div className="grid gap-2">
+                      <Label htmlFor="maxOpenPositions">Max Open Positions</Label>
+                      <Input 
+                        id="maxOpenPositions" 
+                        type="number" 
+                        value={settings.swap.maxOpenPositions}
+                        onChange={(e) => updateSetting('swap', 'maxOpenPositions', parseInt(e.target.value))}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </TabsContent>
+            
+            {/* Strategies Settings */}
+            <TabsContent value="strategies" className="mt-6">
+              <div className="bg-card/50 rounded-lg p-6">
+                <div className="max-w-2xl mx-auto space-y-6">
+                  <h3 className="text-lg font-semibold border-b pb-2">Liquidity Drop Strategy</h3>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="liquidityDropEnabled">Enabled</Label>
+                      <Switch 
+                        id="liquidityDropEnabled" 
+                        checked={settings.strategies.liquidityDropEnabled}
+                        onCheckedChange={(checked) => updateSetting('strategies', 'liquidityDropEnabled', checked)}
+                      />
+                    </div>
+                    
+                    <div className="grid gap-2">
+                      <Label htmlFor="threshold">Threshold (%)</Label>
+                      <Input 
+                        id="threshold" 
+                        type="number" 
+                        value={settings.strategies.threshold}
+                        onChange={(e) => updateSetting('strategies', 'threshold', parseInt(e.target.value))}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </TabsContent>
+          </Tabs>
+        </div>
+        
+        {/* Footer */}
+        <div className="bg-card p-4 border-t border-border flex justify-end space-x-2 sticky bottom-0">
+          <Button variant="outline" onClick={cancelChanges}>
             Cancel
           </Button>
-          <Button>Save Changes</Button>
+          <Button 
+            onClick={saveChanges} 
+            disabled={!hasChanges}
+            className={!hasChanges ? 'opacity-50 cursor-not-allowed' : ''}
+          >
+            Save Changes
+          </Button>
         </div>
       </div>
     </div>
