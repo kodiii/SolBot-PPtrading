@@ -169,11 +169,11 @@ export const config = {
       "Freeze Authority still enabled", // Block tokens with active freeze authority
       "Single holder ownership", // Block tokens with concentrated ownership
       "Copycat token", // Block copycat token names
-      // Commented out checks (can be enabled if needed)
-      //"High holder concentration",
-      //"Large Amount of LP Unlocked",
-      //"Low Liquidity",
-      //"Low amount of LP Providers",
+      //Commented out checks (can be enabled if needed)
+      "High holder concentration",
+      "Large Amount of LP Unlocked",
+      "Low Liquidity",
+      "Low amount of LP Providers",
     ],
   },
 };
