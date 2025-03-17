@@ -15,7 +15,7 @@ export function TradesTable({ trades, isLoading }: TradesTableProps): React.Reac
   }
 
   return (
-    <div className="relative overflow-x-auto">
+    <div className="relative overflow-x-auto overflow-y-auto max-h-[400px]">
       <table className="w-full border-collapse">
         <colgroup>
           <col className="w-[200px]" /> {/* Fixed width for token name */}

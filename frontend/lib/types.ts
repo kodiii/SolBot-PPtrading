@@ -62,6 +62,7 @@ export interface DashboardData {
   balance: Balance;
   positions: Position[];
   trades: Trade[];
+  recentTrades?: Trade[]; // Limited number of trades for charts
   stats: Stats;
 }
 

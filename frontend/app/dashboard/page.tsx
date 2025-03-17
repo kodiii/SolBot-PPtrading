@@ -147,7 +147,7 @@ export default function DashboardPage(): React.ReactElement {
             <div className="flex flex-col">
               {/* Charts */}
               {data?.trades && data.trades.length > 0 ? (
-                <TradingCharts trades={data.trades} />
+                <TradingCharts trades={data.recentTrades || data.trades} />
               ) : (
                 <div className="flex items-center justify-center text-muted-foreground py-12">
                   No trade data available for charts
