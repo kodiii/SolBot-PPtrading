@@ -127,7 +127,13 @@ export default function DashboardPage(): React.ReactElement {
               </div>
               <div className="flex flex-col items-start px-8 first:pl-0 last:pr-0 border-r border-border last:border-0">
                 <span className="text-sm text-muted-foreground">Total P/L</span>
-                <span className={`font-semibold mt-1 ${parseFloat(data?.stats.totalPnL || '0') > 0 ? 'text-green-500' : 'text-red-500'}`}>
+                <span className={`font-semibold mt-1 ${
+                  parseFloat(data?.balance.balance_sol || '0') > 5 
+                    ? 'text-green-500' 
+                    : parseFloat(data?.balance.balance_sol || '0') < 5 
+                      ? 'text-red-500' 
+                      : 'text-muted-foreground'
+                }`}>
                   {formatDecimal(data?.stats.totalPnL || '0')} SOL
                 </span>
               </div>
