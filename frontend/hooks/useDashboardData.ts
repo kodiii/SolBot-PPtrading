@@ -98,6 +98,9 @@ export function usePositions(): {
   
   const closePosition = async (tokenMint: string): Promise<boolean> => {
     try {
+      console.log('Closing position for token:', tokenMint);
+      console.log('Using endpoint:', API_ENDPOINTS.closePosition);
+      
       const response = await fetch(API_ENDPOINTS.closePosition, {
         method: 'POST',
         headers: {
@@ -106,11 +109,22 @@ export function usePositions(): {
         body: JSON.stringify({ tokenMint }),
       });
       
+      console.log('Response status:', response.status);
+      
       if (!response.ok) {
-        const errorData = await response.json() as ApiError;
-        console.error('Failed to close position:', errorData.error || errorData.details);
+        let errorMessage = `HTTP error: ${response.status} ${response.statusText}`;
+        try {
+          const errorData = await response.json() as ApiError;
+          errorMessage = errorData.error || errorData.details || errorMessage;
+        } catch (e) {
+          console.error('Failed to parse error response:', e);
+        }
+        console.error('Failed to close position:', errorMessage);
         return false;
       }
+      
+      const data = await response.json();
+      console.log('Close position response:', data);
       
       // Refresh the data after closing the position
       await rest.refresh();

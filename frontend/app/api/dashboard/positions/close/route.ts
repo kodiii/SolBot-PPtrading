@@ -16,10 +16,10 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    console.log('Proxying close position request to backend:', BACKEND_API_ENDPOINTS.positions);
+    console.log('Proxying close position request to backend:', BACKEND_API_ENDPOINTS.closePosition);
     
     // Forward the request to the backend
-    const response = await fetch(`${BACKEND_API_ENDPOINTS.positions}/close`, {
+    const response = await fetch(BACKEND_API_ENDPOINTS.closePosition, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

@@ -5,6 +5,7 @@ import path from 'path';
 import { config } from '../../config';
 import { getTrackedTokens, getVirtualBalance } from '../../papertrading/paper_trading';
 import { fetchActivePositions, fetchRecentTrades, fetchTradingStats } from '../../papertrading/cli/services/dashboard-data';
+import { TradeExecutor } from '../../papertrading/services/trade-executor';
 
 export function setupDashboardRoutes(app: Express, db: DatabaseService): void {
   // Get current settings
@@ -273,34 +274,72 @@ export function setupDashboardRoutes(app: Express, db: DatabaseService): void {
   // Close a position
   app.post('/api/dashboard/positions/close', async (req, res, next) => {
     try {
+      console.log('Received close position request:', req.body);
+      
       const { tokenMint } = req.body;
       
       if (!tokenMint) {
+        console.log('No token mint provided');
         return res.status(400).json({ error: 'Token mint address is required' });
       }
       
       // Get the token data
+      console.log('Fetching tracked tokens...');
       const trackedTokens = await getTrackedTokens();
+      console.log('Found', trackedTokens.length, 'tracked tokens');
+      
       const token = trackedTokens.find(t => t.token_mint === tokenMint);
       
       if (!token) {
+        console.log('Position not found for token mint:', tokenMint);
         return res.status(404).json({ error: 'Position not found' });
       }
       
+      // Validate token data
+      for (const key of ['amount', 'buy_price', 'current_price', 'stop_loss', 'take_profit']) {
+        if (!(token as any)[key]) {
+          console.error('Missing required token data:', key);
+          return res.status(500).json({ error: `Missing required token data: ${key}` });
+        }
+      }
+      
+      console.log('Found position to close:', {
+        token_name: token.token_name,
+        token_mint: token.token_mint,
+        amount: token.amount.toString(),
+        current_price: token.current_price.toString()
+      });
+      
       // Create a trade executor instance
-      const tradeExecutor = new (await import('../../papertrading/services/trade-executor')).TradeExecutor();
+      const tradeExecutor = new TradeExecutor();
       
       // Execute the sell
+      console.log('Executing sell...');
       const result = await tradeExecutor.executeSell(token, 'Manual close by user');
+      console.log('Sell execution result:', result);
       
       if (result) {
-        res.json({ success: true, message: 'Position closed successfully' });
+        console.log('Position closed successfully');
+        res.json({ 
+          success: true, 
+          message: 'Position closed successfully',
+          token: {
+            name: token.token_name,
+            mint: token.token_mint,
+            amount: token.amount.toString(),
+            price: token.current_price.toString()
+          }
+        });
       } else {
-        res.status(500).json({ error: 'Failed to close position' });
+        console.error('Failed to close position - executeSell returned false');
+        res.status(500).json({ error: 'Failed to execute sell order' });
       }
     } catch (error) {
       console.error('Error closing position:', error);
-      next(error);
+      res.status(500).json({ 
+        error: 'Internal server error', 
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
     }
   });
 
