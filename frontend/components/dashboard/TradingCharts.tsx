@@ -109,7 +109,7 @@ export function TradingCharts({ trades }: TradingChartsProps): React.ReactElemen
   // Common chart options
   const commonOptions = {
     responsive: true,
-    maintainAspectRatio: true,
+    maintainAspectRatio: false,
     aspectRatio: 1, // Fixed aspect ratio for all charts
     plugins: {
       legend: {
@@ -211,15 +211,14 @@ export function TradingCharts({ trades }: TradingChartsProps): React.ReactElemen
   }
   
   return (
-    <div className="flex flex-row justify-between w-full">
-      {/* All charts side by side with more spacing */}
-      <div className="h-72 w-[30%]">
+    <div className="flex flex-row justify-between items-stretch w-full h-80 px-4">
+      <div className="w-[35%]">
         <Line options={lineOptions} data={pnlChartData} />
       </div>
-      <div className="h-72 w-[30%]">
+      <div className="w-[35%]">
         <Bar options={barOptions} data={topTokensChartData} />
       </div>
-      <div className="h-72 w-[30%]">
+      <div className="w-[25%]">
         <Pie options={pieOptions} data={winLossChartData} />
       </div>
     </div>

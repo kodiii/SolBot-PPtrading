@@ -116,18 +116,18 @@ export default function DashboardPage(): React.ReactElement {
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Trading Statistics</CardTitle>
           {!isLoading && (
-            <div className="flex flex-row items-center gap-8">
-              <div className="flex flex-col items-start">
+            <div className="flex flex-row items-center">
+              <div className="flex flex-col items-start px-8 first:pl-0 last:pr-0 border-r border-border last:border-0">
                 <span className="text-sm text-muted-foreground">Total Trades</span>
-                <span className="font-semibold">{data?.stats.totalTrades || 0}</span>
+                <span className="font-semibold mt-1">{data?.stats.totalTrades || 0}</span>
               </div>
-              <div className="flex flex-col items-start">
+              <div className="flex flex-col items-start px-8 first:pl-0 last:pr-0 border-r border-border last:border-0">
                 <span className="text-sm text-muted-foreground">Win Rate</span>
-                <span className="font-semibold">{Number(data?.stats.winRate || 0).toFixed(2)}%</span>
+                <span className="font-semibold mt-1">{Number(data?.stats.winRate || 0).toFixed(2)}%</span>
               </div>
-              <div className="flex flex-col items-start">
+              <div className="flex flex-col items-start px-8 first:pl-0 last:pr-0 border-r border-border last:border-0">
                 <span className="text-sm text-muted-foreground">Total P/L</span>
-                <span className={`font-semibold ${parseFloat(data?.stats.totalPnL || '0') > 0 ? 'text-green-500' : 'text-red-500'}`}>
+                <span className={`font-semibold mt-1 ${parseFloat(data?.stats.totalPnL || '0') > 0 ? 'text-green-500' : 'text-red-500'}`}>
                   {formatDecimal(data?.stats.totalPnL || '0')} SOL
                 </span>
               </div>
