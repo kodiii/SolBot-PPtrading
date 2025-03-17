@@ -44,13 +44,32 @@ npm run build
 npm start
 ```
 
-## Paper Trading
+## Dashboard Options
 
-### Launch Dashboard
-To start the paper trading dashboard:
+### CLI Dashboard
+To start the paper trading dashboard CLI:
 ```bash
 npm run dashboard
 ```
+
+### Web Dashboard
+
+1. Configure frontend environment:
+   - Copy `.env.local.example` to `.env.local` in the frontend directory
+   - Configure the API endpoint if needed (defaults to localhost:3001)
+
+2. Start both the frontend and API server:
+```bash
+./dev.sh
+```
+This script starts both the frontend application and the API server concurrently. 
+The web dashboard will be available at `http://localhost:3000` with features including:
+- Real-time position tracking
+- Trade history visualization
+- Configuration management
+- Performance metrics
+
+## Paper Trading
 
 ### Reset Paper Trading Data
 To reset all paper trading data and start fresh:
@@ -93,7 +112,12 @@ npm run lint
    - Use `npm run reset-paper` to clear all paper trading data
    - Check database connectivity if dashboard fails to load
 
-3. For any other issues:
+3. Web Dashboard Issues:
+   - Ensure both frontend and API server started successfully with `./dev.sh`
+   - Check browser console for error messages
+   - Verify your `.env.local` configuration
+
+4. For any other issues:
    - Check the console output for error messages
    - Ensure all environment variables are properly set
    - Verify your wallet has sufficient SOL for transactions
