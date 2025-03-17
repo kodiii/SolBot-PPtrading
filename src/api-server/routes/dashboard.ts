@@ -141,12 +141,21 @@ export function setupDashboardRoutes(app: Express, db: DatabaseService): void {
       const formattedTrades = trades.map(trade => ({
         token_mint: trade.token_mint,
         token_name: trade.token_name,
-        amount: trade.amount_token.toString(),
+        amount_token: trade.amount_token.toString(),
+        amount_sol: trade.amount_sol.toString(),
         buy_price: trade.buy_price.toString(),
-        buy_time: trade.time_buy,
+        buy_fees: trade.buy_fees.toString(),
+        buy_slippage: trade.buy_slippage.toString(),
         sell_price: trade.sell_price?.toString() || null,
-        sell_time: trade.time_sell || null,
-        pnl: trade.pnl?.toString() || null
+        sell_fees: trade.sell_fees?.toString() || null,
+        sell_slippage: trade.sell_slippage?.toString() || null,
+        time_buy: trade.time_buy,
+        time_sell: trade.time_sell || null,
+        pnl: trade.pnl?.toString() || null,
+        market_cap: trade.dex_data?.marketCap?.toString() || '0',
+        liquidity_buy_usd: trade.dex_data?.liquidity_buy_usd?.toString() || '0',
+        liquidity_sell_usd: trade.dex_data?.liquidity_sell_usd?.toString() || null,
+        volume_m5: trade.dex_data?.volume_m5?.toString() || '0'
       }));
 
       // Format stats for the response
@@ -247,12 +256,21 @@ export function setupDashboardRoutes(app: Express, db: DatabaseService): void {
       const formattedTrades = trades.map(trade => ({
         token_mint: trade.token_mint,
         token_name: trade.token_name,
-        amount: trade.amount_token.toString(),
+        amount_token: trade.amount_token.toString(),
+        amount_sol: trade.amount_sol.toString(),
         buy_price: trade.buy_price.toString(),
-        buy_time: trade.time_buy,
+        buy_fees: trade.buy_fees.toString(),
+        buy_slippage: trade.buy_slippage.toString(),
         sell_price: trade.sell_price?.toString() || null,
-        sell_time: trade.time_sell || null,
-        pnl: trade.pnl?.toString() || null
+        sell_fees: trade.sell_fees?.toString() || null,
+        sell_slippage: trade.sell_slippage?.toString() || null,
+        time_buy: trade.time_buy,
+        time_sell: trade.time_sell || null,
+        pnl: trade.pnl?.toString() || null,
+        market_cap: trade.dex_data?.marketCap?.toString() || '0',
+        liquidity_buy_usd: trade.dex_data?.liquidity_buy_usd?.toString() || '0',
+        liquidity_sell_usd: trade.dex_data?.liquidity_sell_usd?.toString() || null,
+        volume_m5: trade.dex_data?.volume_m5?.toString() || '0'
       }));
       
       res.json(formattedTrades);

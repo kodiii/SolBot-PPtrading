@@ -34,6 +34,7 @@ export interface Trade {
   buy_slippage: string;
   sell_price?: string;
   sell_fees?: string;
+  sell_slippage?: string;
   time_buy: number;
   time_sell?: number;
   pnl?: string;
