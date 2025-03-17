@@ -149,7 +149,7 @@ export default function DashboardPage(): React.ReactElement {
                 />
                 <StatItem
                   label="Win Rate"
-                  value={`${(data?.stats.winRate || 0).toFixed(2)}%`}
+                  value={`${Number(data?.stats.winRate || 0).toFixed(2)}%`}
                 />
                 <StatItem
                   label="Total P/L"

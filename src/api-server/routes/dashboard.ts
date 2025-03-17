@@ -3,7 +3,8 @@ import { DatabaseService } from '../../papertrading/db';
 import fs from 'fs';
 import path from 'path';
 import { config } from '../../config';
-import { getTrackedTokens } from '../../papertrading/paper_trading';
+import { getTrackedTokens, getVirtualBalance } from '../../papertrading/paper_trading';
+import { fetchActivePositions, fetchRecentTrades, fetchTradingStats } from '../../papertrading/cli/services/dashboard-data';
 
 export function setupDashboardRoutes(app: Express, db: DatabaseService): void {
   // Get current settings
@@ -98,10 +99,16 @@ export function setupDashboardRoutes(app: Express, db: DatabaseService): void {
   // Get all dashboard data
   app.get('/api/dashboard', async (req, res, next) => {
     try {
-      // Get holdings for real trading mode
-      const holdings = await db.getHoldings();
+      // Get data from both real trading and paper trading modes
+      const [holdings, paperPositions, virtualBalance, trades, stats] = await Promise.all([
+        db.getHoldings(),
+        fetchActivePositions(),
+        getVirtualBalance(),
+        fetchRecentTrades(config.paper_trading.recent_trades_limit),
+        fetchTradingStats()
+      ]);
 
-      // Transform holdings into positions format
+      // Transform holdings into positions format for real trading
       const realPositions = holdings.map(holding => ({
         token_mint: holding.Token,
         token_name: holding.TokenName,
@@ -109,16 +116,13 @@ export function setupDashboardRoutes(app: Express, db: DatabaseService): void {
         position_size_sol: holding.SolPaid.toString(),
         last_updated: holding.Time,
         buy_price: holding.PerTokenPaidUSDC.toString(),
-        current_price: '0', // Need to implement price tracking
-        stop_loss: '0',    // Need to implement
-        take_profit: '0'   // Need to implement
+        current_price: '0',
+        stop_loss: '0',
+        take_profit: '0'
       }));
 
-      // Get tracked tokens for paper trading mode
-      const trackedTokens = await getTrackedTokens();
-      
-      // Transform tracked tokens into positions format
-      const paperPositions = trackedTokens.map(token => ({
+      // Transform paper positions into the same format
+      const formattedPaperPositions = paperPositions.map(token => ({
         token_mint: token.token_mint,
         token_name: token.token_name,
         amount: token.amount.toString(),
@@ -131,31 +135,58 @@ export function setupDashboardRoutes(app: Express, db: DatabaseService): void {
       }));
 
       // Combine positions from both modes
-      const positions = [...realPositions, ...paperPositions];
+      const positions = [...realPositions, ...formattedPaperPositions];
 
-      // Get initial balance from config or use a default
-      const initialBalance = 100; // This should come from config later
-      
-      // Calculate current balance by subtracting position sizes
-      const totalInvested = positions.reduce((sum, pos) => 
-        sum + parseFloat(pos.position_size_sol), 0);
-      
-      const currentBalance = initialBalance - totalInvested;
+      // Format trades for the response
+      const formattedTrades = trades.map(trade => ({
+        token_mint: trade.token_mint,
+        token_name: trade.token_name,
+        amount: trade.amount_token.toString(),
+        buy_price: trade.buy_price.toString(),
+        buy_time: trade.time_buy,
+        sell_price: trade.sell_price?.toString() || null,
+        sell_time: trade.time_sell || null,
+        pnl: trade.pnl?.toString() || null
+      }));
+
+      // Format stats for the response
+      const formattedStats = stats ? {
+        totalTrades: stats.totalTrades,
+        successfulTrades: stats.profitableTrades,
+        failedTrades: stats.totalTrades - stats.profitableTrades,
+        totalPnL: stats.totalProfitLoss.toString(),
+        winRate: stats.winRate.toString(),
+        avgProfitPerTrade: stats.avgProfitPerTrade.toString(),
+        bestTrade: {
+          token: stats.bestTrade.token,
+          profit: stats.bestTrade.profit.toString()
+        },
+        worstTrade: {
+          token: stats.worstTrade.token,
+          profit: stats.worstTrade.profit.toString()
+        }
+      } : {
+        totalTrades: 0,
+        successfulTrades: 0,
+        failedTrades: 0,
+        totalPnL: '0',
+        winRate: '0'
+      };
+
+      // Get balance from virtual balance or config
+      const balance = virtualBalance || { 
+        balance_sol: config.paper_trading.initial_balance, 
+        updated_at: Date.now() 
+      };
 
       res.json({
         balance: {
-          balance_sol: currentBalance.toString(),
-          updated_at: Date.now()
+          balance_sol: balance.balance_sol.toString(),
+          updated_at: balance.updated_at
         },
         positions,
-        trades: [], // Need to implement trades endpoint
-        stats: {
-          totalTrades: 0,
-          successfulTrades: 0,
-          failedTrades: 0,
-          totalPnL: '0',
-          winRate: 0
-        }
+        trades: formattedTrades,
+        stats: formattedStats
       });
     } catch (error) {
       next(error);
@@ -165,8 +196,13 @@ export function setupDashboardRoutes(app: Express, db: DatabaseService): void {
   // Get positions only
   app.get('/api/dashboard/positions', async (req, res, next) => {
     try {
-      // Get holdings for real trading mode
-      const holdings = await db.getHoldings();
+      // Get data from both real trading and paper trading modes
+      const [holdings, paperPositions] = await Promise.all([
+        db.getHoldings(),
+        fetchActivePositions()
+      ]);
+
+      // Transform holdings into positions format for real trading
       const realPositions = holdings.map(holding => ({
         token_mint: holding.Token,
         token_name: holding.TokenName,
@@ -174,16 +210,13 @@ export function setupDashboardRoutes(app: Express, db: DatabaseService): void {
         position_size_sol: holding.SolPaid.toString(),
         last_updated: holding.Time,
         buy_price: holding.PerTokenPaidUSDC.toString(),
-        current_price: '0', // Need to implement price tracking
-        stop_loss: '0',    // Need to implement
-        take_profit: '0'   // Need to implement
+        current_price: '0',
+        stop_loss: '0',
+        take_profit: '0'
       }));
 
-      // Get tracked tokens for paper trading mode
-      const trackedTokens = await getTrackedTokens();
-      
-      // Transform tracked tokens into positions format
-      const paperPositions = trackedTokens.map(token => ({
+      // Transform paper positions into the same format
+      const formattedPaperPositions = paperPositions.map(token => ({
         token_mint: token.token_mint,
         token_name: token.token_name,
         amount: token.amount.toString(),
@@ -196,7 +229,7 @@ export function setupDashboardRoutes(app: Express, db: DatabaseService): void {
       }));
 
       // Combine positions from both modes
-      const positions = [...realPositions, ...paperPositions];
+      const positions = [...realPositions, ...formattedPaperPositions];
       
       res.json(positions);
     } catch (error) {
@@ -208,8 +241,21 @@ export function setupDashboardRoutes(app: Express, db: DatabaseService): void {
   app.get('/api/dashboard/trades', async (req, res, next) => {
     const limit = parseInt(req.query.limit as string) || 10;
     try {
-      // Need to implement trades endpoint
-      res.json([]);
+      const trades = await fetchRecentTrades(limit);
+      
+      // Format trades for the response
+      const formattedTrades = trades.map(trade => ({
+        token_mint: trade.token_mint,
+        token_name: trade.token_name,
+        amount: trade.amount_token.toString(),
+        buy_price: trade.buy_price.toString(),
+        buy_time: trade.time_buy,
+        sell_price: trade.sell_price?.toString() || null,
+        sell_time: trade.time_sell || null,
+        pnl: trade.pnl?.toString() || null
+      }));
+      
+      res.json(formattedTrades);
     } catch (error) {
       next(error);
     }
@@ -218,14 +264,33 @@ export function setupDashboardRoutes(app: Express, db: DatabaseService): void {
   // Get stats only
   app.get('/api/dashboard/stats', async (req, res, next) => {
     try {
-      // Need to implement proper stats calculation
-      res.json({
+      const stats = await fetchTradingStats();
+      
+      // Format stats for the response
+      const formattedStats = stats ? {
+        totalTrades: stats.totalTrades,
+        successfulTrades: stats.profitableTrades,
+        failedTrades: stats.totalTrades - stats.profitableTrades,
+        totalPnL: stats.totalProfitLoss.toString(),
+        winRate: stats.winRate.toString(),
+        avgProfitPerTrade: stats.avgProfitPerTrade.toString(),
+        bestTrade: {
+          token: stats.bestTrade.token,
+          profit: stats.bestTrade.profit.toString()
+        },
+        worstTrade: {
+          token: stats.worstTrade.token,
+          profit: stats.worstTrade.profit.toString()
+        }
+      } : {
         totalTrades: 0,
         successfulTrades: 0,
         failedTrades: 0,
         totalPnL: '0',
-        winRate: 0
-      });
+        winRate: '0'
+      };
+      
+      res.json(formattedStats);
     } catch (error) {
       next(error);
     }
