@@ -50,7 +50,11 @@
     "legacyNotAllowed": [
       "Freeze Authority still enabled",
       "Single holder ownership",
-      "Copycat token"
+      "Copycat token",
+      "High holder concentration",
+      "Large Amount of LP Unlocked",
+      "Low Liquidity",
+      "Low amount of LP Providers"
     ]
   }
 }
