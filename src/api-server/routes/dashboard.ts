@@ -73,20 +73,24 @@ export function setupDashboardRoutes(app: Express, db: DatabaseService): void {
     try {
       const settings = req.body;
       
-      // In a production environment, you would update a database or configuration file
-      // For this implementation, we'll log the settings and return a success message
       console.log('Received updated settings:', settings);
       
-      // Here you would typically update the config file or database
-      // For example, you could write to a JSON file:
-      /*
-      const configPath = path.resolve(__dirname, '../../config.json');
+      // Save settings to data/settings.json
+      const configPath = path.resolve(__dirname, '../../../data/settings.json');
+      
+      // Ensure the data directory exists
+      const dataDir = path.dirname(configPath);
+      if (!fs.existsSync(dataDir)) {
+        fs.mkdirSync(dataDir, { recursive: true });
+      }
+      
+      // Write settings to file
       fs.writeFileSync(configPath, JSON.stringify(settings, null, 2));
-      */
       
       res.json({ 
         success: true, 
-        message: 'Settings updated successfully',
+        message: 'Settings updated successfully. Please restart the bot for changes to take effect.',
+        requiresRestart: true,
         settings
       });
     } catch (error) {
@@ -100,11 +104,12 @@ export function setupDashboardRoutes(app: Express, db: DatabaseService): void {
   app.get('/api/dashboard', async (req, res, next) => {
     try {
       // Get data from both real trading and paper trading modes
-      const [holdings, paperPositions, virtualBalance, trades, stats] = await Promise.all([
+      const [holdings, paperPositions, virtualBalance, allTrades, recentTrades, stats] = await Promise.all([
         db.getHoldings(),
         fetchActivePositions(),
         getVirtualBalance(),
-        fetchRecentTrades(config.paper_trading.recent_trades_limit),
+        fetchRecentTrades(), // No limit, fetch all trades
+        fetchRecentTrades(config.paper_trading.recent_trades_limit), // Limited trades for charts
         fetchTradingStats()
       ]);
 
@@ -138,7 +143,7 @@ export function setupDashboardRoutes(app: Express, db: DatabaseService): void {
       const positions = [...realPositions, ...formattedPaperPositions];
 
       // Format trades for the response
-      const formattedTrades = trades.map(trade => ({
+      const formattedTrades = allTrades.map(trade => ({
         token_mint: trade.token_mint,
         token_name: trade.token_name,
         amount_token: trade.amount_token.toString(),
@@ -195,6 +200,25 @@ export function setupDashboardRoutes(app: Express, db: DatabaseService): void {
         },
         positions,
         trades: formattedTrades,
+        recentTrades: recentTrades.map(trade => ({
+          token_mint: trade.token_mint,
+          token_name: trade.token_name,
+          amount_token: trade.amount_token.toString(),
+          amount_sol: trade.amount_sol.toString(),
+          buy_price: trade.buy_price.toString(),
+          buy_fees: trade.buy_fees.toString(),
+          buy_slippage: trade.buy_slippage.toString(),
+          sell_price: trade.sell_price?.toString() || null,
+          sell_fees: trade.sell_fees?.toString() || null,
+          sell_slippage: trade.sell_slippage?.toString() || null,
+          time_buy: trade.time_buy,
+          time_sell: trade.time_sell || null,
+          pnl: trade.pnl?.toString() || null,
+          market_cap: trade.dex_data?.marketCap?.toString() || '0',
+          liquidity_buy_usd: trade.dex_data?.liquidity_buy_usd?.toString() || '0',
+          liquidity_sell_usd: trade.dex_data?.liquidity_sell_usd?.toString() || null,
+          volume_m5: trade.dex_data?.volume_m5?.toString() || '0'
+        })),
         stats: formattedStats
       });
     } catch (error) {
@@ -276,6 +300,30 @@ export function setupDashboardRoutes(app: Express, db: DatabaseService): void {
       res.json(formattedTrades);
     } catch (error) {
       next(error);
+    }
+  });
+
+  // Restart server
+  app.post('/api/restart', (req, res) => {
+    try {
+      console.log('Restarting server...');
+      
+      // Send response before restarting
+      res.json({ 
+        success: true, 
+        message: 'Server restart initiated'
+      });
+      
+      // Wait a moment to ensure the response is sent
+      setTimeout(() => {
+        // Exit the process - if running with a process manager like PM2, it will restart automatically
+        process.exit(0);
+      }, 1000);
+    } catch (error) {
+      res.status(500).json({ 
+        success: false,
+        error: 'Failed to restart server' 
+      });
     }
   });
 

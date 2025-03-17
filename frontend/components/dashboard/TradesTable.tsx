@@ -18,8 +18,8 @@ export function TradesTable({ trades, isLoading }: TradesTableProps): React.Reac
     <div className="relative overflow-x-auto overflow-y-auto max-h-[400px]">
       <table className="w-full border-collapse">
         <colgroup>
-          <col className="w-[200px]" /> {/* Fixed width for token name */}
-          <col className="w-[200px]" /> {/* Minimum widths for scrollable columns */}
+          <col className="w-[200px]" />
+          <col className="w-[200px]" />
           <col className="w-[150px]" />
           <col className="w-[150px]" />
           <col className="w-[150px]" />

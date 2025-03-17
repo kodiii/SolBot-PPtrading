@@ -3,7 +3,26 @@
  * This file contains all the settings and parameters that control the bot's behavior
  * for trading, security checks, and simulation features.
  */
-export const config = {
+import fs from 'fs';
+import path from 'path';
+
+// Define the settings file path
+const SETTINGS_FILE = path.join(process.cwd(), 'data', 'settings.json');
+
+// Try to read settings from file
+let settingsFromFile = {};
+try {
+  if (fs.existsSync(SETTINGS_FILE)) {
+    const data = fs.readFileSync(SETTINGS_FILE, 'utf8');
+    settingsFromFile = JSON.parse(data);
+    console.log('Loaded settings from data/settings.json');
+  }
+} catch (error) {
+  console.error('Error reading settings from file:', error);
+}
+
+// Default configuration
+const defaultConfig = {
   // Liquidity pool configuration for Raydium DEX
   liquidity_pool: {
     radiyum_program_id: "675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8", // Raydium DEX program ID
@@ -177,3 +196,21 @@ export const config = {
     ],
   },
 };
+
+// Helper function to merge settings
+function mergeSettings(target: any, source: any) {
+  for (const key of Object.keys(source)) {
+    if (source[key] instanceof Object && key in target) {
+      mergeSettings(target[key], source[key]);
+    } else {
+      target[key] = source[key];
+    }
+  }
+  return target;
+}
+
+// Merge settings from file with default config
+export const config = mergeSettings(JSON.parse(JSON.stringify(defaultConfig)), settingsFromFile);
+
+// Log that config is loaded
+console.log('Configuration loaded successfully');

@@ -1,6 +1,6 @@
 {
   "paperTrading": {
-    "initialBalance": 5,
+    "initialBalance": 2,
     "dashboardRefresh": 2000,
     "recentTradesLimit": 12,
     "verboseLogging": false
@@ -52,7 +52,7 @@
     "minTotalMarketLiquidity": 5000,
     "maxTotalMarketLiquidity": 1000000,
     "maxMarketcap": 100000000,
-    "maxPriceToken": 0.001,
+    "maxPriceToken": 0.01,
     "ignorePumpFun": false,
     "maxScore": 30000,
     "legacyNotAllowed": [

@@ -33,11 +33,9 @@ interface TradingChartsProps {
   trades: Trade[]
 }
 
-export function TradingCharts({ trades, recentTradesOnly = true }: TradingChartsProps & { recentTradesOnly?: boolean }): React.ReactElement {
-  // Use recent trades if available, otherwise use all trades
-  const chartTrades = recentTradesOnly && 'recentTrades' in (trades as any) 
-    ? (trades as any).recentTrades as Trade[]
-    : trades;
+export function TradingCharts({ trades }: TradingChartsProps): React.ReactElement {
+  // Use the trades array directly
+  const chartTrades = trades;
   // Only use completed trades (with sell price and pnl)
   const completedTrades = chartTrades.filter(trade => trade.sell_price && trade.pnl)
   

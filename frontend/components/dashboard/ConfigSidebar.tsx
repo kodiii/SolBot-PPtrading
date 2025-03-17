@@ -208,6 +208,12 @@ export function ConfigSidebar({ isOpen, onClose }: ConfigSidebarProps): React.Re
     }));
   };
 
+  // State for restart notification
+  const [showRestartNotice, setShowRestartNotice] = useState(false);
+  const [restartMessage, setRestartMessage] = useState('');
+  const [isRestarting, setIsRestarting] = useState(false);
+  const [restartError, setRestartError] = useState<string | null>(null);
+
   // Handle saving changes
   const saveChanges = async () => {
     setIsSaving(true);
@@ -235,8 +241,14 @@ export function ConfigSidebar({ isOpen, onClose }: ConfigSidebarProps): React.Re
       setOriginalSettings({...settings});
       setHasChanges(false);
       
-      // Close the modal
-      onClose();
+      // Check if restart is required
+      if (data.requiresRestart) {
+        setRestartMessage(data.message || 'Please restart the bot for changes to take effect.');
+        setShowRestartNotice(true);
+      } else {
+        // Close the modal
+        onClose();
+      }
     } catch (err) {
       console.error('Error saving settings:', err);
       setSaveError('Failed to save settings. Please try again.');
@@ -288,6 +300,87 @@ export function ConfigSidebar({ isOpen, onClose }: ConfigSidebarProps): React.Re
           <p className="mb-6 text-muted-foreground">{saveError}</p>
           <div className="flex justify-center">
             <Button onClick={() => setSaveError(null)}>Try Again</Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Function to restart the server
+  const restartServer = async () => {
+    setIsRestarting(true);
+    setRestartError(null);
+    
+    try {
+      // Call the frontend API endpoint which will proxy to the backend
+      const response = await fetch('/api/restart', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to restart server: ${response.status} ${response.statusText}`);
+      }
+      
+      // Server should be restarting now, show a message
+      setRestartMessage('Server restart initiated. Please wait a moment...');
+      
+      // Close the modal after a delay
+      setTimeout(() => {
+        setShowRestartNotice(false);
+        onClose();
+        // Reload the page after a delay to connect to the restarted server
+        setTimeout(() => {
+          window.location.reload();
+        }, 3000);
+      }, 2000);
+      
+    } catch (err) {
+      console.error('Error restarting server:', err);
+      setRestartError('Failed to restart server. Please try again or restart manually.');
+    } finally {
+      setIsRestarting(false);
+    }
+  };
+
+  // Show restart notification if settings were saved but require restart
+  if (showRestartNotice) {
+    return (
+      <div className="fixed inset-0 z-[9999] flex items-center justify-center backdrop-blur-[40px] bg-black/70">
+        <div className="bg-card rounded-lg p-8 text-center max-w-md">
+          <div className="text-amber-500 text-5xl mb-4">⚠️</div>
+          <h3 className="text-xl font-bold mb-2">Restart Required</h3>
+          <p className="mb-6 text-muted-foreground">{restartMessage}</p>
+          
+          {restartError && (
+            <p className="text-destructive mb-4">{restartError}</p>
+          )}
+          
+          <div className="flex justify-center space-x-4">
+            <Button 
+              variant="outline"
+              onClick={() => {
+                setShowRestartNotice(false);
+                onClose();
+              }}
+            >
+              Close
+            </Button>
+            
+            <Button 
+              onClick={restartServer}
+              disabled={isRestarting}
+              className={isRestarting ? 'opacity-50 cursor-not-allowed' : ''}
+            >
+              {isRestarting ? (
+                <>
+                  <span className="animate-spin mr-2">⟳</span>
+                  Restarting...
+                </>
+              ) : 'Restart Server'}
+            </Button>
           </div>
         </div>
       </div>

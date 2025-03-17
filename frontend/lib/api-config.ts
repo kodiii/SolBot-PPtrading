@@ -2,11 +2,21 @@
  * API configuration
  */
 
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3002';
+// Backend API URL for server-side requests
+export const BACKEND_API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3002';
 
+// Frontend API endpoints for client-side requests
 export const API_ENDPOINTS = {
-  dashboard: `${API_BASE_URL}/api/dashboard`,
-  positions: `${API_BASE_URL}/api/dashboard/positions`,
-  trades: `${API_BASE_URL}/api/dashboard/trades`,
-  stats: `${API_BASE_URL}/api/dashboard/stats`,
+  dashboard: '/api/dashboard',
+  positions: '/api/dashboard/positions',
+  trades: '/api/dashboard/trades',
+  stats: '/api/dashboard/stats',
+} as const;
+
+// Backend API endpoints for server-side requests
+export const BACKEND_API_ENDPOINTS = {
+  dashboard: `${BACKEND_API_URL}/api/dashboard`,
+  positions: `${BACKEND_API_URL}/api/dashboard/positions`,
+  trades: `${BACKEND_API_URL}/api/dashboard/trades`,
+  stats: `${BACKEND_API_URL}/api/dashboard/stats`,
 } as const;

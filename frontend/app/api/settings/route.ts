@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
+import { BACKEND_API_ENDPOINTS } from '@/lib/api-config';
 
 // Define the settings file path
 const SETTINGS_FILE = path.join(process.cwd(), 'data', 'settings.json');
@@ -195,7 +196,34 @@ export async function POST(request: NextRequest) {
     const success = writeSettings(settings);
     
     if (success) {
-      return NextResponse.json({ success: true, message: 'Settings saved successfully' });
+      // Also forward the settings to the backend API
+      try {
+        // Get the base URL from the BACKEND_API_ENDPOINTS
+        const baseUrl = BACKEND_API_ENDPOINTS.dashboard.split('/api/dashboard')[0];
+        const settingsUrl = `${baseUrl}/api/settings`;
+        
+        console.log('Forwarding settings to backend:', settingsUrl);
+        
+        // Forward the settings to the backend
+        const backendResponse = await fetch(settingsUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(settings),
+        });
+        
+        console.log('Backend settings response:', backendResponse.status);
+      } catch (error) {
+        console.error('Error forwarding settings to backend:', error);
+        // Continue even if backend update fails, as we've already saved to the file
+      }
+      
+      return NextResponse.json({ 
+        success: true, 
+        message: 'Settings saved successfully. Please restart the bot for changes to take effect.',
+        requiresRestart: true
+      });
     } else {
       return NextResponse.json(
         { error: 'Failed to save settings' },

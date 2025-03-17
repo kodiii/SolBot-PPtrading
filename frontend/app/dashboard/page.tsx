@@ -12,32 +12,12 @@ import { TradingCharts } from '@/components/dashboard/TradingCharts'
 import { ConfigSidebar } from '@/components/dashboard/ConfigSidebar'
 import { ModeToggle } from '@/components/theme/ModeToggle'
 import { useState } from 'react'
-import { Trade } from '@/lib/types'
 
-interface StatItemProps {
-  label: string
-  value: string | number
-  suffix?: string
-  isPositive?: boolean
-  isNegative?: boolean
-}
-
-function StatItem({ label, value, suffix, isPositive, isNegative }: StatItemProps): React.ReactElement {
-  const valueClass = isPositive ? 'text-positive' : isNegative ? 'text-destructive' : ''
-  
-  return (
-    <div className="space-y-1">
-      <p className="text-sm text-muted-foreground">{label}</p>
-      <p className={`text-lg font-semibold ${valueClass}`}>
-        {value} {suffix}
-      </p>
-    </div>
-  )
-}
+// Removed unused StatItem component
 
 export default function DashboardPage(): React.ReactElement {
   const { data, isLoading, error, refresh } = useDashboardData()
-  const [activeTab, setActiveTab] = useState<'positions' | 'trades'>('positions')
+  // const [activeTab, setActiveTab] = useState<'positions' | 'trades'>('positions')
   const [configOpen, setConfigOpen] = useState(false)
 
   if (error) {
@@ -49,21 +29,7 @@ export default function DashboardPage(): React.ReactElement {
     )
   }
 
-  // Calculate best and worst trades
-  const bestTrade = data?.trades.reduce((best: Trade, trade: Trade) => {
-    const pnl = parseFloat(trade.pnl || '0')
-    return pnl > parseFloat(best?.pnl || '0') ? trade : best
-  }, data?.trades[0])
-
-  const worstTrade = data?.trades.reduce((worst: Trade, trade: Trade) => {
-    const pnl = parseFloat(trade.pnl || '0')
-    return pnl < parseFloat(worst?.pnl || '0') ? trade : worst
-  }, data?.trades[0])
-
-  // Calculate average P/L per trade
-  const avgPnL = data?.stats
-    ? parseFloat(data.stats.totalPnL) / data.stats.totalTrades
-    : 0
+  // Removed unused trade calculations
 
   return (
     <div className="container mx-auto py-6 space-y-6">
@@ -147,7 +113,7 @@ export default function DashboardPage(): React.ReactElement {
             <div className="flex flex-col">
               {/* Charts */}
               {data?.trades && data.trades.length > 0 ? (
-                <TradingCharts trades={data.recentTrades || data.trades} />
+                <TradingCharts trades={data.recentTrades || data.trades.slice(0, 12)} />
               ) : (
                 <div className="flex items-center justify-center text-muted-foreground py-12">
                   No trade data available for charts
