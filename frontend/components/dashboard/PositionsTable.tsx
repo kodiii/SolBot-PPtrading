@@ -53,7 +53,7 @@ export function PositionsTable({ positions, isLoading }: PositionsTableProps): R
 
             return (
               <tr key={`${position.token_mint}-${index}`}>
-                <td className="sticky left-0 bg-background z-10 border-r border-border">{position.token_name}</td>
+                <td className="sticky left-0 bg-background z-10 border-r border-border text-yellow-500">{position.token_name}</td>
                 <td className="whitespace-nowrap px-4">{position.token_mint}</td>
                 <td className="whitespace-nowrap px-4">0.00</td>
                 <td className="whitespace-nowrap px-4">{formatDecimal('2611.00')}</td>

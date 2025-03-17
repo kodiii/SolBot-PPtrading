@@ -51,7 +51,7 @@ export function TradesTable({ trades, isLoading }: TradesTableProps): React.Reac
             
             return (
               <tr key={`${trade.token_mint}-${trade.time_buy}-${index}`}>
-                <td className="sticky left-0 bg-background z-10 border-r border-border">{trade.token_name}</td>
+                <td className="sticky left-0 bg-background z-10 border-r border-border text-yellow-500">{trade.token_name}</td>
                 <td className="whitespace-nowrap px-4">{trade.token_mint}</td>
                 <td className="whitespace-nowrap px-4">{formatDecimal(trade.buy_price)}</td>
                 <td className="whitespace-nowrap px-4">{trade.sell_price ? formatDecimal(trade.sell_price) : '-'}</td>
