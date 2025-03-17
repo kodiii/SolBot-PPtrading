@@ -41,8 +41,8 @@ const defaultConfig = {
 
   // DexScreener API configuration
   dexscreener: {
-    api_url: "https://api.dexscreener.com/token-pairs/v1/solana", // DexScreener API endpoint
-    timeout: 10000, // API request timeout (ms)
+    api_url: "https://api.dexscreener.com/token-pairs/v1/solana",
+    timeout: 10000,
   },
 
   // Paper trading simulation settings
@@ -167,8 +167,8 @@ const defaultConfig = {
     
     // Holder distribution checks
     allow_insider_topholders: true, // Allow insider accounts in top holders
-    max_alowed_pct_topholders: 50, // Maximum percentage for single top holder
-    max_alowed_pct_all_topholders: 50, // Maximum total percentage for all top holders
+    max_alowed_pct_topholders: 100, // Maximum percentage for single top holder
+    max_alowed_pct_all_topholders: 100, // Maximum total percentage for all top holders
     exclude_lp_from_topholders: true, // Exclude LP accounts from holder calculations
     
     // Market validation thresholds
@@ -209,8 +209,57 @@ function mergeSettings(target: any, source: any) {
   return target;
 }
 
+// Map camelCase settings to snake_case config
+function mapSettingsToConfig(settings: any, config: any) {
+  // Map paperTrading to paper_trading
+  if (settings.paperTrading) {
+    if (settings.paperTrading.initialBalance) config.paper_trading.initial_balance = settings.paperTrading.initialBalance;
+    if (settings.paperTrading.dashboardRefresh) config.paper_trading.dashboard_refresh = settings.paperTrading.dashboardRefresh;
+    if (settings.paperTrading.recentTradesLimit) config.paper_trading.recent_trades_limit = settings.paperTrading.recentTradesLimit;
+    if (settings.paperTrading.verboseLogging !== undefined) config.paper_trading.verbose_log = settings.paperTrading.verboseLogging;
+  }
+
+  // Map rugCheck to rug_check
+  if (settings.rugCheck) {
+    if (settings.rugCheck.verboseLog !== undefined) config.rug_check.verbose_log = settings.rugCheck.verboseLog;
+    if (settings.rugCheck.simulationMode !== undefined) config.rug_check.simulation_mode = settings.rugCheck.simulationMode;
+    if (settings.rugCheck.allowMintAuthority !== undefined) config.rug_check.allow_mint_authority = settings.rugCheck.allowMintAuthority;
+    if (settings.rugCheck.allowNotInitialized !== undefined) config.rug_check.allow_not_initialized = settings.rugCheck.allowNotInitialized;
+    if (settings.rugCheck.allowFreezeAuthority !== undefined) config.rug_check.allow_freeze_authority = settings.rugCheck.allowFreezeAuthority;
+    if (settings.rugCheck.allowRugged !== undefined) config.rug_check.allow_rugged = settings.rugCheck.allowRugged;
+    if (settings.rugCheck.allowMutable !== undefined) config.rug_check.allow_mutable = settings.rugCheck.allowMutable;
+    if (settings.rugCheck.blockReturningTokenNames !== undefined) config.rug_check.block_returning_token_names = settings.rugCheck.blockReturningTokenNames;
+    if (settings.rugCheck.blockReturningTokenCreators !== undefined) config.rug_check.block_returning_token_creators = settings.rugCheck.blockReturningTokenCreators;
+    if (settings.rugCheck.blockSymbols) config.rug_check.block_symbols = settings.rugCheck.blockSymbols;
+    if (settings.rugCheck.blockNames) config.rug_check.block_names = settings.rugCheck.blockNames;
+    if (settings.rugCheck.onlyContainString !== undefined) config.rug_check.only_contain_string = settings.rugCheck.onlyContainString;
+    if (settings.rugCheck.containString) config.rug_check.contain_string = settings.rugCheck.containString;
+    if (settings.rugCheck.allowInsiderTopholders !== undefined) config.rug_check.allow_insider_topholders = settings.rugCheck.allowInsiderTopholders;
+    if (settings.rugCheck.maxAllowedPctTopholders !== undefined) config.rug_check.max_alowed_pct_topholders = settings.rugCheck.maxAllowedPctTopholders;
+    if (settings.rugCheck.maxAllowedPctAllTopholders !== undefined) config.rug_check.max_alowed_pct_all_topholders = settings.rugCheck.maxAllowedPctAllTopholders;
+    if (settings.rugCheck.excludeLpFromTopholders !== undefined) config.rug_check.exclude_lp_from_topholders = settings.rugCheck.excludeLpFromTopholders;
+    if (settings.rugCheck.minTotalMarkets !== undefined) config.rug_check.min_total_markets = settings.rugCheck.minTotalMarkets;
+    if (settings.rugCheck.minTotalLpProviders !== undefined) config.rug_check.min_total_lp_providers = settings.rugCheck.minTotalLpProviders;
+    if (settings.rugCheck.minTotalMarketLiquidity !== undefined) config.rug_check.min_total_market_Liquidity = settings.rugCheck.minTotalMarketLiquidity;
+    if (settings.rugCheck.maxTotalMarketLiquidity !== undefined) config.rug_check.max_total_market_Liquidity = settings.rugCheck.maxTotalMarketLiquidity;
+    if (settings.rugCheck.maxMarketcap !== undefined) config.rug_check.max_marketcap = settings.rugCheck.maxMarketcap;
+    if (settings.rugCheck.maxPriceToken !== undefined) config.rug_check.max_price_token = settings.rugCheck.maxPriceToken;
+    if (settings.rugCheck.ignorePumpFun !== undefined) config.rug_check.ignore_pump_fun = settings.rugCheck.ignorePumpFun;
+    if (settings.rugCheck.maxScore !== undefined) config.rug_check.max_score = settings.rugCheck.maxScore;
+    if (settings.rugCheck.legacyNotAllowed) config.rug_check.legacy_not_allowed = settings.rugCheck.legacyNotAllowed;
+  }
+
+  return config;
+}
+
 // Merge settings from file with default config
-export const config = mergeSettings(JSON.parse(JSON.stringify(defaultConfig)), settingsFromFile);
+const mergedConfig = mergeSettings(JSON.parse(JSON.stringify(defaultConfig)), settingsFromFile);
+
+// Map camelCase settings to snake_case config
+export const config = mapSettingsToConfig(settingsFromFile, mergedConfig);
+
+// Log that config is loaded with mapped settings
+console.log('Configuration loaded successfully with mapped settings');
 
 // Log that config is loaded
 console.log('Configuration loaded successfully');

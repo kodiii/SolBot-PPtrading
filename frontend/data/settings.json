@@ -44,8 +44,8 @@
       "AGENT"
     ],
     "allowInsiderTopholders": true,
-    "maxAllowedPctTopholders": 65,
-    "maxAllowedPctAllTopholders": 60,
+    "maxAllowedPctTopholders": 90,
+    "maxAllowedPctAllTopholders": 90,
     "excludeLpFromTopholders": true,
     "minTotalMarkets": 0,
     "minTotalLpProviders": 0,

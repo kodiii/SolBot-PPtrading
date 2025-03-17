@@ -56,9 +56,7 @@ export interface DexscreenerPairInfo {
   marketCap?: number;
 }
 
-export interface DexscreenerPriceResponse {
-  pairs: DexscreenerPairInfo[];
-}
+export type DexscreenerPriceResponse = DexscreenerPairInfo[];
 
 /**
  * Token price data structure

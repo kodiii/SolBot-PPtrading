@@ -25,8 +25,14 @@ export class PriceTracker implements IPriceTracker {
    */
   public async getTokenPrice(tokenMint: string, retryCount = 0): Promise<TokenPriceData | null> {
     try {
+      // Log API URL in verbose mode
+      if (config.paper_trading.verbose_log) {
+        console.log(`🔗 Fetching from DEXScreener API: ${config.dexscreener.api_url}/${tokenMint}`);
+      }
+
+      // Use the exact URL from the old implementation
       const response = await axios.get<DexscreenerPriceResponse>(
-        `${config.dexscreener.api_url}/${tokenMint}`,
+        `https://api.dexscreener.com/token-pairs/v1/solana/${tokenMint}`,
         {
           headers: {
             'accept': 'application/json'
@@ -35,8 +41,8 @@ export class PriceTracker implements IPriceTracker {
         }
       );
 
-      // Check if pairs exist and find Raydium pair
-      if (!response.data?.pairs || response.data.pairs.length === 0) {
+      // Check if pairs exist (response is an array in the old implementation)
+      if (!response.data || !Array.isArray(response.data) || response.data.length === 0) {
         if (retryCount < this.maxRetries) {
           console.log(`⛔ No pairs found for ${tokenMint}`);
           return this.getTokenPrice(tokenMint, retryCount + 1);
@@ -44,12 +50,34 @@ export class PriceTracker implements IPriceTracker {
         return null;
       }
 
-      const pair = response.data.pairs.find((p: DexscreenerPairInfo) => 
-        p.dexId.toLowerCase() === 'raydium'
-      );
+      // Log available pairs in verbose mode
+      if (config.paper_trading.verbose_log) {
+        console.log(`📊 Available pairs for ${tokenMint}:`, 
+          response.data.map(p => ({ dex: p.dexId, liquidity: p.liquidity?.usd }))
+        );
+      }
+
+      // Log raw response in verbose mode
+      if (config.paper_trading.verbose_log) {
+        console.log(`📊 Raw DEXScreener response:`, JSON.stringify(response.data, null, 2));
+      }
+
+      // Find Raydium pair with exact case matching (like the old implementation)
+      const pair = response.data.find(p => {
+        const isRaydium = p.dexId === 'raydium';
+        
+        if (config.paper_trading.verbose_log && isRaydium) {
+          console.log(`✅ Found Raydium pair: ${p.pairAddress} (dexId: ${p.dexId})`);
+        }
+        
+        return isRaydium;
+      });
 
       if (!pair) {
-        console.log(`⛔ No Raydium pair found for ${tokenMint}`);
+        console.log(`⛔ No Raydium pair found for ${tokenMint} (${response.data.length} other pairs available)`);
+        if (config.paper_trading.verbose_log) {
+          console.log(`Available DEX IDs:`, response.data.map(p => p.dexId));
+        }
         return null;
       }
 
