@@ -18,7 +18,8 @@ import { useState } from 'react'
 export default function DashboardPage(): React.ReactElement {
   const { data, isLoading, error, refresh } = useDashboardData()
   // const [activeTab, setActiveTab] = useState<'positions' | 'trades'>('positions')
-  const [configOpen, setConfigOpen] = useState(false)
+  const [configOpen, setConfigOpen] = useState(false);
+  const [statsCollapsed, setStatsCollapsed] = useState(false);
 
   if (error) {
     return (
@@ -78,9 +79,28 @@ export default function DashboardPage(): React.ReactElement {
       </header>
 
       {/* Trading Statistics Card - full width */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Trading Statistics</CardTitle>
+      <Card className="overflow-hidden">
+        <CardHeader 
+          className="flex flex-row items-center justify-between cursor-pointer hover:bg-muted/50"
+          onClick={() => setStatsCollapsed(!statsCollapsed)}
+        >
+          <div className="flex items-center gap-2">
+            <CardTitle>Trading Statistics</CardTitle>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className={`transform transition-transform ${statsCollapsed ? '-rotate-90' : ''}`}
+            >
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </div>
           {!isLoading && (
             <div className="flex flex-row items-center">
               <div className="flex flex-col items-start px-8 first:pl-0 last:pr-0 border-r border-border last:border-0">
@@ -106,7 +126,9 @@ export default function DashboardPage(): React.ReactElement {
             </div>
           )}
         </CardHeader>
-        <CardContent>
+        <CardContent className={`transition-all duration-300 ease-in-out overflow-hidden ${
+          statsCollapsed ? 'max-h-0 p-0' : 'max-h-[500px]'
+        }`}>
           {isLoading ? (
             <SkeletonCard />
           ) : (
