@@ -9,6 +9,7 @@ export const BACKEND_API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localh
 export const API_ENDPOINTS = {
   dashboard: '/api/dashboard',
   positions: '/api/dashboard/positions',
+  closePosition: '/api/dashboard/positions/close',
   trades: '/api/dashboard/trades',
   stats: '/api/dashboard/stats',
 } as const;
@@ -17,6 +18,7 @@ export const API_ENDPOINTS = {
 export const BACKEND_API_ENDPOINTS = {
   dashboard: `${BACKEND_API_URL}/api/dashboard`,
   positions: `${BACKEND_API_URL}/api/dashboard/positions`,
+  closePosition: `${BACKEND_API_URL}/api/dashboard/positions/close`,
   trades: `${BACKEND_API_URL}/api/dashboard/trades`,
   stats: `${BACKEND_API_URL}/api/dashboard/stats`,
 } as const;

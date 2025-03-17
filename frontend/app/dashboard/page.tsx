@@ -4,7 +4,7 @@ import * as React from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { SkeletonCard } from '@/components/ui/skeleton'
-import { useDashboardData } from '@/hooks/useDashboardData'
+import { useDashboardData, usePositions } from '@/hooks/useDashboardData'
 import { formatDecimal, formatDateTime } from '@/lib/utils'
 import { PositionsTable } from '@/components/dashboard/PositionsTable'
 import { TradesTable } from '@/components/dashboard/TradesTable'
@@ -17,6 +17,7 @@ import { useState } from 'react'
 
 export default function DashboardPage(): React.ReactElement {
   const { data, isLoading, error, refresh } = useDashboardData()
+  const { positions, closePosition } = usePositions()
   // const [activeTab, setActiveTab] = useState<'positions' | 'trades'>('positions')
   const [configOpen, setConfigOpen] = useState(false);
   const [statsCollapsed, setStatsCollapsed] = useState(false);
@@ -152,7 +153,22 @@ export default function DashboardPage(): React.ReactElement {
           <CardTitle>Active Positions</CardTitle>
         </CardHeader>
         <CardContent className="p-0">
-          <PositionsTable positions={data?.positions || []} isLoading={isLoading} />
+          <PositionsTable 
+            positions={positions} 
+            isLoading={isLoading} 
+            onClosePosition={(tokenMint) => {
+              if (window.confirm('Are you sure you want to close this position and sell the token?')) {
+                closePosition(tokenMint)
+                  .then(success => {
+                    if (success) {
+                      console.log('Position closed successfully');
+                    } else {
+                      console.error('Failed to close position');
+                    }
+                  });
+              }
+            }}
+          />
         </CardContent>
       </Card>
 

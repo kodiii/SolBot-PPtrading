@@ -270,6 +270,40 @@ export function setupDashboardRoutes(app: Express, db: DatabaseService): void {
     }
   });
 
+  // Close a position
+  app.post('/api/dashboard/positions/close', async (req, res, next) => {
+    try {
+      const { tokenMint } = req.body;
+      
+      if (!tokenMint) {
+        return res.status(400).json({ error: 'Token mint address is required' });
+      }
+      
+      // Get the token data
+      const trackedTokens = await getTrackedTokens();
+      const token = trackedTokens.find(t => t.token_mint === tokenMint);
+      
+      if (!token) {
+        return res.status(404).json({ error: 'Position not found' });
+      }
+      
+      // Create a trade executor instance
+      const tradeExecutor = new (await import('../../papertrading/services/trade-executor')).TradeExecutor();
+      
+      // Execute the sell
+      const result = await tradeExecutor.executeSell(token, 'Manual close by user');
+      
+      if (result) {
+        res.json({ success: true, message: 'Position closed successfully' });
+      } else {
+        res.status(500).json({ error: 'Failed to close position' });
+      }
+    } catch (error) {
+      console.error('Error closing position:', error);
+      next(error);
+    }
+  });
+
   // Get trades only
   app.get('/api/dashboard/trades', async (req, res, next) => {
     const limit = parseInt(req.query.limit as string) || 10;

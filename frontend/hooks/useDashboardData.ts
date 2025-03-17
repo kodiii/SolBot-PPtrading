@@ -92,10 +92,38 @@ export function usePositions(): {
   isRefreshing: boolean;
   error: string | undefined;
   refresh: () => Promise<DashboardData | undefined>;
+  closePosition: (tokenMint: string) => Promise<boolean>;
 } {
   const { data, ...rest } = useDashboardData();
+  
+  const closePosition = async (tokenMint: string): Promise<boolean> => {
+    try {
+      const response = await fetch(API_ENDPOINTS.closePosition, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ tokenMint }),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json() as ApiError;
+        console.error('Failed to close position:', errorData.error || errorData.details);
+        return false;
+      }
+      
+      // Refresh the data after closing the position
+      await rest.refresh();
+      return true;
+    } catch (error) {
+      console.error('Error closing position:', error);
+      return false;
+    }
+  };
+  
   return {
     positions: data?.positions || [],
+    closePosition,
     ...rest,
   };
 }

@@ -2,14 +2,16 @@
 
 import { formatDecimal } from '@/lib/utils'
 import { SkeletonTable } from '@/components/ui/skeleton'
+import { Button } from '@/components/ui/button'
 import type { Position } from '@/lib/types'
 
 interface PositionsTableProps {
   positions: Position[]
   isLoading?: boolean
+  onClosePosition?: (tokenMint: string) => void
 }
 
-export function PositionsTable({ positions, isLoading }: PositionsTableProps): React.ReactElement {
+export function PositionsTable({ positions, isLoading, onClosePosition }: PositionsTableProps): React.ReactElement {
   if (isLoading) {
     return <SkeletonTable />
   }
@@ -29,6 +31,7 @@ export function PositionsTable({ positions, isLoading }: PositionsTableProps): R
           <col className="w-[150px]" />
           <col className="w-[150px]" />
           <col className="w-[150px]" />
+          <col className="w-[120px]" />
         </colgroup>
         <thead className="sticky top-0 bg-background z-20">
           <tr>
@@ -43,6 +46,7 @@ export function PositionsTable({ positions, isLoading }: PositionsTableProps): R
             <th className="whitespace-nowrap px-4">P/L (%)</th>
             <th className="whitespace-nowrap px-4">Take Profit (SOL)</th>
             <th className="whitespace-nowrap px-4">Stop Loss (SOL)</th>
+            <th className="whitespace-nowrap px-4">Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -66,6 +70,16 @@ export function PositionsTable({ positions, isLoading }: PositionsTableProps): R
                 </td>
                 <td className="whitespace-nowrap px-4">{formatDecimal(position.take_profit)}</td>
                 <td className="whitespace-nowrap px-4">{formatDecimal(position.stop_loss)}</td>
+                <td className="whitespace-nowrap px-4">
+                  <Button 
+                    variant="destructive" 
+                    size="sm" 
+                    onClick={() => onClosePosition?.(position.token_mint)}
+                    title="Close position and sell token"
+                  >
+                    Close
+                  </Button>
+                </td>
               </tr>
             )
           })}
