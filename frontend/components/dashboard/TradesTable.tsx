@@ -15,21 +15,34 @@ export function TradesTable({ trades, isLoading }: TradesTableProps): React.Reac
   }
 
   return (
-    <div className="table-container">
-      <table>
-        <thead>
+    <div className="relative overflow-x-auto">
+      <table className="w-full border-collapse">
+        <colgroup>
+          <col className="w-[200px]" /> {/* Fixed width for token name */}
+          <col className="w-[200px]" /> {/* Minimum widths for scrollable columns */}
+          <col className="w-[150px]" />
+          <col className="w-[150px]" />
+          <col className="w-[150px]" />
+          <col className="w-[180px]" />
+          <col className="w-[180px]" />
+          <col className="w-[150px]" />
+          <col className="w-[150px]" />
+          <col className="w-[150px]" />
+          <col className="w-[150px]" />
+        </colgroup>
+        <thead className="sticky top-0 bg-background z-20">
           <tr>
-            <th>Token Name</th>
-            <th>Address</th>
-            <th>Buy Price (SOL)</th>
-            <th>Sell Price (SOL)</th>
-            <th>Position Size (SOL)</th>
-            <th>Time Buy</th>
-            <th>Time Sell</th>
-            <th>Market Cap</th>
-            <th>Liquidity Buy</th>
-            <th>Liquidity Sell</th>
-            <th>P/L</th>
+            <th className="sticky left-0 bg-background z-30 border-r border-border">Token Name</th>
+            <th className="whitespace-nowrap px-4">Address</th>
+            <th className="whitespace-nowrap px-4">Buy Price (SOL)</th>
+            <th className="whitespace-nowrap px-4">Sell Price (SOL)</th>
+            <th className="whitespace-nowrap px-4">Position Size (SOL)</th>
+            <th className="whitespace-nowrap px-4">Time Buy</th>
+            <th className="whitespace-nowrap px-4">Time Sell</th>
+            <th className="whitespace-nowrap px-4">Market Cap</th>
+            <th className="whitespace-nowrap px-4">Liquidity Buy</th>
+            <th className="whitespace-nowrap px-4">Liquidity Sell</th>
+            <th className="whitespace-nowrap px-4">P/L</th>
           </tr>
         </thead>
         <tbody>
@@ -38,17 +51,17 @@ export function TradesTable({ trades, isLoading }: TradesTableProps): React.Reac
             
             return (
               <tr key={`${trade.token_mint}-${trade.time_buy}-${index}`}>
-                <td className="token-cell">{trade.token_name}</td>
-                <td className="address-cell">{trade.token_mint}</td>
-                <td>{formatDecimal(trade.buy_price)}</td>
-                <td>{trade.sell_price ? formatDecimal(trade.sell_price) : '-'}</td>
-                <td>{formatDecimal(trade.amount_sol)}</td>
-                <td>{new Date(trade.time_buy).toLocaleString()}</td>
-                <td>{trade.time_sell ? new Date(trade.time_sell).toLocaleString() : '-'}</td>
-                <td>{formatDecimal(trade.market_cap)}</td>
-                <td>{formatDecimal(trade.liquidity_buy_usd)}</td>
-                <td>{trade.liquidity_sell_usd ? formatDecimal(trade.liquidity_sell_usd) : '-'}</td>
-                <td className={pnl >= 0 ? 'positive' : 'negative'}>
+                <td className="sticky left-0 bg-background z-10 border-r border-border">{trade.token_name}</td>
+                <td className="whitespace-nowrap px-4">{trade.token_mint}</td>
+                <td className="whitespace-nowrap px-4">{formatDecimal(trade.buy_price)}</td>
+                <td className="whitespace-nowrap px-4">{trade.sell_price ? formatDecimal(trade.sell_price) : '-'}</td>
+                <td className="whitespace-nowrap px-4">{formatDecimal(trade.amount_sol)}</td>
+                <td className="whitespace-nowrap px-4">{new Date(trade.time_buy).toLocaleString()}</td>
+                <td className="whitespace-nowrap px-4">{trade.time_sell ? new Date(trade.time_sell).toLocaleString() : '-'}</td>
+                <td className="whitespace-nowrap px-4">{formatDecimal(trade.market_cap)}</td>
+                <td className="whitespace-nowrap px-4">{formatDecimal(trade.liquidity_buy_usd)}</td>
+                <td className="whitespace-nowrap px-4">{trade.liquidity_sell_usd ? formatDecimal(trade.liquidity_sell_usd) : '-'}</td>
+                <td className={`whitespace-nowrap px-4 ${pnl >= 0 ? 'text-green-500' : 'text-red-500'}`}>
                   {trade.pnl ? `${formatDecimal(trade.pnl)} SOL` : '-'}
                 </td>
               </tr>
