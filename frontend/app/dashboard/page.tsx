@@ -158,43 +158,25 @@ export default function DashboardPage(): React.ReactElement {
         </CardContent>
       </Card>
 
-      {/* Tabs and Tables */}
-      <div className="space-y-4">
-        <div className="border-b border-border">
-          <div className="flex space-x-4">
-            <button
-              className={`px-4 py-2 text-sm font-medium border-b-2 ${
-                activeTab === 'positions'
-                  ? 'border-primary text-primary'
-                  : 'border-transparent text-muted-foreground hover:text-foreground'
-              }`}
-              onClick={() => setActiveTab('positions')}
-            >
-              Active Positions
-            </button>
-            <button
-              className={`px-4 py-2 text-sm font-medium border-b-2 ${
-                activeTab === 'trades'
-                  ? 'border-primary text-primary'
-                  : 'border-transparent text-muted-foreground hover:text-foreground'
-              }`}
-              onClick={() => setActiveTab('trades')}
-            >
-              Recent Trades
-            </button>
-          </div>
-        </div>
+      {/* Active Positions */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Active Positions</CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          <PositionsTable positions={data?.positions || []} isLoading={isLoading} />
+        </CardContent>
+      </Card>
 
-        <Card>
-          <CardContent className="p-0">
-            {activeTab === 'positions' ? (
-              <PositionsTable positions={data?.positions || []} isLoading={isLoading} />
-            ) : (
-              <TradesTable trades={data?.trades || []} isLoading={isLoading} />
-            )}
-          </CardContent>
-        </Card>
-      </div>
+      {/* Recent Trades */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Recent Trades</CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          <TradesTable trades={data?.trades || []} isLoading={isLoading} />
+        </CardContent>
+      </Card>
 
       {/* Footer */}
       <footer className="flex justify-between items-center pt-4 mt-8 border-t border-border text-sm text-muted-foreground">
