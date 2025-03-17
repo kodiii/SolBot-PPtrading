@@ -30,6 +30,21 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
+echo "=============================================="
+echo "          System Startup Guide                "
+echo "=============================================="
+echo "Terminal 1 (this terminal):                   "
+echo "- Starting API server (port 3002)             "
+echo "- Starting frontend (port 3010)               "
+echo "                                              "
+echo "Terminal 2 (open a new terminal):             "
+echo "Start the trading bot with:                   "
+echo "    npm run dev                               "
+echo "                                              "
+echo "Wait to see 'ready - started server on        "
+echo "0.0.0.0:3010' before starting the bot         "
+echo "=============================================="
+
 # Start API server from project root to maintain correct paths
 echo "Starting API server on port 3002..."
 (cd src/api-server && NODE_PATH=.. PORT=3002 npm run dev) &
@@ -49,7 +64,7 @@ FRONTEND_PID=$!
 
 # Handle shutdown
 function cleanup {
-    echo "Shutting down servers..."
+    echo "Shutting down frontend and API server..."
     kill $API_PID
     kill $FRONTEND_PID
     exit 0
@@ -57,5 +72,5 @@ function cleanup {
 
 trap cleanup SIGINT SIGTERM
 
-# Wait for both processes
+# Wait for remaining processes
 wait $API_PID $FRONTEND_PID

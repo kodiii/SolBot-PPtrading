@@ -29,45 +29,43 @@ npm install
 npm run build
 ```
 
-## Running the Trading Bot
+## Running the System
 
-### Development Mode
-To run the bot in development mode with live TypeScript compilation:
+1. Start the web interface and API server:
+```bash
+./dev.sh
+```
+This will start:
+- The API server for data management (port 3002)
+- The frontend web dashboard (port 3010)
+
+2. In a separate terminal, start the trading bot:
 ```bash
 npm run dev
 ```
 
-### Production Mode
-To run the compiled version:
-```bash
-npm run build
-npm start
-```
+The system components work together as follows:
+- Trading Bot: Monitors new tokens and executes trades
+- API Server: Manages data flow between components
+- Web Dashboard: Provides trading interface and monitoring
+- CLI Dashboard: Optional command-line monitoring tool
 
 ## Dashboard Options
 
 ### CLI Dashboard
-To start the paper trading dashboard CLI:
+If you prefer a command-line interface, you can use:
 ```bash
 npm run dashboard
 ```
 
 ### Web Dashboard
-
-1. Configure frontend environment:
-   - Copy `.env.local.example` to `.env.local` in the frontend directory
-   - Configure the API endpoint if needed (defaults to localhost:3001)
-
-2. Start both the frontend and API server:
-```bash
-./dev.sh
-```
-This script starts both the frontend application and the API server concurrently. 
-The web dashboard will be available at `http://localhost:3000` with features including:
+The web dashboard provides:
 - Real-time position tracking
 - Trade history visualization
 - Configuration management
 - Performance metrics
+
+Access the web dashboard at http://localhost:3010
 
 ## Paper Trading
 
@@ -80,26 +78,23 @@ npm run reset-paper
 ## Additional Commands
 
 ### Running Tests
-Run all tests:
 ```bash
-npm test
-```
-
-Run tests in watch mode:
-```bash
-npm run test:watch
-```
-
-Run unit tests only:
-```bash
-npm run test:unit
+npm test                # Run all tests
+npm run test:watch     # Run tests in watch mode
+npm run test:unit      # Run unit tests only
 ```
 
 ### Linting
-Check code style and find potential issues:
 ```bash
-npm run lint
+npm run lint           # Check code style and find potential issues
 ```
+
+## Logging Configuration
+
+By default, only important notifications and errors are shown in the terminal. To see detailed trade information:
+
+1. Set `verbose_log: true` in the `paper_trading` section of `config.ts`
+2. Restart the bot to apply changes
 
 ## Troubleshooting
 
@@ -112,10 +107,11 @@ npm run lint
    - Use `npm run reset-paper` to clear all paper trading data
    - Check database connectivity if dashboard fails to load
 
-3. Web Dashboard Issues:
-   - Ensure both frontend and API server started successfully with `./dev.sh`
-   - Check browser console for error messages
-   - Verify your `.env.local` configuration
+3. System Startup Issues:
+   - Check that Node.js version 18.17.0 or higher is installed
+   - Ensure ports 3002 (API) and 3010 (frontend) are available
+   - Start components in the recommended order: web interface, then bot
+   - Look for any error messages in the console output
 
 4. For any other issues:
    - Check the console output for error messages

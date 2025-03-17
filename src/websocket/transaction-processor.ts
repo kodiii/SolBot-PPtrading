@@ -17,120 +17,110 @@ import { TRADING_MODE } from "../system/initializer";
 const simulationService = config.rug_check.simulation_mode ? SimulationService.getInstance() : null;
 
 /**
- * Processes a new liquidity pool creation transaction
- * Includes rug check validation, paper trading simulation, and swap execution
+ * Process a new liquidity pool creation transaction
  * @param signature - Transaction signature to process
  */
 export async function processTransaction(signature: string): Promise<void> {
-  console.log("\n[" + TRADING_MODE + "] Processing new transaction...");
+  console.log("\n[" + TRADING_MODE + "] 🔎 New Liquidity Pool found");
   console.log("=============================================");
-  console.log("🔎 New Liquidity Pool found.");
-  console.log("🔃 Fetching transaction details ...");
 
   const data: MintsDataReponse | null = await fetchTransactionDetails(signature);
   if (!data) {
     console.log("⛔ Transaction aborted. No data returned.");
-    console.log("🟢 Resuming looking for new tokens...\n");
+    console.log("=============================================");
     return;
   }
 
   if (!data.solMint || !data.tokenMint) {
     console.log("⛔ Transaction aborted. Missing mint addresses.");
-    console.log("🟢 Resuming looking for new tokens...\n");
+    console.log("=============================================");
     return;
   }
 
   const isRugCheckPassed = await getRugCheckConfirmed(data.tokenMint);
   if (!isRugCheckPassed) {
     console.log("🚫 Rug Check not passed! Transaction aborted.");
-    console.log("🟢 Resuming looking for new tokens...\n");
+    console.log("=============================================");
     return;
   }
 
   if (data.tokenMint.trim().toLowerCase().endsWith("pump") && config.rug_check.ignore_pump_fun) {
-    console.log("🚫 Transaction skipped. Ignoring Pump.fun.");
-    console.log("🟢 Resuming looking for new tokens..\n");
+    console.log("🚫 Transaction skipped. Ignoring Pump.fun token.");
+    console.log("=============================================");
     return;
   }
 
-  console.log("Token found");
-  console.log("👽 GMGN: https://gmgn.ai/sol/token/" + data.tokenMint);
-  console.log("😈 BullX: https://neo.bullx.io/terminal?chainId=1399811149&address=" + data.tokenMint);
+  // These will be hidden unless verbose_log is true
+  if (config.paper_trading.verbose_log) {
+    console.log("Token Info:");
+    console.log("👽 GMGN: https://gmgn.ai/sol/token/" + data.tokenMint);
+    console.log("😈 BullX: https://neo.bullx.io/terminal?chainId=1399811149&address=" + data.tokenMint);
+  }
 
   if (config.rug_check.simulation_mode && simulationService) {
     await handlePaperTrading(data.tokenMint);
-    return;
+  } else {
+    await handleRealTrading(data.solMint, data.tokenMint);
   }
-
-  await handleRealTrading(data.solMint, data.tokenMint);
+  
+  console.log("=============================================");
 }
 
 /**
- * Handles paper trading simulation
+ * Handle paper trading simulation
  * @param tokenMint - Token mint address
  */
 async function handlePaperTrading(tokenMint: string): Promise<void> {
-  console.log("🎮 Paper Trading Mode: Simulating trade for new token");
   const tokenPrice = await simulationService?.getTokenPrice(tokenMint);
   
   if (tokenPrice) {
-    console.log(`💰 Found Raydium price: $${tokenPrice.price}`);
     const success = await simulationService?.executeBuy(tokenMint, tokenMint, tokenPrice.price);
     if (success) {
-      console.log("🟢 Paper trade executed successfully");
+      console.log("🎮 Paper trade executed successfully");
     } else {
       console.log("❌ Failed to execute paper trade");
     }
   } else {
     console.log("❌ Could not fetch token price for paper trading");
   }
-  
-  console.log("🟢 Resuming looking for new tokens..\n");
 }
 
 /**
- * Handles real trading execution
+ * Handle real trading execution
  * @param solMint - SOL mint address
  * @param tokenMint - Token mint address
  */
 async function handleRealTrading(solMint: string, tokenMint: string): Promise<void> {
   try {
-    // Add initial delay
     await new Promise((resolve) => setTimeout(resolve, config.tx.swap_tx_initial_delay));
 
-    // Initialize connection and wallet
     const rpcUrl = process.env.HELIUS_HTTPS_URI || "";
     const connection = new Connection(rpcUrl);
     const wallet = new Wallet(Keypair.fromSecretKey(bs58.decode(process.env.PRIV_KEY_WALLET || "")));
 
-    // Always check balance before proceeding with real trades
     const balance = await connection.getBalance(wallet.publicKey);
     const balanceInSOL = balance / 1_000_000_000;
-    console.log(`\n💰 Current wallet balance: ${balanceInSOL.toFixed(4)} SOL`);
+    console.log(`💰 Current wallet balance: ${balanceInSOL.toFixed(4)} SOL`);
 
-    // Verify sufficient balance
     if (!await checkWalletBalance(connection, wallet)) {
       console.log("⛔ Transaction aborted due to insufficient balance.");
-      console.log("🟢 Resuming looking for new tokens...\n");
       return;
     }
 
     const tx = await createSwapTransaction(solMint, tokenMint);
     if (!tx) {
       console.log("⛔ Transaction aborted.");
-      console.log("🟢 Resuming looking for new tokens...\n");
       return;
     }
 
-    console.log("🚀 Swapping SOL for Token.");
+    console.log("[Real Trading] 🚀 Swapping SOL for Token");
     console.log("Swap Transaction: ", "https://solscan.io/tx/" + tx);
 
     const saveConfirmation = await fetchAndSaveSwapDetails(tx);
     if (!saveConfirmation) {
-      console.log("❌ Warning: Transaction not saved for tracking! Track Manually!");
+      console.log("❌ Warning: Transaction not saved for tracking!");
     }
   } catch (error) {
-    console.error("[Real Trading Mode] Error:", error);
-    console.log("🟢 Resuming looking for new tokens...\n");
+    console.error("[Real Trading] ❌ Error:", error);
   }
 }

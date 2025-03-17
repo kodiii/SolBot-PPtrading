@@ -74,7 +74,8 @@ export class SimulationService implements ISimulationService {
    * Clean up service resources
    */
   public cleanup(): void {
-    // Add cleanup logic if needed
-    console.log('Simulation service cleanup completed');
+    if (config.paper_trading.verbose_log) {
+      console.log('Simulation service cleanup completed');
+    }
   }
 }

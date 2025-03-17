@@ -38,7 +38,7 @@ export class PriceTracker implements IPriceTracker {
       // Check if pairs exist and find Raydium pair
       if (!response.data?.pairs || response.data.pairs.length === 0) {
         if (retryCount < this.maxRetries) {
-          console.log(`🔄 [${this.serviceId}] No pairs found for ${tokenMint}, retrying...`);
+          console.log(`⛔ No pairs found for ${tokenMint}`);
           return this.getTokenPrice(tokenMint, retryCount + 1);
         }
         return null;
@@ -49,7 +49,7 @@ export class PriceTracker implements IPriceTracker {
       );
 
       if (!pair) {
-        console.log(`❌ [${this.serviceId}] No Raydium pair found for ${tokenMint}`);
+        console.log(`⛔ No Raydium pair found for ${tokenMint}`);
         return null;
       }
 
@@ -70,9 +70,8 @@ export class PriceTracker implements IPriceTracker {
 
       return result;
     } catch (error) {
-      console.error(`❌ [ERROR][${this.serviceId}] Failed to fetch price:`, error);
+      console.error(`❌ Failed to fetch price for ${tokenMint}:`, error);
       if (retryCount < this.maxRetries - 1) {  // Adjusted to ensure exact number of retries
-        console.log(`🔄 [${this.serviceId}] Retrying price fetch...`);
         return this.getTokenPrice(tokenMint, retryCount + 1);
       }
       return null;

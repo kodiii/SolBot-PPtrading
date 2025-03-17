@@ -11,6 +11,7 @@ import { SimulationService } from "../papertrading/services";
 import { ConnectionManager } from "../papertrading/db/connection_manager";
 import { initializePaperTradingDB } from "../papertrading/paper_trading";
 import { initializeWalletChecks } from "../utils/wallet-checks";
+import { initializeLogging } from "../utils/logging";
 
 export const TRADING_MODE = config.rug_check.simulation_mode ? "Paper Trading" : "Real Trading";
 
@@ -51,6 +52,9 @@ async function initializeWallet(): Promise<boolean> {
  * Initializes the trading system and validates configuration
  */
 export async function initializeSystem(): Promise<boolean> {
+  // Initialize logging system
+  initializeLogging();
+  
   // Display trading mode banner
   console.clear();
   console.log('=============================================');

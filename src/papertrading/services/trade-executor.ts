@@ -28,13 +28,13 @@ export class TradeExecutor {
     // Check positions limit
     const openPositions = await getOpenPositionsCount();
     if (openPositions >= config.swap.max_open_positions) {
-      console.log(`❌ Maximum open positions limit (${config.swap.max_open_positions}) reached`);
+      console.log(`⛔ Maximum open positions limit (${config.swap.max_open_positions}) reached`);
       return false;
     }
 
     const balance = await getVirtualBalance();
     if (!balance) {
-      console.log('❌ Could not get virtual balance');
+      console.log('⛔ Could not get virtual balance');
       return false;
     }
 
@@ -43,7 +43,7 @@ export class TradeExecutor {
     const fees = new Decimal(config.swap.prio_fee_max_lamports).divide(Decimal.LAMPORTS_PER_SOL);
 
     if (balance.balance_sol.lessThan(amountInSol.add(fees))) {
-      console.log('❌ Insufficient virtual balance for trade');
+      console.log('⛔ Insufficient virtual balance for trade');
       return false;
     }
 
@@ -55,7 +55,7 @@ export class TradeExecutor {
 
     // Calculate token amount
     const amountTokens = amountInSol.divide(priceWithSlippage);
-    console.log(`💱 Token price in SOL: ${currentPrice.toString(8)} SOL`);
+    console.log(`Token price in SOL: ${currentPrice.toString(8)} SOL`);
 
     // Get DexScreener data
     const priceData = await this.priceTracker.getTokenPrice(tokenMint);
@@ -96,12 +96,12 @@ export class TradeExecutor {
     const amountInSol = token.amount.multiply(priceWithSlippage);
     const fees = new Decimal(config.sell.prio_fee_max_lamports).divide(Decimal.LAMPORTS_PER_SOL);
 
-    console.log(`🎮 Paper Trade: ${reason}`);
-    console.log(`📈 Selling ${token.amount.toString(8)} ${token.token_name} tokens`);
-    console.log(`💰 Final price after ${randomSlippage.multiply(100).toString(4)}% slippage:`);
-    console.log(`   Original: ${token.current_price.toString(8)} SOL`);
-    console.log(`   Adjusted w/slippage: ${priceWithSlippage.toString(8)} SOL`);
-    console.log(`🏦 Total received: ${amountInSol.toString(8)} SOL (- ${fees.toString(8)} SOL fees)`);
+    console.log(`Paper Trade: ${reason}`);
+    console.log(`Sell Amount: ${token.amount.toString(8)} ${token.token_name} tokens`);
+    console.log(`Final price after ${randomSlippage.multiply(100).toString(4)}% slippage:`);
+    console.log(`Original: ${token.current_price.toString(8)} SOL`);
+    console.log(`Adjusted w/slippage: ${priceWithSlippage.toString(8)} SOL`);
+    console.log(`Total received: ${amountInSol.toString(8)} SOL (- ${fees.toString(8)} SOL fees)`);
 
     const priceData = await this.priceTracker.getTokenPrice(token.token_mint);
     if (!priceData) {
