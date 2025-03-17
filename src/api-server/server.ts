@@ -20,6 +20,27 @@ async function ensureDatabase() {
 app.use(cors());
 app.use(express.json());
 
+// Add middleware to ensure proper JSON formatting
+app.use((req, res, next) => {
+  const originalJson = res.json;
+  res.json = function(body) {
+    // Create a properly formatted JSON string
+    let jsonString;
+    try {
+      // Use a custom serializer to ensure proper formatting
+      jsonString = JSON.stringify(body, null, 2);
+      console.log('Sending JSON response:', jsonString);
+      res.setHeader('Content-Type', 'application/json');
+      res.send(jsonString);
+    } catch (error) {
+      console.error('Error serializing JSON:', error);
+      return originalJson.call(this, body);
+    }
+    return res; // Return res for chaining
+  };
+  next();
+});
+
 // Initialize database service
 const db = DatabaseService.getInstance();
 

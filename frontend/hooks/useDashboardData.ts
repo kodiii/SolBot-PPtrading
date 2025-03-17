@@ -18,8 +18,22 @@ const fetcher = async (url: string): Promise<DashboardData> => {
     throw new Error(errorData.details || errorData.error || 'Failed to fetch data');
   }
 
-  const data = await res.json();
-  return data as DashboardData;
+  // Get the response text and fix the malformed JSON by adding missing commas
+  const text = await res.text();
+  const fixedJson = text
+    .replace(/"([^"]+)":/g, '"$1":') // Fix property names
+    .replace(/}([^,{}\[\]])"([^"]+)":/g, '},"$2":') // Add commas between objects
+    .replace(/]([^,{}\[\]])"([^"]+)":/g, '],"$2":') // Add commas after arrays
+    .replace(/"([^"]+)"([^:,{}\[\]])"([^"]+)":/g, '"$1","$3":') // Add commas between properties
+    .replace(/"([^"]+)":([^,{}\[\]])"([^"]+)":/g, '"$1":$2,"$3":'); // Add commas after values
+
+  try {
+    const data = JSON.parse(fixedJson);
+    return data as DashboardData;
+  } catch (error) {
+    console.error('Error parsing JSON:', error, 'Original text:', text, 'Fixed JSON:', fixedJson);
+    throw new Error('Failed to parse dashboard data');
+  }
 };
 
 /**

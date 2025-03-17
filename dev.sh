@@ -14,7 +14,7 @@ else
   required_version="18.17.0"
   current_version=$(node -v)
 
-  if [[ ! "$current_version" =~ ^v18\.[0-9]+\.[0-9]+$ ]] || [[ "$current_version" < "v$required_version" ]]; then
+  if [[ "$current_version" < "v$required_version" ]]; then
     echo "Error: Next.js requires Node.js version >= $required_version"
     echo "Current version: $current_version"
     echo "Please install nvm or update Node.js manually"

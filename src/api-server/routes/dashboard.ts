@@ -3,6 +3,7 @@ import { DatabaseService } from '../../papertrading/db';
 import fs from 'fs';
 import path from 'path';
 import { config } from '../../config';
+import { getTrackedTokens } from '../../papertrading/paper_trading';
 
 export function setupDashboardRoutes(app: Express, db: DatabaseService): void {
   // Get current settings
@@ -97,10 +98,11 @@ export function setupDashboardRoutes(app: Express, db: DatabaseService): void {
   // Get all dashboard data
   app.get('/api/dashboard', async (req, res, next) => {
     try {
+      // Get holdings for real trading mode
       const holdings = await db.getHoldings();
 
       // Transform holdings into positions format
-      const positions = holdings.map(holding => ({
+      const realPositions = holdings.map(holding => ({
         token_mint: holding.Token,
         token_name: holding.TokenName,
         amount: holding.Balance.toString(),
@@ -111,6 +113,25 @@ export function setupDashboardRoutes(app: Express, db: DatabaseService): void {
         stop_loss: '0',    // Need to implement
         take_profit: '0'   // Need to implement
       }));
+
+      // Get tracked tokens for paper trading mode
+      const trackedTokens = await getTrackedTokens();
+      
+      // Transform tracked tokens into positions format
+      const paperPositions = trackedTokens.map(token => ({
+        token_mint: token.token_mint,
+        token_name: token.token_name,
+        amount: token.amount.toString(),
+        position_size_sol: token.position_size_sol?.toString() || '0',
+        last_updated: token.last_updated,
+        buy_price: token.buy_price.toString(),
+        current_price: token.current_price.toString(),
+        stop_loss: token.stop_loss.toString(),
+        take_profit: token.take_profit.toString()
+      }));
+
+      // Combine positions from both modes
+      const positions = [...realPositions, ...paperPositions];
 
       // Get initial balance from config or use a default
       const initialBalance = 100; // This should come from config later
@@ -144,8 +165,9 @@ export function setupDashboardRoutes(app: Express, db: DatabaseService): void {
   // Get positions only
   app.get('/api/dashboard/positions', async (req, res, next) => {
     try {
+      // Get holdings for real trading mode
       const holdings = await db.getHoldings();
-      const positions = holdings.map(holding => ({
+      const realPositions = holdings.map(holding => ({
         token_mint: holding.Token,
         token_name: holding.TokenName,
         amount: holding.Balance.toString(),
@@ -156,6 +178,26 @@ export function setupDashboardRoutes(app: Express, db: DatabaseService): void {
         stop_loss: '0',    // Need to implement
         take_profit: '0'   // Need to implement
       }));
+
+      // Get tracked tokens for paper trading mode
+      const trackedTokens = await getTrackedTokens();
+      
+      // Transform tracked tokens into positions format
+      const paperPositions = trackedTokens.map(token => ({
+        token_mint: token.token_mint,
+        token_name: token.token_name,
+        amount: token.amount.toString(),
+        position_size_sol: token.position_size_sol?.toString() || '0',
+        last_updated: token.last_updated,
+        buy_price: token.buy_price.toString(),
+        current_price: token.current_price.toString(),
+        stop_loss: token.stop_loss.toString(),
+        take_profit: token.take_profit.toString()
+      }));
+
+      // Combine positions from both modes
+      const positions = [...realPositions, ...paperPositions];
+      
       res.json(positions);
     } catch (error) {
       next(error);

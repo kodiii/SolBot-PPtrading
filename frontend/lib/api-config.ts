@@ -2,7 +2,7 @@
  * API configuration
  */
 
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3002';
 
 export const API_ENDPOINTS = {
   dashboard: `${API_BASE_URL}/api/dashboard`,

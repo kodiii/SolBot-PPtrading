@@ -7,7 +7,7 @@ import path from 'path';
  * Default path for the SQLite database file
  */
 // Resolve path relative to this file's location
-const DB_PATH = path.resolve(__dirname, "../../../src/papertrading/db/paper_trading.db");
+const DB_PATH = path.resolve(__dirname, "paper_trading.db");
 console.log('Using database path:', DB_PATH); // Debug log
 
 /**
