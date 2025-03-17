@@ -8,6 +8,7 @@ import { useDashboardData } from '@/hooks/useDashboardData'
 import { formatDecimal, formatDateTime } from '@/lib/utils'
 import { PositionsTable } from '@/components/dashboard/PositionsTable'
 import { TradesTable } from '@/components/dashboard/TradesTable'
+import { TradingCharts } from '@/components/dashboard/TradingCharts'
 import { ConfigSidebar } from '@/components/dashboard/ConfigSidebar'
 import { ModeToggle } from '@/components/theme/ModeToggle'
 import { useState } from 'react'
@@ -110,76 +111,46 @@ export default function DashboardPage(): React.ReactElement {
         </div>
       </header>
 
-      {/* Stats Grid */}
-      <div className="grid gap-6 grid-cols-1 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Virtual Balance</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {isLoading ? (
-              <SkeletonCard />
-            ) : (
-              <div className="grid grid-cols-2 gap-4">
-                <StatItem
-                  label="SOL Balance"
-                  value={formatDecimal(data?.balance.balance_sol || '0')}
-                />
-                <StatItem
-                  label="Updated At"
-                  value={formatDateTime(data?.balance.updated_at || 0)}
-                />
+      {/* Trading Statistics Card - full width */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle>Trading Statistics</CardTitle>
+          {!isLoading && (
+            <div className="flex flex-row items-center gap-8">
+              <div className="flex flex-col items-start">
+                <span className="text-sm text-muted-foreground">Total Trades</span>
+                <span className="font-semibold">{data?.stats.totalTrades || 0}</span>
               </div>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Trading Statistics</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {isLoading ? (
-              <SkeletonCard />
-            ) : (
-              <div className="grid grid-cols-3 gap-4">
-                <StatItem
-                  label="Total Trades"
-                  value={data?.stats.totalTrades || 0}
-                />
-                <StatItem
-                  label="Win Rate"
-                  value={`${Number(data?.stats.winRate || 0).toFixed(2)}%`}
-                />
-                <StatItem
-                  label="Total P/L"
-                  value={formatDecimal(data?.stats.totalPnL || '0')}
-                  suffix="SOL"
-                  isPositive={parseFloat(data?.stats.totalPnL || '0') > 0}
-                  isNegative={parseFloat(data?.stats.totalPnL || '0') < 0}
-                />
-                <StatItem
-                  label="Avg P/L per Trade"
-                  value={formatDecimal(avgPnL.toString())}
-                  suffix="SOL"
-                  isPositive={avgPnL > 0}
-                  isNegative={avgPnL < 0}
-                />
-                <StatItem
-                  label="Best Trade"
-                  value={`${bestTrade?.token_name || '-'} (${formatDecimal(bestTrade?.pnl || '0')} SOL)`}
-                  isPositive={true}
-                />
-                <StatItem
-                  label="Worst Trade"
-                  value={`${worstTrade?.token_name || '-'} (${formatDecimal(worstTrade?.pnl || '0')} SOL)`}
-                  isNegative={true}
-                />
+              <div className="flex flex-col items-start">
+                <span className="text-sm text-muted-foreground">Win Rate</span>
+                <span className="font-semibold">{Number(data?.stats.winRate || 0).toFixed(2)}%</span>
               </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+              <div className="flex flex-col items-start">
+                <span className="text-sm text-muted-foreground">Total P/L</span>
+                <span className={`font-semibold ${parseFloat(data?.stats.totalPnL || '0') > 0 ? 'text-green-500' : 'text-red-500'}`}>
+                  {formatDecimal(data?.stats.totalPnL || '0')} SOL
+                </span>
+              </div>
+            </div>
+          )}
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <SkeletonCard />
+          ) : (
+            <div className="flex flex-col">
+              {/* Charts */}
+              {data?.trades && data.trades.length > 0 ? (
+                <TradingCharts trades={data.trades} />
+              ) : (
+                <div className="flex items-center justify-center text-muted-foreground py-12">
+                  No trade data available for charts
+                </div>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Tabs and Tables */}
       <div className="space-y-4">
