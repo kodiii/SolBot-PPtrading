@@ -1,9 +1,9 @@
 import express from 'express';
 import cors from 'cors';
-import { DatabaseService } from '../papertrading/db';
 import { initializePaperTradingDB } from '../papertrading/paper_trading';
 import { errorHandler } from './middleware/error-handler';
 import { setupRoutes } from './routes';
+import { ConnectionManager } from '../papertrading/db/connection_manager';
 
 const app = express();
 const PORT = process.env.API_PORT || 3002;
@@ -27,9 +27,8 @@ app.use((req, res, next) => {
     // Create a properly formatted JSON string
     let jsonString;
     try {
-      // Use a custom serializer to ensure proper formatting
-      jsonString = JSON.stringify(body, null, 2);
-      console.log('Sending JSON response:', jsonString);
+      // Use standard JSON.stringify without custom formatting
+      jsonString = JSON.stringify(body);
       res.setHeader('Content-Type', 'application/json');
       res.send(jsonString);
     } catch (error) {
@@ -41,11 +40,8 @@ app.use((req, res, next) => {
   next();
 });
 
-// Initialize database service
-const db = DatabaseService.getInstance();
-
 // Setup routes
-setupRoutes(app, db);
+setupRoutes(app);
 
 // Error handling
 app.use(errorHandler);
@@ -54,7 +50,6 @@ async function startServer() {
   try {
     // Initialize database and paper trading system
     await ensureDatabase();
-    await db.initialize();
     console.log('Database and paper trading system initialized successfully');
 
     // Start server
@@ -70,13 +65,11 @@ async function startServer() {
 // Handle graceful shutdown
 process.on('SIGTERM', async () => {
   console.log('SIGTERM received. Starting graceful shutdown...');
-  await db.close();
   process.exit(0);
 });
 
 process.on('SIGINT', async () => {
   console.log('SIGINT received. Starting graceful shutdown...');
-  await db.close();
   process.exit(0);
 });
 

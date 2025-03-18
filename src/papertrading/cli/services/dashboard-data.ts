@@ -1,8 +1,10 @@
 import { ConnectionManager } from "../../db/connection_manager";
 import { TokenPosition, SimulatedTrade, TradingStats } from "../types.js";
 import { Decimal } from "../../../utils/decimal";
+import path from 'path';
 
-const DB_PATH = "src/papertrading/db/paper_trading.db";
+// Use path.resolve to ensure consistent database path across the application
+const DB_PATH = path.resolve(__dirname, "../../db/paper_trading.db");
 
 export async function fetchActivePositions(): Promise<TokenPosition[]> {
     const connectionManager = ConnectionManager.getInstance(DB_PATH);
@@ -25,19 +27,14 @@ export async function fetchActivePositions(): Promise<TokenPosition[]> {
     }
 }
 
-export async function fetchRecentTrades(limit?: number): Promise<SimulatedTrade[]> {
+export async function fetchRecentTrades(limit: number): Promise<SimulatedTrade[]> {
     const connectionManager = ConnectionManager.getInstance(DB_PATH);
     try {
         const db = await connectionManager.getConnection();
-        
-        // If limit is 0 or not provided, get all trades
-        const query = limit && limit > 0 
-            ? 'SELECT * FROM simulated_trades ORDER BY time_buy DESC LIMIT ?'
-            : 'SELECT * FROM simulated_trades ORDER BY time_buy DESC';
-        
-        const params = limit && limit > 0 ? [limit] : [];
-        
-        const trades = (await db.all(query, params)).map(trade => ({
+        const trades = (await db.all(
+            'SELECT * FROM simulated_trades ORDER BY time_buy DESC LIMIT ?',
+            [limit]
+        )).map(trade => ({
             ...trade,
             amount_sol: new Decimal(trade.amount_sol),
             amount_token: new Decimal(trade.amount_token),

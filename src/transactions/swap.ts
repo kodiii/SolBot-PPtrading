@@ -10,7 +10,6 @@ import bs58 from "bs58";
 import { config } from "../config";
 import { QuoteResponse, SerializedQuoteResponse } from "../types";
 import { getOpenPositionsCount } from "../tracker/db";
-import { calculateTransactionFee } from "../utils/fees";
 
 export async function createSwapTransaction(solMint: string, tokenMint: string): Promise<string | null> {
   // Check open positions limit
@@ -68,15 +67,11 @@ export async function createSwapTransaction(solMint: string, tokenMint: string):
     }
   }
 
-  if (quoteResponseData) console.log("✅ Swap quote received.");
+  if (quoteResponseData) console.log("✅ Swap quote recieved.");
 
   // Serialize the quote into a swap transaction
   try {
     if (!quoteResponseData) return null;
-
-    // Calculate transaction fee based on mode (dynamic/fixed)
-    const feeInfo = await calculateTransactionFee(connection, config);
-    console.log(`Using ${config.swap.fees.mode} fee calculation:`, feeInfo);
 
     const swapResponse = await axios.post<SerializedQuoteResponse>(
       swapUrl,
@@ -88,7 +83,10 @@ export async function createSwapTransaction(solMint: string, tokenMint: string):
           maxBps: 300,
         },
         prioritizationFeeLamports: {
-          priorityLevelWithMaxLamports: feeInfo,
+          priorityLevelWithMaxLamports: {
+            maxLamports: config.swap.prio_fee_max_lamports,
+            priorityLevel: config.swap.prio_level,
+          },
         },
       }),
       {

@@ -1,16 +1,29 @@
-import useSWR from 'swr';
+import useSWR, { mutate } from 'swr';
 import { DashboardData, ApiError } from '@/lib/types';
+import { API_ENDPOINTS } from '@/lib/api-config';
+
+// Clear all SWR cache on load
+mutate(() => true, undefined, { revalidate: false });
 
 const REFRESH_INTERVAL = 2000; // 2 seconds
 
 /**
  * Custom fetcher with error handling for dashboard data
  */
-import { API_ENDPOINTS } from '@/lib/api-config';
-
 const fetcher = async (url: string): Promise<DashboardData> => {
-  console.log('Fetching dashboard data...'); // Provisional debug log
-  const res = await fetch(url);
+  console.log('Fetching dashboard data with cache busting...'); // Provisional debug log
+  
+  // Add cache busting parameter
+  const cacheBustUrl = `${url}${url.includes('?') ? '&' : '?'}_=${Date.now()}`;
+  
+  const res = await fetch(cacheBustUrl, {
+    headers: {
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0'
+    },
+    cache: 'no-store'
+  });
   
   if (!res.ok) {
     console.error('Dashboard data fetch failed:', res.status, res.statusText); // Provisional debug log
@@ -18,20 +31,12 @@ const fetcher = async (url: string): Promise<DashboardData> => {
     throw new Error(errorData.details || errorData.error || 'Failed to fetch data');
   }
 
-  // Get the response text and fix the malformed JSON by adding missing commas
-  const text = await res.text();
-  const fixedJson = text
-    .replace(/"([^"]+)":/g, '"$1":') // Fix property names
-    .replace(/}([^,{}\[\]])"([^"]+)":/g, '},"$2":') // Add commas between objects
-    .replace(/]([^,{}\[\]])"([^"]+)":/g, '],"$2":') // Add commas after arrays
-    .replace(/"([^"]+)"([^:,{}\[\]])"([^"]+)":/g, '"$1","$3":') // Add commas between properties
-    .replace(/"([^"]+)":([^,{}\[\]])"([^"]+)":/g, '"$1":$2,"$3":'); // Add commas after values
-
   try {
-    const data = JSON.parse(fixedJson);
+    const data = await res.json();
+    console.log('Received dashboard data:', data);
     return data as DashboardData;
   } catch (error) {
-    console.error('Error parsing JSON:', error, 'Original text:', text, 'Fixed JSON:', fixedJson);
+    console.error('Error parsing JSON:', error);
     throw new Error('Failed to parse dashboard data');
   }
 };
@@ -61,12 +66,14 @@ export function useDashboardData(): {
     fetcher,
     {
       refreshInterval: REFRESH_INTERVAL,
-      revalidateOnFocus: false,
-      revalidateOnReconnect: false,
-      keepPreviousData: true,
-      dedupingInterval: REFRESH_INTERVAL,
+      revalidateOnFocus: true,
+      revalidateOnReconnect: true,
+      keepPreviousData: false,
+      dedupingInterval: 0,
       errorRetryCount: 3,
       isPaused: () => false,
+      revalidateIfStale: true,
+      revalidateOnMount: true,
       onError: (err) => {
         console.error('SWR onError callback:', err); // Provisional debug log
         console.error('Dashboard data fetch error:', err);

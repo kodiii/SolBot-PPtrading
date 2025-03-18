@@ -1,9 +1,12 @@
 /**
- * Paper trading services module exports
+ * @file index.ts
+ * @description Service layer entry point for paper trading simulation functionality.
+ * Exports the SimulationService which provides core paper trading capabilities including:
+ * - Price tracking and monitoring
+ * - Trade simulation (buy/sell)
+ * - Stop loss and take profit automation
+ * - Virtual balance management
+ * - Integration with external price feeds (DexScreener, CoinDesk)
  */
 
-export * from './types';
-export { PriceTracker } from './price-tracker';
-export { TradeExecutor } from './trade-executor';
-export { StrategyManager } from './strategy-manager';
 export { SimulationService } from './simulation';

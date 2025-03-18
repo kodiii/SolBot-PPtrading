@@ -59,9 +59,15 @@ export function PositionsTable({ positions, isLoading, onClosePosition }: Positi
               <tr key={`${position.token_mint}-${index}`}>
                 <td className="sticky left-0 bg-background z-10 border-r border-border text-yellow-500">{position.token_name}</td>
                 <td className="whitespace-nowrap px-4">{position.token_mint}</td>
-                <td className="whitespace-nowrap px-4">0.00</td>
-                <td className="whitespace-nowrap px-4">{formatDecimal('2611.00')}</td>
-                <td className="whitespace-nowrap px-4">{formatDecimal('4859.25')}</td>
+                <td className="whitespace-nowrap px-4">
+                  {position.volume_m5 === null ? '...' : `$${formatDecimal(position.volume_m5)}`}
+                </td>
+                <td className="whitespace-nowrap px-4">
+                  {position.market_cap === null ? '...' : `$${formatDecimal(position.market_cap)}`}
+                </td>
+                <td className="whitespace-nowrap px-4">
+                  {position.liquidity_usd === null ? '...' : `$${formatDecimal(position.liquidity_usd)}`}
+                </td>
                 <td className="whitespace-nowrap px-4">{formatDecimal(position.position_size_sol)}</td>
                 <td className="whitespace-nowrap px-4">{formatDecimal(position.buy_price)}</td>
                 <td className="whitespace-nowrap px-4">{formatDecimal(position.current_price)}</td>

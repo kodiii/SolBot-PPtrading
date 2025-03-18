@@ -52,7 +52,9 @@ export async function fetchDashboardData(retries = MAX_RETRIES) {
  * Resets paper trading data
  */
 export async function resetPaperTrading(): Promise<void> {
-    const connectionManager = ConnectionManager.getInstance("src/papertrading/db/paper_trading.db");
+    const path = require('path');
+    const DB_PATH = path.resolve(__dirname, "../db/paper_trading.db");
+    const connectionManager = ConnectionManager.getInstance(DB_PATH);
     
     try {
         await connectionManager.initialize();
@@ -90,7 +92,9 @@ export async function resetPaperTrading(): Promise<void> {
  * Validates database connection
  */
 export async function validateConnection(): Promise<boolean> {
-    const connectionManager = ConnectionManager.getInstance("src/papertrading/db/paper_trading.db");
+    const path = require('path');
+    const DB_PATH = path.resolve(__dirname, "../db/paper_trading.db");
+    const connectionManager = ConnectionManager.getInstance(DB_PATH);
     
     try {
         await connectionManager.initialize();

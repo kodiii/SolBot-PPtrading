@@ -19,6 +19,9 @@ export interface Position {
   take_profit: string;
   position_size_sol: string;
   last_updated: number;
+  volume_m5: string | null;
+  market_cap: string | null;
+  liquidity_usd: string | null;
 }
 
 /**
@@ -38,10 +41,10 @@ export interface Trade {
   time_buy: number;
   time_sell?: number;
   pnl?: string;
-  volume_m5?: string;
-  market_cap: string;
-  liquidity_buy_usd: string;
-  liquidity_sell_usd?: string;
+  volume_m5?: string | null;
+  market_cap: string | null;
+  liquidity_buy_usd: string | null;
+  liquidity_sell_usd?: string | null;
 }
 
 /**

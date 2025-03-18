@@ -16,7 +16,10 @@ import { ConnectionManager } from "./db/connection_manager";
 import { config } from "../config";
 import { Decimal } from "../utils/decimal";
 
-const DB_PATH = "src/papertrading/db/paper_trading.db";
+import path from 'path';
+
+// Use path relative to the current file's directory to ensure consistent database location
+const DB_PATH = path.resolve(__dirname, "db/paper_trading.db");
 
 /**
  * Represents the virtual balance in the paper trading system
@@ -93,12 +96,6 @@ export interface TokenTracking {
   liquidity_buy_usd?: number;
   liquidity_sell_usd?: number;
   position_size_sol?: Decimal;
-}
-
-function logIfVerbose(...args: any[]) {
-  if (config.paper_trading.verbose_log) {
-    console.log(...args);
-  }
 }
 
 /**
@@ -192,7 +189,7 @@ export async function initializePaperTradingDB(): Promise<boolean> {
           'INSERT INTO virtual_balance (balance_sol, updated_at) VALUES (?, ?)',
           [config.paper_trading.initial_balance.toString(), Date.now()]
         );
-        logIfVerbose(`🎮 Paper Trading balance set to ${config.paper_trading.initial_balance} SOL`);
+        console.log(`🎮 Paper Trading balance set to ${config.paper_trading.initial_balance} SOL`);
       }
 
       return true;
@@ -283,13 +280,14 @@ export async function recordSimulatedTrade(trade: SimulatedTrade): Promise<boole
           // PNL is sell return minus buy cost
           const pnl = sellReturn.subtract(buyCost);
 
-          logIfVerbose(`Trade Summary:
-          Token: ${trade.token_name} (${trade.token_mint})
-          Buy Amount: ${originalBuyAmount.toString()} SOL
-          Buy Price: ${trade.buy_price.toString()}
+          console.log(`PNL Calculation:
           Sell Amount: ${trade.amount_sol.toString()} SOL
-          Sell Price: ${trade.sell_price.toString()}
-          PNL: ${pnl.toString()} SOL`);
+          Sell Fees: ${trade.sell_fees!.toString()} SOL
+          Sell Slippage: ${trade.sell_slippage?.toString() || '0'} SOL
+          Buy Amount: ${originalBuyAmount.toString()} SOL
+          Buy Fees: ${buyFees.toString()} SOL
+          Buy Slippage: ${buySlippage.toString()} SOL
+          Final PNL: ${pnl.toString()} SOL`);
 
           // Update existing buy record with sell information
           await db.run(
@@ -327,11 +325,12 @@ export async function recordSimulatedTrade(trade: SimulatedTrade): Promise<boole
             trade.dex_data?.liquidity_buy_usd || 0
           ];
 
-          logIfVerbose(`New Buy Trade:
-          Token: ${trade.token_name} (${trade.token_mint})
-          Amount: ${trade.amount_sol.toString()} SOL
-          Price: ${trade.buy_price.toString()}
-          Slippage: ${trade.buy_slippage.toString()}`);
+          console.log(`Recording Buy Trade:
+          Token: ${trade.token_name}
+          Amount SOL: ${trade.amount_sol.toString()}
+          Buy Price: ${trade.buy_price.toString()}
+          Buy Fees: ${trade.buy_fees.toString()}
+          Buy Slippage: ${trade.buy_slippage.toString()}`);
           
           await db.run(
             `INSERT INTO simulated_trades (

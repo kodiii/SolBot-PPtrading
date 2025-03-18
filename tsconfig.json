@@ -4,7 +4,7 @@
     "target": "ES2020",                       /* Set the JavaScript language version for emitted JavaScript and include compatible library declarations */
     "module": "CommonJS",                     /* Specify what module code is generated. CommonJS is compatible with Node.js */
     "outDir": "./dist",                       /* Specify an output folder for all emitted files */
-    "rootDir": "./src",                       /* Specify the root folder within your source files */
+    "rootDir": "src",                       /* Specify the root folder within your source files */
     "strict": true,                           /* Enable all strict type-checking options */
     "esModuleInterop": true,                  /* Emit additional JavaScript to ease support for importing CommonJS modules */
     "skipLibCheck": true,                     /* Skip type checking of declaration files */

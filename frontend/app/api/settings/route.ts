@@ -3,8 +3,15 @@ import fs from 'fs';
 import path from 'path';
 import { BACKEND_API_ENDPOINTS } from '@/lib/api-config';
 
-// Define the settings file path
+// Define the settings file path - we'll use this only as a fallback
 const SETTINGS_FILE = path.join(process.cwd(), 'data', 'settings.json');
+
+// Get the backend settings URL
+const getBackendSettingsUrl = () => {
+  // Get the base URL from the BACKEND_API_ENDPOINTS
+  const baseUrl = BACKEND_API_ENDPOINTS.dashboard.split('/api/dashboard')[0];
+  return `${baseUrl}/api/settings`;
+};
 
 // Define the configuration settings interface
 interface ConfigSettings {
@@ -122,8 +129,30 @@ const defaultSettings: ConfigSettings = {
   }
 };
 
-// Helper function to ensure the settings file exists
-function ensureSettingsFile() {
+// Helper function to read settings from the backend API
+async function readSettingsFromBackend(): Promise<ConfigSettings | null> {
+  try {
+    const response = await fetch(getBackendSettingsUrl(), {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      cache: 'no-store',
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Failed to fetch settings: ${response.status} ${response.statusText}`);
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error('Error reading settings from backend:', error);
+    return null;
+  }
+}
+
+// Helper function to read settings from local file (fallback only)
+function readLocalSettings(): ConfigSettings {
   try {
     // Ensure the data directory exists
     const dataDir = path.join(process.cwd(), 'data');
@@ -136,40 +165,52 @@ function ensureSettingsFile() {
       // Create the settings file with default settings
       fs.writeFileSync(SETTINGS_FILE, JSON.stringify(defaultSettings, null, 2));
     }
-  } catch (error) {
-    console.error('Error ensuring settings file:', error);
-  }
-}
-
-// Helper function to read settings
-function readSettings(): ConfigSettings {
-  try {
-    ensureSettingsFile();
+    
     const data = fs.readFileSync(SETTINGS_FILE, 'utf8');
     return JSON.parse(data);
   } catch (error) {
-    console.error('Error reading settings:', error);
+    console.error('Error reading local settings:', error);
     return defaultSettings;
   }
 }
 
-// Helper function to write settings
-function writeSettings(settings: ConfigSettings) {
+// Helper function to write settings to the backend API
+async function writeSettingsToBackend(settings: ConfigSettings): Promise<boolean> {
   try {
-    ensureSettingsFile();
-    fs.writeFileSync(SETTINGS_FILE, JSON.stringify(settings, null, 2));
+    const response = await fetch(getBackendSettingsUrl(), {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(settings),
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Failed to update settings: ${response.status} ${response.statusText}`);
+    }
+    
     return true;
   } catch (error) {
-    console.error('Error writing settings:', error);
+    console.error('Error writing settings to backend:', error);
     return false;
   }
 }
 
-// GET handler for retrieving settings
+// GET handler for retrieving settings - prioritize backend API
 export async function GET() {
   try {
-    const settings = readSettings();
-    return NextResponse.json(settings);
+    // Try to get settings from backend first
+    const backendSettings = await readSettingsFromBackend();
+    
+    if (backendSettings) {
+      console.log('Retrieved settings from backend API');
+      return NextResponse.json(backendSettings);
+    }
+    
+    // Fallback to local settings if backend is unavailable
+    console.log('Backend unavailable, using local settings');
+    const localSettings = readLocalSettings();
+    return NextResponse.json(localSettings);
   } catch (error) {
     console.error('Error in GET /api/settings:', error);
     return NextResponse.json(
@@ -179,7 +220,7 @@ export async function GET() {
   }
 }
 
-// POST handler for updating settings
+// POST handler for updating settings - prioritize backend API
 export async function POST(request: NextRequest) {
   try {
     const settings = await request.json();
@@ -192,31 +233,24 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    // Write settings to file
-    const success = writeSettings(settings);
+    // Write settings to backend API
+    const success = await writeSettingsToBackend(settings);
     
     if (success) {
-      // Also forward the settings to the backend API
+      // Also save to local file as a fallback
       try {
-        // Get the base URL from the BACKEND_API_ENDPOINTS
-        const baseUrl = BACKEND_API_ENDPOINTS.dashboard.split('/api/dashboard')[0];
-        const settingsUrl = `${baseUrl}/api/settings`;
+        // Ensure the data directory exists
+        const dataDir = path.join(process.cwd(), 'data');
+        if (!fs.existsSync(dataDir)) {
+          fs.mkdirSync(dataDir, { recursive: true });
+        }
         
-        console.log('Forwarding settings to backend:', settingsUrl);
-        
-        // Forward the settings to the backend
-        const backendResponse = await fetch(settingsUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(settings),
-        });
-        
-        console.log('Backend settings response:', backendResponse.status);
+        // Write settings to local file
+        fs.writeFileSync(SETTINGS_FILE, JSON.stringify(settings, null, 2));
+        console.log('Saved settings to local file as fallback');
       } catch (error) {
-        console.error('Error forwarding settings to backend:', error);
-        // Continue even if backend update fails, as we've already saved to the file
+        console.error('Error saving settings to local file:', error);
+        // Continue even if local save fails, as we've already saved to the backend
       }
       
       return NextResponse.json({ 
@@ -226,7 +260,7 @@ export async function POST(request: NextRequest) {
       });
     } else {
       return NextResponse.json(
-        { error: 'Failed to save settings' },
+        { error: 'Failed to save settings to backend' },
         { status: 500 }
       );
     }

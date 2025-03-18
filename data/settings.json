@@ -1,6 +1,6 @@
 {
   "paperTrading": {
-    "initialBalance": 10,
+    "initialBalance": 5,
     "dashboardRefresh": 2000,
     "recentTradesLimit": 12,
     "verboseLogging": false
@@ -15,7 +15,7 @@
   "swap": {
     "amount": 500000000,
     "slippageBps": 200,
-    "maxOpenPositions": 3
+    "maxOpenPositions": 5
   },
   "strategies": {
     "liquidityDropEnabled": false,

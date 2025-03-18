@@ -1,131 +1,109 @@
 import { Express } from 'express';
-import { DatabaseService } from '../../papertrading/db';
-import fs from 'fs';
-import path from 'path';
 import { config } from '../../config';
-import { getTrackedTokens, getVirtualBalance } from '../../papertrading/paper_trading';
+import { SettingsService } from '../../papertrading/services/settings-service';
+import { SimulationService } from '../../papertrading/services/simulation';
 import { fetchActivePositions, fetchRecentTrades, fetchTradingStats } from '../../papertrading/cli/services/dashboard-data';
-import { TradeExecutor } from '../../papertrading/services/trade-executor';
+import { getTrackedTokens, getVirtualBalance } from '../../papertrading/paper_trading';
 
-export function setupDashboardRoutes(app: Express, db: DatabaseService): void {
+export function setupDashboardRoutes(app: Express): void {
   // Get current settings
-  app.get('/api/settings', (req, res) => {
+  app.get('/api/settings', async (req, res) => {
     try {
-      // Return the current configuration
-      res.json({
-        paperTrading: {
-          initialBalance: config.paper_trading.initial_balance,
-          dashboardRefresh: config.paper_trading.dashboard_refresh,
-          recentTradesLimit: config.paper_trading.recent_trades_limit,
-          verboseLogging: config.paper_trading.verbose_log
-        },
-        priceValidation: {
-          enabled: config.price_validation.enabled,
-          windowSize: config.price_validation.window_size,
-          maxDeviation: config.price_validation.max_deviation,
-          minDataPoints: config.price_validation.min_data_points,
-          fallbackToSingleSource: config.price_validation.fallback_to_single_source
-        },
-        swap: {
-          amount: parseInt(config.swap.amount),
-          slippageBps: parseInt(config.swap.slippageBps),
-          maxOpenPositions: config.swap.max_open_positions
-        },
-        strategies: {
-          liquidityDropEnabled: config.strategies.liquidity_drop.enabled,
-          threshold: config.strategies.liquidity_drop.threshold_percent
-        },
-        rugCheck: {
-          verboseLog: config.rug_check.verbose_log,
-          simulationMode: config.rug_check.simulation_mode,
-          allowMintAuthority: config.rug_check.allow_mint_authority,
-          allowNotInitialized: config.rug_check.allow_not_initialized,
-          allowFreezeAuthority: config.rug_check.allow_freeze_authority,
-          allowRugged: config.rug_check.allow_rugged,
-          allowMutable: config.rug_check.allow_mutable,
-          blockReturningTokenNames: config.rug_check.block_returning_token_names,
-          blockReturningTokenCreators: config.rug_check.block_returning_token_creators,
-          blockSymbols: config.rug_check.block_symbols,
-          blockNames: config.rug_check.block_names,
-          onlyContainString: config.rug_check.only_contain_string,
-          containString: config.rug_check.contain_string,
-          allowInsiderTopholders: config.rug_check.allow_insider_topholders,
-          maxAllowedPctTopholders: config.rug_check.max_alowed_pct_topholders,
-          maxAllowedPctAllTopholders: config.rug_check.max_alowed_pct_all_topholders,
-          excludeLpFromTopholders: config.rug_check.exclude_lp_from_topholders,
-          minTotalMarkets: config.rug_check.min_total_markets,
-          minTotalLpProviders: config.rug_check.min_total_lp_providers,
-          minTotalMarketLiquidity: config.rug_check.min_total_market_Liquidity,
-          maxTotalMarketLiquidity: config.rug_check.max_total_market_Liquidity,
-          maxMarketcap: config.rug_check.max_marketcap,
-          maxPriceToken: config.rug_check.max_price_token,
-          ignorePumpFun: config.rug_check.ignore_pump_fun,
-          maxScore: config.rug_check.max_score,
-          legacyNotAllowed: config.rug_check.legacy_not_allowed
-        }
-      });
+      const settingsService = SettingsService.getInstance();
+      const settings = await settingsService.getSettings();
+      
+      res.json(settings);
     } catch (error) {
+      console.error('Error retrieving settings:', error);
       res.status(500).json({ error: 'Failed to retrieve settings' });
     }
   });
 
   // Update settings
-  app.post('/api/settings', (req, res) => {
+  app.post('/api/settings', async (req, res) => {
     try {
       const settings = req.body;
       
       console.log('Received updated settings:', settings);
       
-      // Save settings to data/settings.json
-      const configPath = path.resolve(__dirname, '../../../data/settings.json');
+      // Save settings to database
+      const settingsService = SettingsService.getInstance();
+      await settingsService.saveSettings(settings);
       
-      // Ensure the data directory exists
-      const dataDir = path.dirname(configPath);
-      if (!fs.existsSync(dataDir)) {
-        fs.mkdirSync(dataDir, { recursive: true });
-      }
+      // Update config in memory
+      // This is a temporary solution until we refactor the config to use the settings service
+      config.paper_trading.initial_balance = settings.paperTrading.initialBalance;
+      config.paper_trading.dashboard_refresh = settings.paperTrading.dashboardRefresh;
+      config.paper_trading.recent_trades_limit = settings.paperTrading.recentTradesLimit;
+      config.paper_trading.verbose_log = settings.paperTrading.verboseLogging;
       
-      // Write settings to file
-      fs.writeFileSync(configPath, JSON.stringify(settings, null, 2));
+      config.price_validation.enabled = settings.priceValidation.enabled;
+      config.price_validation.window_size = settings.priceValidation.windowSize;
+      config.price_validation.max_deviation = settings.priceValidation.maxDeviation;
+      config.price_validation.min_data_points = settings.priceValidation.minDataPoints;
+      config.price_validation.fallback_to_single_source = settings.priceValidation.fallbackToSingleSource;
+      
+      config.swap.amount = settings.swap.amount.toString();
+      config.swap.slippageBps = settings.swap.slippageBps.toString();
+      config.swap.max_open_positions = settings.swap.maxOpenPositions;
+      
+      config.strategies.liquidity_drop.enabled = settings.strategies.liquidityDropEnabled;
+      config.strategies.liquidity_drop.threshold_percent = settings.strategies.threshold;
+      
+      // Update rugCheck settings
+      config.rug_check.verbose_log = settings.rugCheck.verboseLog;
+      config.rug_check.simulation_mode = settings.rugCheck.simulationMode;
+      config.rug_check.allow_mint_authority = settings.rugCheck.allowMintAuthority;
+      config.rug_check.allow_not_initialized = settings.rugCheck.allowNotInitialized;
+      config.rug_check.allow_freeze_authority = settings.rugCheck.allowFreezeAuthority;
+      config.rug_check.allow_rugged = settings.rugCheck.allowRugged;
+      config.rug_check.allow_mutable = settings.rugCheck.allowMutable;
+      config.rug_check.block_returning_token_names = settings.rugCheck.blockReturningTokenNames;
+      config.rug_check.block_returning_token_creators = settings.rugCheck.blockReturningTokenCreators;
+      config.rug_check.block_symbols = settings.rugCheck.blockSymbols;
+      config.rug_check.block_names = settings.rugCheck.blockNames;
+      config.rug_check.only_contain_string = settings.rugCheck.onlyContainString;
+      config.rug_check.contain_string = settings.rugCheck.containString;
+      config.rug_check.allow_insider_topholders = settings.rugCheck.allowInsiderTopholders;
+      config.rug_check.max_alowed_pct_topholders = settings.rugCheck.maxAllowedPctTopholders;
+      config.rug_check.max_alowed_pct_all_topholders = settings.rugCheck.maxAllowedPctAllTopholders;
+      config.rug_check.exclude_lp_from_topholders = settings.rugCheck.excludeLpFromTopholders;
+      config.rug_check.min_total_markets = settings.rugCheck.minTotalMarkets;
+      config.rug_check.min_total_lp_providers = settings.rugCheck.minTotalLpProviders;
+      config.rug_check.min_total_market_Liquidity = settings.rugCheck.minTotalMarketLiquidity;
+      config.rug_check.max_total_market_Liquidity = settings.rugCheck.maxTotalMarketLiquidity;
+      config.rug_check.max_marketcap = settings.rugCheck.maxMarketcap;
+      config.rug_check.max_price_token = settings.rugCheck.maxPriceToken;
+      config.rug_check.ignore_pump_fun = settings.rugCheck.ignorePumpFun;
+      config.rug_check.max_score = settings.rugCheck.maxScore;
+      config.rug_check.legacy_not_allowed = settings.rugCheck.legacyNotAllowed;
       
       res.json({ 
         success: true, 
-        message: 'Settings updated successfully. Please restart the bot for changes to take effect.',
-        requiresRestart: true,
+        message: 'Settings updated successfully.',
+        requiresRestart: false,
         settings
       });
     } catch (error) {
+      console.error('Error updating settings:', error);
       res.status(500).json({ 
         success: false,
         error: 'Failed to update settings' 
       });
     }
   });
+
   // Get all dashboard data
   app.get('/api/dashboard', async (req, res, next) => {
     try {
-      // Get data from both real trading and paper trading modes
-      const [holdings, paperPositions, virtualBalance, allTrades, recentTrades, stats] = await Promise.all([
-        db.getHoldings(),
+      // Get data from paper trading mode
+      const [paperPositions, virtualBalance, allTrades, recentTrades, stats] = await Promise.all([
         fetchActivePositions(),
         getVirtualBalance(),
-        fetchRecentTrades(), // No limit, fetch all trades
+        fetchRecentTrades(1000), // High limit to fetch all trades
         fetchRecentTrades(config.paper_trading.recent_trades_limit), // Limited trades for charts
         fetchTradingStats()
       ]);
-
-      // Transform holdings into positions format for real trading
-      const realPositions = holdings.map(holding => ({
-        token_mint: holding.Token,
-        token_name: holding.TokenName,
-        amount: holding.Balance.toString(),
-        position_size_sol: holding.SolPaid.toString(),
-        last_updated: holding.Time,
-        buy_price: holding.PerTokenPaidUSDC.toString(),
-        current_price: '0',
-        stop_loss: '0',
-        take_profit: '0'
-      }));
 
       // Transform paper positions into the same format
       const formattedPaperPositions = paperPositions.map(token => ({
@@ -137,11 +115,11 @@ export function setupDashboardRoutes(app: Express, db: DatabaseService): void {
         buy_price: token.buy_price.toString(),
         current_price: token.current_price.toString(),
         stop_loss: token.stop_loss.toString(),
-        take_profit: token.take_profit.toString()
+        take_profit: token.take_profit.toString(),
+        volume_m5: token.volume_m5?.toString() || '0',
+        market_cap: token.market_cap?.toString() || '0',
+        liquidity_usd: token.liquidity_usd?.toString() || '0'
       }));
-
-      // Combine positions from both modes
-      const positions = [...realPositions, ...formattedPaperPositions];
 
       // Format trades for the response
       const formattedTrades = allTrades.map(trade => ({
@@ -194,12 +172,17 @@ export function setupDashboardRoutes(app: Express, db: DatabaseService): void {
         updated_at: Date.now() 
       };
 
+      // Set cache control headers
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+      
       res.json({
         balance: {
           balance_sol: balance.balance_sol.toString(),
           updated_at: balance.updated_at
         },
-        positions,
+        positions: formattedPaperPositions,
         trades: formattedTrades,
         recentTrades: recentTrades.map(trade => ({
           token_mint: trade.token_mint,
@@ -230,24 +213,8 @@ export function setupDashboardRoutes(app: Express, db: DatabaseService): void {
   // Get positions only
   app.get('/api/dashboard/positions', async (req, res, next) => {
     try {
-      // Get data from both real trading and paper trading modes
-      const [holdings, paperPositions] = await Promise.all([
-        db.getHoldings(),
-        fetchActivePositions()
-      ]);
-
-      // Transform holdings into positions format for real trading
-      const realPositions = holdings.map(holding => ({
-        token_mint: holding.Token,
-        token_name: holding.TokenName,
-        amount: holding.Balance.toString(),
-        position_size_sol: holding.SolPaid.toString(),
-        last_updated: holding.Time,
-        buy_price: holding.PerTokenPaidUSDC.toString(),
-        current_price: '0',
-        stop_loss: '0',
-        take_profit: '0'
-      }));
+      // Get data from paper trading mode
+      const paperPositions = await fetchActivePositions();
 
       // Transform paper positions into the same format
       const formattedPaperPositions = paperPositions.map(token => ({
@@ -259,13 +226,18 @@ export function setupDashboardRoutes(app: Express, db: DatabaseService): void {
         buy_price: token.buy_price.toString(),
         current_price: token.current_price.toString(),
         stop_loss: token.stop_loss.toString(),
-        take_profit: token.take_profit.toString()
+        take_profit: token.take_profit.toString(),
+        volume_m5: token.volume_m5?.toString() || '0',
+        market_cap: token.market_cap?.toString() || '0',
+        liquidity_usd: token.liquidity_usd?.toString() || '0'
       }));
-
-      // Combine positions from both modes
-      const positions = [...realPositions, ...formattedPaperPositions];
       
-      res.json(positions);
+      // Set cache control headers
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+      
+      res.json(formattedPaperPositions);
     } catch (error) {
       next(error);
     }
@@ -310,12 +282,12 @@ export function setupDashboardRoutes(app: Express, db: DatabaseService): void {
         current_price: token.current_price.toString()
       });
       
-      // Create a trade executor instance
-      const tradeExecutor = new TradeExecutor();
+      // Create a simulation service instance
+      const simulationService = SimulationService.getInstance();
       
       // Execute the sell
       console.log('Executing sell...');
-      const result = await tradeExecutor.executeSell(token, 'Manual close by user');
+      const result = await simulationService.executeSell(token, 'Manual close by user');
       console.log('Sell execution result:', result);
       
       if (result) {
@@ -369,6 +341,11 @@ export function setupDashboardRoutes(app: Express, db: DatabaseService): void {
         liquidity_sell_usd: trade.dex_data?.liquidity_sell_usd?.toString() || null,
         volume_m5: trade.dex_data?.volume_m5?.toString() || '0'
       }));
+      
+      // Set cache control headers
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
       
       res.json(formattedTrades);
     } catch (error) {
@@ -428,6 +405,11 @@ export function setupDashboardRoutes(app: Express, db: DatabaseService): void {
         totalPnL: '0',
         winRate: '0'
       };
+      
+      // Set cache control headers
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
       
       res.json(formattedStats);
     } catch (error) {

@@ -166,7 +166,7 @@ function validateTokenContent(data: RugCheckXYZResponse): ValidationResult[] {
   const tokenSymbol = data.tokenMeta.symbol.toLowerCase();
 
   // Check blocked names
-  const blockedName = config.rug_check.block_names.some((name: string) => 
+  const blockedName = config.rug_check.block_names.some(name => 
     tokenName.includes(name.toLowerCase())
   );
   results.push({
@@ -177,7 +177,7 @@ function validateTokenContent(data: RugCheckXYZResponse): ValidationResult[] {
   });
 
   // Check blocked symbols
-  const blockedSymbol = config.rug_check.block_symbols.some((symbol: string) => 
+  const blockedSymbol = config.rug_check.block_symbols.some(symbol => 
     tokenSymbol === symbol.toLowerCase()
   );
   results.push({
@@ -189,7 +189,7 @@ function validateTokenContent(data: RugCheckXYZResponse): ValidationResult[] {
 
   // Check required content
   if (config.rug_check.only_contain_string) {
-    const hasRequiredString = config.rug_check.contain_string.some((str: string) => 
+    const hasRequiredString = config.rug_check.contain_string.some(str => 
       tokenName.includes(str.toLowerCase())
     );
     results.push({
@@ -241,7 +241,7 @@ function validateScoring(data: RugCheckXYZResponse): ValidationResult[] {
  * Validates legacy risk conditions
  */
 function validateLegacyRisks(data: RugCheckXYZResponse): ValidationResult[] {
-  return config.rug_check.legacy_not_allowed.map((risk: string) => {
+  return config.rug_check.legacy_not_allowed.map(risk => {
     let passed = true;
     switch (risk) {
       case 'Freeze Authority still enabled':

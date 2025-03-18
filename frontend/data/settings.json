@@ -1,6 +1,6 @@
 {
   "paperTrading": {
-    "initialBalance": 10,
+    "initialBalance": 5,
     "dashboardRefresh": 2000,
     "recentTradesLimit": 12,
     "verboseLogging": false
