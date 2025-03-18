@@ -18,7 +18,7 @@ export function ModeToggle(): React.ReactElement {
   }
 
   // Toggle between light and dark mode while preserving the current theme family
-  const toggleColorMode = () => {
+  const toggleColorMode = (): void => {
     // Get the current theme
     const currentTheme = theme || 'system'
     

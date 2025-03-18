@@ -68,7 +68,7 @@ export function PositionsTable({ positions, isLoading, onClosePosition }: Positi
                 <td className="whitespace-nowrap px-4">
                   {position.liquidity_usd === null ? '...' : `$${formatDecimal(position.liquidity_usd)}`}
                 </td>
-                <td className="whitespace-nowrap px-4">{formatDecimal(position.position_size_sol)}</td>
+                <td className="whitespace-nowrap px-4">{formatDecimal(position.amount)}</td>
                 <td className="whitespace-nowrap px-4">{formatDecimal(position.buy_price)}</td>
                 <td className="whitespace-nowrap px-4">{formatDecimal(position.current_price)}</td>
                 <td className={`whitespace-nowrap px-4 ${pnlPercentage >= 0 ? 'text-green-500' : 'text-red-500'}`}>

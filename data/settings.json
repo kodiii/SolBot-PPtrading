@@ -1,12 +1,12 @@
 {
   "appearance": {
-    "theme": "bluish-purple-cricket",
-    "colorMode": "light"
+    "theme": "system",
+    "colorMode": "system"
   },
   "paperTrading": {
     "initialBalance": 5,
     "dashboardRefresh": 2000,
-    "recentTradesLimit": 10,
+    "recentTradesLimit": 12,
     "verboseLogging": false
   },
   "priceValidation": {
@@ -32,7 +32,7 @@
     "allowNotInitialized": false,
     "allowFreezeAuthority": false,
     "allowRugged": false,
-    "allowMutable": true,
+    "allowMutable": false,
     "blockReturningTokenNames": false,
     "blockReturningTokenCreators": false,
     "blockSymbols": [
@@ -63,7 +63,8 @@
       "Freeze Authority still enabled",
       "Single holder ownership",
       "Copycat token",
-      "High holder concentration"
+      "Low amount of LP Providers",
+      "Low Liquidity"
     ]
   }
 }

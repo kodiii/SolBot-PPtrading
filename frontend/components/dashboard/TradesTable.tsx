@@ -55,7 +55,7 @@ export function TradesTable({ trades, isLoading }: TradesTableProps): React.Reac
                 <td className="whitespace-nowrap px-4">{trade.token_mint}</td>
                 <td className="whitespace-nowrap px-4">{formatDecimal(trade.buy_price)}</td>
                 <td className="whitespace-nowrap px-4">{trade.sell_price ? formatDecimal(trade.sell_price) : '-'}</td>
-                <td className="whitespace-nowrap px-4">{formatDecimal(trade.amount_sol)}</td>
+                <td className="whitespace-nowrap px-4">{formatDecimal(trade.amount_token)}</td>
                 <td className="whitespace-nowrap px-4">{new Date(trade.time_buy).toLocaleString()}</td>
                 <td className="whitespace-nowrap px-4">{trade.time_sell ? new Date(trade.time_sell).toLocaleString() : '-'}</td>
                 <td className="whitespace-nowrap px-4">{formatDecimal(trade.market_cap)}</td>

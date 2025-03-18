@@ -39,6 +39,15 @@ This will start:
 - The API server for data management (port 3002)
 - The frontend web dashboard (port 3010)
 
+If you need to start the components separately:
+```bash
+# Start the API server only
+cd src/api-server && npm run dev
+
+# Start the frontend only
+cd frontend && npm run dev
+```
+
 2. In a separate terminal, start the trading bot:
 ```bash
 npm run dev
@@ -113,7 +122,23 @@ By default, only important notifications and errors are shown in the terminal. T
    - Start components in the recommended order: web interface, then bot
    - Look for any error messages in the console output
 
-4. For any other issues:
+4. Connection Issues Between Frontend and Backend:
+   - If you see "ECONNREFUSED" errors in the frontend console, ensure the API server is running on port 3002
+   - If the API server fails to start, try these steps:
+     ```bash
+     # Navigate to the API server directory
+     cd src/api-server
+     
+     # Install dependencies if needed
+     npm install
+     
+     # Start the API server in development mode
+     npm run dev
+     ```
+   - Verify the API server is running by checking for the message "API server running on port 3002"
+   - The frontend will automatically use local settings if it cannot connect to the backend
+
+5. For any other issues:
    - Check the console output for error messages
    - Ensure all environment variables are properly set
    - Verify your wallet has sufficient SOL for transactions

@@ -67,11 +67,11 @@
 }
 
 .positive {
-  color: #2EB88A; /* Green color for positive values */
+  color: #10b981; /* Green color for positive values */
 }
 
 .negative {
-  color: #E23670; /* Red color for negative values */
+  color: #ef4444; /* Red color for negative values */
 }
 
 /* Table Styles */

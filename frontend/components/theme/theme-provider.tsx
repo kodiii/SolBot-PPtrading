@@ -16,7 +16,7 @@ export const themeOptions = [
 export default function ThemeProvider({ children, ...props }: ThemeProviderProps): React.JSX.Element {
   // Apply theme-specific class to root element
   React.useEffect(() => {
-    const handleThemeChange = () => {
+    const handleThemeChange = (): void => {
       // Get theme and color mode from localStorage
       const theme = localStorage.getItem('theme') || 'system'
       const colorMode = localStorage.getItem('theme-mode') || 'system'
