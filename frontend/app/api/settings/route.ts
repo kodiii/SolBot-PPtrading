@@ -7,7 +7,7 @@ import { BACKEND_API_ENDPOINTS } from '@/lib/api-config';
 const SETTINGS_FILE = path.join(process.cwd(), 'data', 'settings.json');
 
 // Get the backend settings URL
-const getBackendSettingsUrl = () => {
+const getBackendSettingsUrl = (): string => {
   // Get the base URL from the BACKEND_API_ENDPOINTS
   const baseUrl = BACKEND_API_ENDPOINTS.dashboard.split('/api/dashboard')[0];
   return `${baseUrl}/api/settings`;
@@ -268,6 +268,86 @@ export async function POST(request: NextRequest): Promise<Response> {
     console.error('Error in POST /api/settings:', error);
     return NextResponse.json(
       { error: 'Failed to update settings' },
+      { status: 500 }
+    );
+  }
+}
+
+// Helper function to reset settings to default values
+async function resetSettingsToBackend(): Promise<boolean> {
+  try {
+    const response = await fetch(getBackendSettingsUrl() + '/reset', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Failed to reset settings: ${response.status} ${response.statusText}`);
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('Error resetting settings to backend:', error);
+    return false;
+  }
+}
+
+// POST handler for resetting settings to default values
+export async function PATCH(): Promise<Response> {
+  try {
+    // Reset settings to default values
+    const success = await resetSettingsToBackend();
+    
+    if (success) {
+      // Get the updated settings
+      const response = await fetch(getBackendSettingsUrl(), {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        cache: 'no-store',
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch settings: ${response.status} ${response.statusText}`);
+      }
+      
+      const settings = await response.json();
+      
+      // Also save to local file as a fallback
+      try {
+        // Ensure the data directory exists
+        const dataDir = path.join(process.cwd(), 'data');
+        if (!fs.existsSync(dataDir)) {
+          fs.mkdirSync(dataDir, { recursive: true });
+        }
+        
+        // Write settings to local file
+        fs.writeFileSync(SETTINGS_FILE, JSON.stringify(settings, null, 2));
+        console.log('Saved reset settings to local file as fallback');
+      } catch (error) {
+        console.error('Error saving reset settings to local file:', error);
+        // Continue even if local save fails, as we've already saved to the backend
+      }
+      
+      return NextResponse.json({ 
+        success: true, 
+        message: 'Settings reset to default values successfully.',
+        requiresRestart: false,
+        settings
+      });
+    } else {
+      return NextResponse.json(
+        { error: 'Failed to reset settings to default values' },
+        { status: 500 }
+      );
+    }
+  } catch (error) {
+    console.error('Error in PATCH /api/settings:', error);
+    return NextResponse.json(
+      { error: 'Failed to reset settings' },
       { status: 500 }
     );
   }

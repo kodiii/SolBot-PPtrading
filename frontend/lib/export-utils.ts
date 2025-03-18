@@ -3,9 +3,9 @@ import type { Trade } from './types'
 
 export type ExportFormat = 'csv' | 'json' | 'excel'
 
-const formatDate = (timestamp: number) => new Date(timestamp).toLocaleString()
+const formatDate = (timestamp: number): string => new Date(timestamp).toLocaleString()
 
-export const exportTrades = async (trades: Trade[], format: ExportFormat, fileName: string = 'trades') => {
+export const exportTrades = async (trades: Trade[], format: ExportFormat, fileName: string = 'trades'): Promise<void> => {
   switch (format) {
     case 'csv':
       return exportToCSV(trades, fileName)
@@ -18,7 +18,7 @@ export const exportTrades = async (trades: Trade[], format: ExportFormat, fileNa
   }
 }
 
-const exportToCSV = (trades: Trade[], fileName: string) => {
+const exportToCSV = (trades: Trade[], fileName: string): void => {
   const headers = [
     'Token Name',
     'Token Mint',
@@ -59,7 +59,7 @@ const exportToCSV = (trades: Trade[], fileName: string) => {
   link.click()
 }
 
-const exportToJSON = (trades: Trade[], fileName: string) => {
+const exportToJSON = (trades: Trade[], fileName: string): void => {
   const jsonContent = JSON.stringify(trades, null, 2)
   const blob = new Blob([jsonContent], { type: 'application/json' })
   const link = document.createElement('a')
@@ -68,7 +68,7 @@ const exportToJSON = (trades: Trade[], fileName: string) => {
   link.click()
 }
 
-const exportToExcel = async (trades: Trade[], fileName: string) => {
+const exportToExcel = async (trades: Trade[], fileName: string): Promise<void> => {
   const workbook = new ExcelJS.Workbook()
   const worksheet = workbook.addWorksheet('Trades')
 

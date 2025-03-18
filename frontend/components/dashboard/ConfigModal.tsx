@@ -136,7 +136,7 @@ export function ConfigModal({ isOpen, onClose }: ConfigModalProps): React.ReactE
   useEffect(() => {
     let mounted = true;
     
-    const fetchSettings = async () => {
+    const fetchSettings = async (): Promise<void> => {
       if (!isOpen) return;
       
       setIsLoading(true);
@@ -184,7 +184,7 @@ export function ConfigModal({ isOpen, onClose }: ConfigModalProps): React.ReactE
 
   // Check for changes when settings are updated
   useEffect(() => {
-    const checkChanges = () => {
+    const checkChanges = (): void => {
       const settingsStr = JSON.stringify(settings);
       const originalStr = JSON.stringify(originalSettings);
       setHasChanges(settingsStr !== originalStr);
@@ -197,8 +197,8 @@ export function ConfigModal({ isOpen, onClose }: ConfigModalProps): React.ReactE
   const updateSetting = (
     category: keyof ConfigSettings, 
     key: string, 
-    value: any
-  ) => {
+    value: string | number | boolean | string[]
+  ): void => {
     // Ensure numeric values are valid numbers
     if (typeof value === 'number' && isNaN(value)) {
       value = 0; // Default to 0 for NaN values
@@ -220,7 +220,7 @@ export function ConfigModal({ isOpen, onClose }: ConfigModalProps): React.ReactE
   const [restartError, setRestartError] = useState<string | null>(null);
 
   // Handle saving changes
-  const saveChanges = async () => {
+  const saveChanges = async (): Promise<void> => {
     setIsSaving(true);
     setSaveError(null);
     
@@ -273,15 +273,65 @@ export function ConfigModal({ isOpen, onClose }: ConfigModalProps): React.ReactE
   };
 
   // Handle canceling changes
-  const cancelChanges = () => {
+  const cancelChanges = (): void => {
     // Reset settings to original values
     setSettings({...originalSettings});
     onClose();
   };
 
+  // Handle resetting to default values
+  const [isResetting, setIsResetting] = useState(false);
+  const resetToDefault = async (): Promise<void> => {
+    if (!confirm('Are you sure you want to reset all settings to default values? This cannot be undone.')) {
+      return;
+    }
+    
+    setIsResetting(true);
+    setSaveError(null);
+    
+    try {
+      // Call the reset API endpoint
+      const response = await fetch('/api/settings', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to reset settings: ${response.status} ${response.statusText}`);
+      }
+      
+      // Get the response data
+      const data = await response.json();
+      console.log('Settings reset successfully:', data);
+      
+      // Update settings with the reset values
+      if (data.settings) {
+        setSettings({...data.settings});
+        setOriginalSettings({...data.settings});
+        setHasChanges(false);
+      }
+      
+      // Show success message
+      alert('Settings have been reset to default values.');
+      
+      // Check if restart is required
+      if (data.requiresRestart) {
+        setRestartMessage(data.message || 'Please restart the bot for changes to take effect.');
+        setShowRestartNotice(true);
+      }
+    } catch (err) {
+      console.error('Error resetting settings:', err);
+      setSaveError('Failed to reset settings. Please try again.');
+    } finally {
+      setIsResetting(false);
+    }
+  };
+
   // Handle ESC key press
   useEffect(() => {
-    const handleEscapeKey = (event: KeyboardEvent) => {
+    const handleEscapeKey = (event: KeyboardEvent): void => {
       if (event.key === 'Escape' && isOpen) {
         onClose();
       }
@@ -322,7 +372,7 @@ export function ConfigModal({ isOpen, onClose }: ConfigModalProps): React.ReactE
   }
 
   // Function to restart the server
-  const restartServer = async () => {
+  const restartServer = async (): Promise<void> => {
     setIsRestarting(true);
     setRestartError(null);
     
@@ -1073,27 +1123,48 @@ export function ConfigModal({ isOpen, onClose }: ConfigModalProps): React.ReactE
         </div>
         
         {/* Footer */}
-        <div className="bg-card p-4 border-t border-border flex justify-end space-x-2 sticky bottom-0">
-          {error && (
-            <div className="mr-auto text-sm text-destructive">
-              {error}
-            </div>
-          )}
-          <Button variant="outline" onClick={cancelChanges}>
-            Cancel
-          </Button>
-          <Button 
-            onClick={saveChanges} 
-            disabled={!hasChanges || isSaving}
-            className={(!hasChanges || isSaving) ? 'opacity-50 cursor-not-allowed' : ''}
-          >
-            {isSaving ? (
-              <>
-                <span className="animate-spin mr-2">⟳</span>
-                Saving...
-              </>
-            ) : 'Save Changes'}
-          </Button>
+        <div className="bg-card p-4 border-t border-border flex justify-between sticky bottom-0">
+          {/* Left side */}
+          <div className="flex items-center">
+            <Button 
+              variant="outline" 
+              onClick={resetToDefault}
+              disabled={isResetting}
+              className="text-destructive border-destructive hover:bg-destructive/10"
+            >
+              {isResetting ? (
+                <>
+                  <span className="animate-spin mr-2">⟳</span>
+                  Resetting...
+                </>
+              ) : 'Reset to Default'}
+            </Button>
+            
+            {error && (
+              <div className="ml-4 text-sm text-destructive">
+                {error}
+              </div>
+            )}
+          </div>
+          
+          {/* Right side */}
+          <div className="flex space-x-2">
+            <Button variant="outline" onClick={cancelChanges}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={saveChanges} 
+              disabled={!hasChanges || isSaving}
+              className={(!hasChanges || isSaving) ? 'opacity-50 cursor-not-allowed' : ''}
+            >
+              {isSaving ? (
+                <>
+                  <span className="animate-spin mr-2">⟳</span>
+                  Saving...
+                </>
+              ) : 'Save Changes'}
+            </Button>
+          </div>
         </div>
       </div>
     </div>

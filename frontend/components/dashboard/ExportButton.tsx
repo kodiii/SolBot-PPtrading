@@ -16,8 +16,8 @@ interface ExportButtonProps {
   trades: Trade[]
 }
 
-export function ExportButton({ trades }: ExportButtonProps) {
-  const handleExport = async (format: 'csv' | 'json' | 'excel') => {
+export function ExportButton({ trades }: ExportButtonProps): React.ReactElement {
+  const handleExport = async (format: 'csv' | 'json' | 'excel'): Promise<void> => {
     const timestamp = new Date().toISOString().split('T')[0]
     await exportTrades(trades, format, `trades_${timestamp}`)
   }

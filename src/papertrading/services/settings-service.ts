@@ -81,10 +81,10 @@ export const defaultSettings: AppSettings = {
   swap: {
     amount: 500000000,
     slippageBps: 200,
-    maxOpenPositions: 3
+    maxOpenPositions: 5
   },
   strategies: {
-    liquidityDropEnabled: true,
+    liquidityDropEnabled: false,
     threshold: 20
   },
   rugCheck: {
@@ -94,7 +94,7 @@ export const defaultSettings: AppSettings = {
     allowNotInitialized: false,
     allowFreezeAuthority: false,
     allowRugged: false,
-    allowMutable: true,
+    allowMutable: false,
     blockReturningTokenNames: false,
     blockReturningTokenCreators: false,
     blockSymbols: ["XXX"],
@@ -102,15 +102,15 @@ export const defaultSettings: AppSettings = {
     onlyContainString: false,
     containString: ["AI", "GPT", "AGENT"],
     allowInsiderTopholders: true,
-    maxAllowedPctTopholders: 50,
-    maxAllowedPctAllTopholders: 50,
+    maxAllowedPctTopholders: 90,
+    maxAllowedPctAllTopholders: 90,
     excludeLpFromTopholders: true,
     minTotalMarkets: 0,
     minTotalLpProviders: 0,
-    minTotalMarketLiquidity: 10000,
-    maxTotalMarketLiquidity: 100000,
-    maxMarketcap: 25000000,
-    maxPriceToken: 0.001,
+    minTotalMarketLiquidity: 5000,
+    maxTotalMarketLiquidity: 10000000,
+    maxMarketcap: 1000000000,
+    maxPriceToken: 1,
     ignorePumpFun: false,
     maxScore: 30000,
     legacyNotAllowed: [
@@ -160,6 +160,21 @@ export class SettingsService {
    */
   public static resetInstance(): void {
     SettingsService.instance = null as any;
+  }
+
+  /**
+   * Reset settings to default values
+   * @returns Promise that resolves when settings are reset
+   */
+  public async resetSettings(): Promise<void> {
+    if (!this.initialized) {
+      await this.initialize();
+    }
+    
+    // Save default settings
+    await this.saveSettings(defaultSettings);
+    
+    console.log('Settings reset to default values');
   }
 
   /**
@@ -232,7 +247,16 @@ export class SettingsService {
             if (!settings[keys[0] as keyof AppSettings]) {
               (settings as any)[keys[0]] = {};
             }
-            (settings[keys[0] as keyof AppSettings] as any)[keys[1]] = value;
+            
+            // Ensure boolean values are properly handled
+            if (typeof (settings[keys[0] as keyof AppSettings] as any)[keys[1]] === 'boolean') {
+              (settings[keys[0] as keyof AppSettings] as any)[keys[1]] = Boolean(value);
+            } else if (typeof (settings[keys[0] as keyof AppSettings] as any)[keys[1]] === 'number') {
+              // Ensure numeric values are properly handled
+              (settings[keys[0] as keyof AppSettings] as any)[keys[1]] = Number(value) || 0;
+            } else {
+              (settings[keys[0] as keyof AppSettings] as any)[keys[1]] = value;
+            }
           }
         } catch (error) {
           console.error(`Error parsing setting ${row.key}:`, error);
@@ -255,10 +279,25 @@ export class SettingsService {
       await this.initialize();
     }
 
+    // Sanitize settings to ensure proper types
+    const sanitizedSettings = JSON.parse(JSON.stringify(settings, (key, value) => {
+      // Handle NaN values
+      if (typeof value === 'number' && isNaN(value)) {
+        return 0;
+      }
+      
+      // Ensure boolean values are properly handled
+      if (typeof value === 'boolean') {
+        return Boolean(value);
+      }
+      
+      return value;
+    }));
+
     const db = await this.connectionManager.getConnection();
     try {
       // Flatten the settings object into key-value pairs
-      const flattenedSettings = this.flattenObject(settings);
+      const flattenedSettings = this.flattenObject(sanitizedSettings);
       const timestamp = Date.now();
 
       // Begin transaction
@@ -275,6 +314,25 @@ export class SettingsService {
 
         // Commit transaction
         await db.exec('COMMIT');
+        
+        // Also update the JSON files to keep them in sync
+        try {
+          const fs = require('fs');
+          const path = require('path');
+          
+          // Update the main settings file
+          const mainSettingsPath = path.resolve(__dirname, '../../../data/settings.json');
+          fs.writeFileSync(mainSettingsPath, JSON.stringify(sanitizedSettings, null, 2));
+          
+          // Update the frontend settings file
+          const frontendSettingsPath = path.resolve(__dirname, '../../../frontend/data/settings.json');
+          fs.writeFileSync(frontendSettingsPath, JSON.stringify(sanitizedSettings, null, 2));
+          
+          console.log('Settings files updated successfully');
+        } catch (fileError) {
+          console.error('Error updating settings files:', fileError);
+          // Continue even if file update fails, as we've already saved to the database
+        }
       } catch (error) {
         // Rollback transaction on error
         await db.exec('ROLLBACK');

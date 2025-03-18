@@ -353,6 +353,86 @@ export function setupDashboardRoutes(app: Express): void {
     }
   });
 
+  // Reset settings to default values
+  app.post('/api/settings/reset', async (req, res) => {
+    try {
+      console.log('Resetting settings to default values...');
+      
+      // Get the settings service
+      const settingsService = SettingsService.getInstance();
+      
+      // Reset settings to default values
+      await settingsService.resetSettings();
+      
+      // Get the updated settings
+      const settings = await settingsService.getSettings();
+      
+      // Update config in memory
+      // This is a temporary solution until we refactor the config to use the settings service
+      config.paper_trading.initial_balance = settings.paperTrading.initialBalance;
+      config.paper_trading.dashboard_refresh = settings.paperTrading.dashboardRefresh;
+      config.paper_trading.recent_trades_limit = settings.paperTrading.recentTradesLimit;
+      config.paper_trading.verbose_log = settings.paperTrading.verboseLogging;
+      
+      config.price_validation.enabled = settings.priceValidation.enabled;
+      config.price_validation.window_size = settings.priceValidation.windowSize;
+      config.price_validation.max_deviation = settings.priceValidation.maxDeviation;
+      config.price_validation.min_data_points = settings.priceValidation.minDataPoints;
+      config.price_validation.fallback_to_single_source = settings.priceValidation.fallbackToSingleSource;
+      
+      config.swap.amount = settings.swap.amount.toString();
+      config.swap.slippageBps = settings.swap.slippageBps.toString();
+      config.swap.max_open_positions = settings.swap.maxOpenPositions;
+      
+      config.strategies.liquidity_drop.enabled = settings.strategies.liquidityDropEnabled;
+      config.strategies.liquidity_drop.threshold_percent = settings.strategies.threshold;
+      
+      // Update rugCheck settings with proper boolean conversion
+      const rugCheckSettings = settings.rugCheck;
+      if (typeof rugCheckSettings !== 'undefined') {
+        config.rug_check.verbose_log = Boolean(rugCheckSettings.verboseLog);
+        config.rug_check.simulation_mode = Boolean(rugCheckSettings.simulationMode);
+        config.rug_check.allow_mint_authority = Boolean(rugCheckSettings.allowMintAuthority);
+        config.rug_check.allow_not_initialized = Boolean(rugCheckSettings.allowNotInitialized);
+        config.rug_check.allow_freeze_authority = Boolean(rugCheckSettings.allowFreezeAuthority);
+        config.rug_check.allow_rugged = Boolean(rugCheckSettings.allowRugged);
+        config.rug_check.allow_mutable = Boolean(rugCheckSettings.allowMutable);
+        config.rug_check.block_returning_token_names = Boolean(rugCheckSettings.blockReturningTokenNames);
+        config.rug_check.block_returning_token_creators = Boolean(rugCheckSettings.blockReturningTokenCreators);
+        config.rug_check.block_symbols = rugCheckSettings.blockSymbols;
+        config.rug_check.block_names = rugCheckSettings.blockNames;
+        config.rug_check.only_contain_string = Boolean(rugCheckSettings.onlyContainString);
+        config.rug_check.contain_string = rugCheckSettings.containString;
+        config.rug_check.allow_insider_topholders = Boolean(rugCheckSettings.allowInsiderTopholders);
+        config.rug_check.max_alowed_pct_topholders = Number(rugCheckSettings.maxAllowedPctTopholders) || 0;
+        config.rug_check.max_alowed_pct_all_topholders = Number(rugCheckSettings.maxAllowedPctAllTopholders) || 0;
+        config.rug_check.exclude_lp_from_topholders = Boolean(rugCheckSettings.excludeLpFromTopholders);
+        config.rug_check.min_total_markets = Number(rugCheckSettings.minTotalMarkets) || 0;
+        config.rug_check.min_total_lp_providers = Number(rugCheckSettings.minTotalLpProviders) || 0;
+        config.rug_check.min_total_market_Liquidity = Number(rugCheckSettings.minTotalMarketLiquidity) || 0;
+        config.rug_check.max_total_market_Liquidity = Number(rugCheckSettings.maxTotalMarketLiquidity) || 0;
+        config.rug_check.max_marketcap = Number(rugCheckSettings.maxMarketcap) || 0;
+        config.rug_check.max_price_token = Number(rugCheckSettings.maxPriceToken) || 0;
+        config.rug_check.ignore_pump_fun = Boolean(rugCheckSettings.ignorePumpFun);
+        config.rug_check.max_score = Number(rugCheckSettings.maxScore) || 0;
+        config.rug_check.legacy_not_allowed = rugCheckSettings.legacyNotAllowed;
+      }
+      
+      res.json({ 
+        success: true, 
+        message: 'Settings reset to default values',
+        requiresRestart: false,
+        settings
+      });
+    } catch (error) {
+      console.error('Error resetting settings:', error);
+      res.status(500).json({ 
+        success: false,
+        error: 'Failed to reset settings' 
+      });
+    }
+  });
+
   // Restart server
   app.post('/api/restart', (req, res) => {
     try {

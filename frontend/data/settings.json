@@ -15,7 +15,7 @@
   "swap": {
     "amount": 500000000,
     "slippageBps": 200,
-    "maxOpenPositions": 3
+    "maxOpenPositions": 5
   },
   "strategies": {
     "liquidityDropEnabled": false,
@@ -24,11 +24,11 @@
   "rugCheck": {
     "verboseLog": false,
     "simulationMode": true,
-    "allowMintAuthority": true,
-    "allowNotInitialized": true,
-    "allowFreezeAuthority": true,
-    "allowRugged": true,
-    "allowMutable": true,
+    "allowMintAuthority": false,
+    "allowNotInitialized": false,
+    "allowFreezeAuthority": false,
+    "allowRugged": false,
+    "allowMutable": false,
     "blockReturningTokenNames": false,
     "blockReturningTokenCreators": false,
     "blockSymbols": [
@@ -58,7 +58,11 @@
     "legacyNotAllowed": [
       "Freeze Authority still enabled",
       "Single holder ownership",
-      "Copycat token"
+      "Copycat token",
+      "High holder concentration",
+      "Large Amount of LP Unlocked",
+      "Low Liquidity",
+      "Low amount of LP Providers"
     ]
   }
 }
