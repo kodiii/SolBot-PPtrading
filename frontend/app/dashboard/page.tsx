@@ -11,6 +11,7 @@ import { TradesTable } from '@/components/dashboard/TradesTable'
 import { TradingCharts } from '@/components/dashboard/TradingCharts'
 import { ConfigSidebar } from '@/components/dashboard/ConfigSidebar'
 import { ModeToggle } from '@/components/theme/ModeToggle'
+import { ExportButton } from '@/components/dashboard/ExportButton'
 import { useState } from 'react'
 
 // Removed unused StatItem component
@@ -174,8 +175,11 @@ export default function DashboardPage(): React.ReactElement {
 
       {/* Recent Trades */}
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Recent Trades</CardTitle>
+          {!isLoading && data?.trades && data.trades.length > 0 && (
+            <ExportButton trades={data.trades} />
+          )}
         </CardHeader>
         <CardContent className="p-0">
           <TradesTable trades={data?.trades || []} isLoading={isLoading} />
