@@ -22,8 +22,8 @@
     "maxOpenPositions": 5
   },
   "strategies": {
-    "liquidityDropEnabled": false,
-    "threshold": 20
+    "liquidityDropEnabled": true,
+    "threshold": 15
   },
   "rugCheck": {
     "verboseLog": false,
@@ -33,7 +33,7 @@
     "allowFreezeAuthority": false,
     "allowRugged": false,
     "allowMutable": false,
-    "blockReturningTokenNames": false,
+    "blockReturningTokenNames": true,
     "blockReturningTokenCreators": false,
     "blockSymbols": [
       "XXX"
@@ -48,23 +48,21 @@
       "AGENT"
     ],
     "allowInsiderTopholders": true,
-    "maxAllowedPctTopholders": 90,
-    "maxAllowedPctAllTopholders": 90,
+    "maxAllowedPctTopholders": 35,
+    "maxAllowedPctAllTopholders": 35,
     "excludeLpFromTopholders": true,
     "minTotalMarkets": 0,
     "minTotalLpProviders": 0,
-    "minTotalMarketLiquidity": 5000,
-    "maxTotalMarketLiquidity": 10000000,
-    "maxMarketcap": 1000000000,
-    "maxPriceToken": 1,
+    "minTotalMarketLiquidity": 40000,
+    "maxTotalMarketLiquidity": 1000000,
+    "maxMarketcap": 100000000,
+    "maxPriceToken": 0.001,
     "ignorePumpFun": false,
     "maxScore": 30000,
     "legacyNotAllowed": [
       "Freeze Authority still enabled",
       "Single holder ownership",
-      "Copycat token",
-      "Low amount of LP Providers",
-      "Low Liquidity"
+      "Copycat token"
     ]
   }
 }

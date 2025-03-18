@@ -40,3 +40,7 @@ frontend/.vscode/
 frontend/src/papertrading/db/paper_trading.db
 src/tracker/holdings.db
 src/papertrading/db/paper_trading.db
+
+# Ignore cline rules files
+.clinerules-*
+.roomodes
