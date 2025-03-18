@@ -186,28 +186,74 @@ export class SettingsService {
       return;
     }
 
-    await this.connectionManager.initialize();
-
-    // Create settings table if it doesn't exist
-    const db = await this.connectionManager.getConnection();
     try {
-      await db.exec(`
-        CREATE TABLE IF NOT EXISTS settings (
-          key TEXT PRIMARY KEY,
-          value TEXT NOT NULL,
-          updated_at INTEGER NOT NULL
-        );
-      `);
+      await this.connectionManager.initialize();
 
-      // Check if we need to initialize with default settings
-      const count = await db.get('SELECT COUNT(*) as count FROM settings');
-      if (count && count.count === 0) {
-        await this.saveSettings(defaultSettings);
+      // Create settings table if it doesn't exist
+      const db = await this.connectionManager.getConnection();
+      try {
+        await db.exec(`
+          CREATE TABLE IF NOT EXISTS settings (
+            key TEXT PRIMARY KEY,
+            value TEXT NOT NULL,
+            updated_at INTEGER NOT NULL
+          );
+        `);
+
+        // Check if we need to initialize with default settings
+        const count = await db.get('SELECT COUNT(*) as count FROM settings');
+        if (count && count.count === 0) {
+          // Use direct database operations instead of calling saveSettings
+          const flattenedSettings = this.flattenObject(defaultSettings);
+          const timestamp = Date.now();
+
+          // Begin transaction
+          await db.exec('BEGIN TRANSACTION');
+
+          try {
+            // Insert or update each setting
+            for (const [key, value] of Object.entries(flattenedSettings)) {
+              await db.run(
+                'INSERT OR REPLACE INTO settings (key, value, updated_at) VALUES (?, ?, ?)',
+                [key, JSON.stringify(value), timestamp]
+              );
+            }
+
+            // Commit transaction
+            await db.exec('COMMIT');
+          } catch (error) {
+            // Rollback transaction on error
+            await db.exec('ROLLBACK');
+            throw error;
+          }
+        }
+
+        this.initialized = true;
+      } finally {
+        this.connectionManager.releaseConnection(db);
       }
-
+    } catch (error) {
+      console.error('Error initializing settings service:', error);
+      // Set initialized to true to prevent infinite recursion
       this.initialized = true;
-    } finally {
-      this.connectionManager.releaseConnection(db);
+      
+      // Try to update the JSON files directly as a fallback
+      try {
+        const fs = require('fs');
+        const path = require('path');
+        
+        // Update the main settings file
+        const mainSettingsPath = path.resolve(__dirname, '../../../data/settings.json');
+        fs.writeFileSync(mainSettingsPath, JSON.stringify(defaultSettings, null, 2));
+        
+        // Update the frontend settings file
+        const frontendSettingsPath = path.resolve(__dirname, '../../../frontend/data/settings.json');
+        fs.writeFileSync(frontendSettingsPath, JSON.stringify(defaultSettings, null, 2));
+        
+        console.log('Settings files updated successfully as fallback');
+      } catch (fileError) {
+        console.error('Error updating settings files:', fileError);
+      }
     }
   }
 
@@ -294,52 +340,56 @@ export class SettingsService {
       return value;
     }));
 
-    const db = await this.connectionManager.getConnection();
     try {
-      // Flatten the settings object into key-value pairs
-      const flattenedSettings = this.flattenObject(sanitizedSettings);
-      const timestamp = Date.now();
-
-      // Begin transaction
-      await db.exec('BEGIN TRANSACTION');
-
+      const db = await this.connectionManager.getConnection();
       try {
-        // Insert or update each setting
-        for (const [key, value] of Object.entries(flattenedSettings)) {
-          await db.run(
-            'INSERT OR REPLACE INTO settings (key, value, updated_at) VALUES (?, ?, ?)',
-            [key, JSON.stringify(value), timestamp]
-          );
-        }
+        // Flatten the settings object into key-value pairs
+        const flattenedSettings = this.flattenObject(sanitizedSettings);
+        const timestamp = Date.now();
 
-        // Commit transaction
-        await db.exec('COMMIT');
-        
-        // Also update the JSON files to keep them in sync
+        // Begin transaction
+        await db.exec('BEGIN TRANSACTION');
+
         try {
-          const fs = require('fs');
-          const path = require('path');
-          
-          // Update the main settings file
-          const mainSettingsPath = path.resolve(__dirname, '../../../data/settings.json');
-          fs.writeFileSync(mainSettingsPath, JSON.stringify(sanitizedSettings, null, 2));
-          
-          // Update the frontend settings file
-          const frontendSettingsPath = path.resolve(__dirname, '../../../frontend/data/settings.json');
-          fs.writeFileSync(frontendSettingsPath, JSON.stringify(sanitizedSettings, null, 2));
-          
-          console.log('Settings files updated successfully');
-        } catch (fileError) {
-          console.error('Error updating settings files:', fileError);
-          // Continue even if file update fails, as we've already saved to the database
+          // Insert or update each setting
+          for (const [key, value] of Object.entries(flattenedSettings)) {
+            await db.run(
+              'INSERT OR REPLACE INTO settings (key, value, updated_at) VALUES (?, ?, ?)',
+              [key, JSON.stringify(value), timestamp]
+            );
+          }
+
+          // Commit transaction
+          await db.exec('COMMIT');
+        } catch (error) {
+          // Rollback transaction on error
+          await db.exec('ROLLBACK');
+          throw error;
         }
-      } catch (error) {
-        // Rollback transaction on error
-        await db.exec('ROLLBACK');
-        throw error;
+      } finally {
+        this.connectionManager.releaseConnection(db);
       }
-    } finally {
-      this.connectionManager.releaseConnection(db);
+    } catch (dbError) {
+      console.error('Error saving settings to database:', dbError);
+    }
+    
+    // Always update the JSON files, even if database save fails
+    try {
+      const fs = require('fs');
+      const path = require('path');
+      
+      // Update the main settings file
+      const mainSettingsPath = path.resolve(__dirname, '../../../data/settings.json');
+      fs.writeFileSync(mainSettingsPath, JSON.stringify(sanitizedSettings, null, 2));
+      
+      // Update the frontend settings file
+      const frontendSettingsPath = path.resolve(__dirname, '../../../frontend/data/settings.json');
+      fs.writeFileSync(frontendSettingsPath, JSON.stringify(sanitizedSettings, null, 2));
+      
+      console.log('Settings files updated successfully');
+    } catch (fileError) {
+      console.error('Error updating settings files:', fileError);
+      throw fileError; // Re-throw if we can't even save to files
     }
   }
 

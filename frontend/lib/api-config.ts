@@ -12,6 +12,7 @@ export const API_ENDPOINTS = {
   closePosition: '/api/dashboard/positions/close',
   trades: '/api/dashboard/trades',
   stats: '/api/dashboard/stats',
+  settings: '/api/settings',
 } as const;
 
 // Backend API endpoints for server-side requests
@@ -21,4 +22,5 @@ export const BACKEND_API_ENDPOINTS = {
   closePosition: `${BACKEND_API_URL}/api/dashboard/positions/close`,
   trades: `${BACKEND_API_URL}/api/dashboard/trades`,
   stats: `${BACKEND_API_URL}/api/dashboard/stats`,
+  settings: `${BACKEND_API_URL}/api/settings`,
 } as const;

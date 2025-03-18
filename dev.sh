@@ -45,13 +45,39 @@ echo "Wait to see 'ready - started server on        "
 echo "0.0.0.0:3010' before starting the bot         "
 echo "=============================================="
 
-# Start API server from project root to maintain correct paths
-echo "Starting API server on port 3002..."
-(cd src/api-server && NODE_PATH=.. PORT=3002 npm run dev) &
-API_PID=$!
+# Function to start the API server
+start_api_server() {
+  echo "Starting API server on port 3002..."
+  (cd src/api-server && NODE_PATH=.. PORT=3002 npm run dev) &
+  API_PID=$!
+  echo "API server started with PID: $API_PID"
+  
+  # Wait a moment to ensure API server starts
+  sleep 3
+  
+  # Check if API server is running
+  if ! ps -p $API_PID > /dev/null; then
+    echo "API server failed to start. Retrying..."
+    start_api_server
+  fi
+}
 
-# Wait a moment to ensure API server starts
-sleep 3
+# Start API server from project root to maintain correct paths
+start_api_server
+
+# Monitor for restart flag
+(
+  while true; do
+    if [ -f "src/api-server/restart.flag" ]; then
+      echo "Restart flag detected, restarting API server..."
+      kill $API_PID 2>/dev/null || true
+      rm -f "src/api-server/restart.flag"
+      start_api_server
+    fi
+    sleep 1
+  done
+) &
+MONITOR_PID=$!
 
 # Clear port 3010 if it's in use
 echo "Ensuring port 3010 is available..."
@@ -65,8 +91,9 @@ FRONTEND_PID=$!
 # Handle shutdown
 function cleanup {
     echo "Shutting down frontend and API server..."
-    kill $API_PID
-    kill $FRONTEND_PID
+    kill $API_PID 2>/dev/null || true
+    kill $FRONTEND_PID 2>/dev/null || true
+    kill $MONITOR_PID 2>/dev/null || true
     exit 0
 }
 
