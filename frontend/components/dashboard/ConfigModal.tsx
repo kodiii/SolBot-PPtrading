@@ -428,7 +428,7 @@ export function ConfigModal({ isOpen, onClose }: ConfigModalProps): React.ReactE
         // Reload the page after a delay to connect to the restarted server
         setTimeout(() => {
           window.location.reload();
-        }, 5000); // Increased delay to give server more time to restart
+        }, 8000); // Increased delay to give server more time to restart
       }, 2000);
       
     } catch (err) {

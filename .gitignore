@@ -36,3 +36,7 @@ frontend/.next/
 
 # VSCode
 frontend/.vscode/
+
+frontend/src/papertrading/db/paper_trading.db
+src/tracker/holdings.db
+src/papertrading/db/paper_trading.db

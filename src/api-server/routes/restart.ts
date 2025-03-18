@@ -8,8 +8,10 @@ const router = express.Router();
 // Create a restart flag file
 const createRestartFlag = () => {
   try {
-    // Create the flag in the current working directory
-    const flagPath = 'restart.flag';
+    // Create the flag in the project root directory
+    // The dev.sh script is looking for the flag in the project root
+    const flagPath = path.resolve(process.cwd(), '../../restart.flag');
+    
     fs.writeFileSync(flagPath, Date.now().toString(), 'utf8');
     console.log(`Created restart flag at ${flagPath}`);
     console.log(`Current working directory: ${process.cwd()}`);
