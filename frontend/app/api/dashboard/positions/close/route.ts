@@ -4,7 +4,7 @@ import { BACKEND_API_ENDPOINTS } from '@/lib/api-config';
 /**
  * POST handler for closing a position
  */
-export async function POST(request: NextRequest) {
+export async function POST(request: NextRequest): Promise<Response> {
   try {
     const body = await request.json();
     const { tokenMint } = body;

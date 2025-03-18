@@ -7,7 +7,7 @@ export const revalidate = 0;
 /**
  * GET handler for stats data
  */
-export async function GET() {
+export async function GET(): Promise<Response> {
   try {
     console.log('Proxying stats request to backend:', BACKEND_API_ENDPOINTS.stats);
     

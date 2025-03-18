@@ -7,7 +7,7 @@ export const revalidate = 0;
 /**
  * GET handler for trades data
  */
-export async function GET(request: Request) {
+export async function GET(request: Request): Promise<Response> {
   try {
     // Get the limit parameter from the query string
     const url = new URL(request.url);

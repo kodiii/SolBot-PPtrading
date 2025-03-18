@@ -4,7 +4,7 @@ import { BACKEND_API_ENDPOINTS } from '@/lib/api-config';
 /**
  * POST handler for restarting the server
  */
-export async function POST() {
+export async function POST(): Promise<Response> {
   try {
     // Get the base URL from the BACKEND_API_ENDPOINTS
     const baseUrl = BACKEND_API_ENDPOINTS.dashboard.split('/api/dashboard')[0];

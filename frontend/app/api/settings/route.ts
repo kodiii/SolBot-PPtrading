@@ -197,7 +197,7 @@ async function writeSettingsToBackend(settings: ConfigSettings): Promise<boolean
 }
 
 // GET handler for retrieving settings - prioritize backend API
-export async function GET() {
+export async function GET(): Promise<Response> {
   try {
     // Try to get settings from backend first
     const backendSettings = await readSettingsFromBackend();
@@ -221,7 +221,7 @@ export async function GET() {
 }
 
 // POST handler for updating settings - prioritize backend API
-export async function POST(request: NextRequest) {
+export async function POST(request: NextRequest): Promise<Response> {
   try {
     const settings = await request.json();
     
