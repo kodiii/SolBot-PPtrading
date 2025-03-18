@@ -14,10 +14,6 @@ interface ConfigModalProps {
 
 // Default settings
 const defaultSettings: ConfigSettings = {
-  appearance: {
-    theme: "system",
-    colorMode: "system"
-  },
   paperTrading: {
     initialBalance: 5,
     dashboardRefresh: 2000,
@@ -76,10 +72,6 @@ const defaultSettings: ConfigSettings = {
 
 // Define the configuration settings interface
 interface ConfigSettings {
-  appearance: {
-    theme: string;
-    colorMode: string;
-  };
   paperTrading: {
     initialBalance: number;
     dashboardRefresh: number;
@@ -547,9 +539,6 @@ export function ConfigModal({ isOpen, onClose }: ConfigModalProps): React.ReactE
         <div className="flex-1 overflow-y-auto p-6">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="inline-flex h-10 items-center justify-center rounded-md bg-muted/50 p-1">
-              <TabsTrigger value="appearance" className="inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
-                Appearance
-              </TabsTrigger>
               <TabsTrigger value="paperTrading" className="inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
                 Paper Trading
               </TabsTrigger>
@@ -568,59 +557,6 @@ export function ConfigModal({ isOpen, onClose }: ConfigModalProps): React.ReactE
             </TabsList>
             
             {/* Paper Trading Settings */}
-            {/* Appearance Settings */}
-            <TabsContent value="appearance" className="mt-6">
-              <div className="bg-card/50 rounded-lg p-6">
-                <div className="max-w-2xl mx-auto space-y-6">
-                  <h3 className="text-lg font-semibold border-b pb-2">Theme Settings</h3>
-                  <div className="space-y-3">
-                    <div className="grid gap-2">
-                      <Label htmlFor="theme">Theme</Label>
-                      <select
-                        id="theme"
-                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                        value={settings.appearance.theme}
-                        onChange={(e) => updateSetting('appearance', 'theme', e.target.value)}
-                      >
-                        <option value="system">System Default</option>
-                        <option value="light">Light</option>
-                        <option value="dark">Dark</option>
-                        <option value="bluish-purple-cricket">Bluish Purple</option>
-                        <option value="exquisite-turquoise-giraffe">Turquoise</option>
-                      </select>
-                    </div>
-                    
-                    <div className="grid gap-2">
-                      <Label htmlFor="colorMode">Color Mode</Label>
-                      <select
-                        id="colorMode"
-                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                        value={settings.appearance.colorMode}
-                        onChange={(e) => updateSetting('appearance', 'colorMode', e.target.value)}
-                      >
-                        <option value="system">System Default</option>
-                        <option value="light">Light</option>
-                        <option value="dark">Dark</option>
-                      </select>
-                    </div>
-                    
-                    <div className="mt-6 p-4 bg-muted/50 rounded-md">
-                      <h4 className="text-sm font-medium mb-2">Theme Preview</h4>
-                      <div className="grid grid-cols-5 gap-2">
-                        <div className="h-6 rounded bg-primary"></div>
-                        <div className="h-6 rounded bg-secondary"></div>
-                        <div className="h-6 rounded bg-accent"></div>
-                        <div className="h-6 rounded bg-muted"></div>
-                        <div className="h-6 rounded bg-destructive"></div>
-                      </div>
-                      <div className="mt-2 text-xs text-muted-foreground">
-                        Theme changes will apply immediately after saving.
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </TabsContent>
             
             <TabsContent value="paperTrading" className="mt-6">
               <div className="bg-card/50 rounded-lg p-6">

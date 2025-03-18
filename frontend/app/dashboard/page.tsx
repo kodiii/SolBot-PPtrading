@@ -39,7 +39,7 @@ export default function DashboardPage(): React.ReactElement {
       {/* Header with Balance */}
       <header className="flex justify-between items-center pb-4 border-b border-border">
         <div className="flex items-center gap-2">
-          <h1 className="text-2xl font-semibold text-primary">Paper Trading Dashboard</h1>
+          <h1 className="text-2xl font-semibold text-primary">SOLANA Paper Trading</h1>
         </div>
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
