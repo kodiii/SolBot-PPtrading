@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
-interface ConfigSidebarProps {
+interface ConfigModalProps {
   isOpen: boolean
   onClose: () => void
 }
@@ -124,7 +124,7 @@ interface ConfigSettings {
   };
 }
 
-export function ConfigSidebar({ isOpen, onClose }: ConfigSidebarProps): React.ReactElement {
+export function ConfigModal({ isOpen, onClose }: ConfigModalProps): React.ReactElement {
   // State for settings
   const [settings, setSettings] = useState<ConfigSettings>(defaultSettings);
   const [isLoading, setIsLoading] = useState(true);

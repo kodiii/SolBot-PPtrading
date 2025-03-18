@@ -9,7 +9,7 @@ import { formatDecimal, formatDateTime } from '@/lib/utils'
 import { PositionsTable } from '@/components/dashboard/PositionsTable'
 import { TradesTable } from '@/components/dashboard/TradesTable'
 import { TradingCharts } from '@/components/dashboard/TradingCharts'
-import { ConfigSidebar } from '@/components/dashboard/ConfigSidebar'
+import { ConfigModal } from '@/components/dashboard/ConfigModal'
 import { ModeToggle } from '@/components/theme/ModeToggle'
 import { ExportButton } from '@/components/dashboard/ExportButton'
 import { useState } from 'react'
@@ -193,7 +193,7 @@ export default function DashboardPage(): React.ReactElement {
       </footer>
 
       {/* Config Sidebar */}
-      <ConfigSidebar isOpen={configOpen} onClose={() => setConfigOpen(false)} />
+      <ConfigModal isOpen={configOpen} onClose={() => setConfigOpen(false)} />
     </div>
   )
 }
