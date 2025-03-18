@@ -1,4 +1,8 @@
 {
+  "appearance": {
+    "theme": "bluish-purple-cricket",
+    "colorMode": "light"
+  },
   "paperTrading": {
     "initialBalance": 5,
     "dashboardRefresh": 2000,

@@ -9,6 +9,10 @@ const SETTINGS_DB_PATH = path.resolve(__dirname, '../db/paper_trading.db');
  * Interface for application settings
  */
 export interface AppSettings {
+  appearance: {
+    theme: string;
+    colorMode: string;
+  };
   paperTrading: {
     initialBalance: number;
     dashboardRefresh: number;
@@ -65,6 +69,10 @@ export interface AppSettings {
  * Default settings to use when initializing the database
  */
 export const defaultSettings: AppSettings = {
+  appearance: {
+    theme: "system",
+    colorMode: "system"
+  },
   paperTrading: {
     initialBalance: 5,
     dashboardRefresh: 2000,
@@ -438,6 +446,11 @@ export class SettingsService {
   private mergeSettings(target: AppSettings, source: Partial<AppSettings>): AppSettings {
     const result = { ...target };
 
+    // Merge appearance settings
+    if (source.appearance) {
+      result.appearance = { ...result.appearance, ...source.appearance };
+    }
+    
     // Merge paperTrading settings
     if (source.paperTrading) {
       result.paperTrading = { ...result.paperTrading, ...source.paperTrading };

@@ -15,6 +15,10 @@ const getBackendSettingsUrl = (): string => {
 
 // Define the configuration settings interface
 interface ConfigSettings {
+  appearance: {
+    theme: string;
+    colorMode: string;
+  };
   paperTrading: {
     initialBalance: number;
     dashboardRefresh: number;
@@ -69,6 +73,10 @@ interface ConfigSettings {
 
 // Default settings
 const defaultSettings: ConfigSettings = {
+  appearance: {
+    theme: "system",
+    colorMode: "system"
+  },
   paperTrading: {
     initialBalance: 5,
     dashboardRefresh: 2000,

@@ -1,4 +1,6 @@
 import '@/styles/globals.css'
+import '@/styles/Bluish_Purple_Cricket.css'
+import '@/styles/Exquisite_Turquoise_Giraffe.css'
 import { Inter } from 'next/font/google'
 import { ThemeProvider } from '@/components/theme'
 import { ErrorBoundary } from '@/components/layout'
