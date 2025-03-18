@@ -378,15 +378,44 @@ export function ConfigModal({ isOpen, onClose }: ConfigModalProps): React.ReactE
     
     try {
       // Call the frontend API endpoint which will proxy to the backend
-      const response = await fetch('/api/restart', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        }
-      });
+      // Use a timeout to handle the case where the server exits before responding
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
       
-      if (!response.ok) {
-        throw new Error(`Failed to restart server: ${response.status} ${response.statusText}`);
+      try {
+        const response = await fetch('/api/restart', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          signal: controller.signal
+        });
+        
+        clearTimeout(timeoutId);
+        
+        if (!response.ok) {
+          throw new Error(`Failed to restart server: ${response.status} ${response.statusText}`);
+        }
+        
+        // Successfully sent the restart request
+        console.log('Restart request sent successfully');
+      } catch (error) {
+        // If the error is an AbortError or a network error, it might be because
+        // the server is already restarting, which is actually what we want
+        if (
+          error && 
+          typeof error === 'object' && 
+          (
+            ('name' in error && error.name === 'AbortError') || 
+            error instanceof TypeError
+          )
+        ) {
+          console.log('Server connection closed - this is expected during restart');
+          // Continue with the restart process
+        } else {
+          // For other errors, rethrow
+          throw error;
+        }
       }
       
       // Server should be restarting now, show a message
@@ -399,7 +428,7 @@ export function ConfigModal({ isOpen, onClose }: ConfigModalProps): React.ReactE
         // Reload the page after a delay to connect to the restarted server
         setTimeout(() => {
           window.location.reload();
-        }, 3000);
+        }, 5000); // Increased delay to give server more time to restart
       }, 2000);
       
     } catch (err) {

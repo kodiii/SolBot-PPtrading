@@ -1,7 +1,5 @@
 import express from 'express';
 import cors from 'cors';
-import fs from 'fs';
-import path from 'path';
 import { initializePaperTradingDB } from '../papertrading/paper_trading';
 import { errorHandler } from './middleware/error-handler';
 import { setupRoutes } from './routes';
@@ -9,27 +7,6 @@ import { ConnectionManager } from '../papertrading/db/connection_manager';
 
 const app = express();
 const PORT = process.env.API_PORT || 3002;
-
-// Check for restart flag
-const checkRestartFlag = () => {
-  const flagPath = path.join(__dirname, 'restart.flag');
-  if (fs.existsSync(flagPath)) {
-    console.log('Restart flag found, removing it...');
-    try {
-      fs.unlinkSync(flagPath);
-      console.log('Restart flag removed successfully');
-    } catch (error) {
-      console.error('Error removing restart flag:', error);
-    }
-    return true;
-  }
-  return false;
-};
-
-// If we're restarting, log it
-if (checkRestartFlag()) {
-  console.log('Server restarted successfully');
-}
 
 // Ensure database is initialized before starting server
 async function ensureDatabase() {

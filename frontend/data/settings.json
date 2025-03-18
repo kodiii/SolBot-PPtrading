@@ -1,6 +1,6 @@
 {
   "paperTrading": {
-    "initialBalance": 15,
+    "initialBalance": 5,
     "dashboardRefresh": 2000,
     "recentTradesLimit": 12,
     "verboseLogging": false
@@ -28,7 +28,7 @@
     "allowNotInitialized": false,
     "allowFreezeAuthority": false,
     "allowRugged": false,
-    "allowMutable": false,
+    "allowMutable": true,
     "blockReturningTokenNames": false,
     "blockReturningTokenCreators": false,
     "blockSymbols": [
@@ -58,7 +58,8 @@
     "legacyNotAllowed": [
       "Freeze Authority still enabled",
       "Single holder ownership",
-      "Copycat token"
+      "Copycat token",
+      "High holder concentration"
     ]
   }
 }

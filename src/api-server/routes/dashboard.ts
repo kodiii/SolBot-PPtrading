@@ -433,7 +433,8 @@ export function setupDashboardRoutes(app: Express): void {
     }
   });
 
-  // Restart server
+  // Restart server - COMMENTED OUT TO AVOID CONFLICT WITH restart.ts
+  /*
   app.post('/api/restart', (req, res) => {
     try {
       console.log('Restarting server...');
@@ -456,6 +457,7 @@ export function setupDashboardRoutes(app: Express): void {
       });
     }
   });
+  */
 
   // Get stats only
   app.get('/api/dashboard/stats', async (req, res, next) => {
