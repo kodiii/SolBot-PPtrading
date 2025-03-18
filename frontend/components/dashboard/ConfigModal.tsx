@@ -199,6 +199,11 @@ export function ConfigModal({ isOpen, onClose }: ConfigModalProps): React.ReactE
     key: string, 
     value: any
   ) => {
+    // Ensure numeric values are valid numbers
+    if (typeof value === 'number' && isNaN(value)) {
+      value = 0; // Default to 0 for NaN values
+    }
+    
     setSettings(prev => ({
       ...prev,
       [category]: {
@@ -220,13 +225,22 @@ export function ConfigModal({ isOpen, onClose }: ConfigModalProps): React.ReactE
     setSaveError(null);
     
     try {
-      // Send settings to the API
+      // Create a sanitized copy of settings to ensure no NaN values
+      const sanitizedSettings = JSON.parse(JSON.stringify(settings, (_, value) => {
+        // Replace any NaN values with 0
+        if (typeof value === 'number' && isNaN(value)) {
+          return 0;
+        }
+        return value;
+      }));
+      
+      // Send sanitized settings to the API
       const response = await fetch('/api/settings', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(settings),
+        body: JSON.stringify(sanitizedSettings),
       });
       
       if (!response.ok) {
@@ -238,7 +252,8 @@ export function ConfigModal({ isOpen, onClose }: ConfigModalProps): React.ReactE
       console.log('Settings saved successfully:', data);
       
       // Update original settings to match current settings
-      setOriginalSettings({...settings});
+      setOriginalSettings({...sanitizedSettings});
+      setSettings({...sanitizedSettings});
       setHasChanges(false);
       
       // Check if restart is required
@@ -552,8 +567,8 @@ export function ConfigModal({ isOpen, onClose }: ConfigModalProps): React.ReactE
                       <Input 
                         id="minDataPoints" 
                         type="number" 
-                        value={settings.priceValidation.minDataPoints}
-                        onChange={(e) => updateSetting('priceValidation', 'minDataPoints', parseInt(e.target.value))}
+                        value={isNaN(settings.priceValidation.minDataPoints) ? 0 : settings.priceValidation.minDataPoints}
+                        onChange={(e) => updateSetting('priceValidation', 'minDataPoints', parseInt(e.target.value) || 0)}
                       />
                     </div>
                     
@@ -601,8 +616,8 @@ export function ConfigModal({ isOpen, onClose }: ConfigModalProps): React.ReactE
                       <Input 
                         id="maxOpenPositions" 
                         type="number" 
-                        value={settings.swap.maxOpenPositions}
-                        onChange={(e) => updateSetting('swap', 'maxOpenPositions', parseInt(e.target.value))}
+                        value={isNaN(settings.swap.maxOpenPositions) ? 0 : settings.swap.maxOpenPositions}
+                        onChange={(e) => updateSetting('swap', 'maxOpenPositions', parseInt(e.target.value) || 0)}
                       />
                     </div>
                   </div>
@@ -796,8 +811,8 @@ export function ConfigModal({ isOpen, onClose }: ConfigModalProps): React.ReactE
                         <Input 
                           id="maxAllowedPctTopholders" 
                           type="number" 
-                          value={settings.rugCheck.maxAllowedPctTopholders}
-                          onChange={(e) => updateSetting('rugCheck', 'maxAllowedPctTopholders', parseInt(e.target.value))}
+                          value={isNaN(settings.rugCheck.maxAllowedPctTopholders) ? 0 : settings.rugCheck.maxAllowedPctTopholders}
+                          onChange={(e) => updateSetting('rugCheck', 'maxAllowedPctTopholders', parseInt(e.target.value) || 0)}
                         />
                       </div>
                       
@@ -806,8 +821,8 @@ export function ConfigModal({ isOpen, onClose }: ConfigModalProps): React.ReactE
                         <Input 
                           id="maxAllowedPctAllTopholders" 
                           type="number" 
-                          value={settings.rugCheck.maxAllowedPctAllTopholders}
-                          onChange={(e) => updateSetting('rugCheck', 'maxAllowedPctAllTopholders', parseInt(e.target.value))}
+                          value={isNaN(settings.rugCheck.maxAllowedPctAllTopholders) ? 0 : settings.rugCheck.maxAllowedPctAllTopholders}
+                          onChange={(e) => updateSetting('rugCheck', 'maxAllowedPctAllTopholders', parseInt(e.target.value) || 0)}
                         />
                       </div>
                       
@@ -841,8 +856,8 @@ export function ConfigModal({ isOpen, onClose }: ConfigModalProps): React.ReactE
                         <Input 
                           id="minTotalLpProviders" 
                           type="number" 
-                          value={settings.rugCheck.minTotalLpProviders}
-                          onChange={(e) => updateSetting('rugCheck', 'minTotalLpProviders', parseInt(e.target.value))}
+                          value={isNaN(settings.rugCheck.minTotalLpProviders) ? 0 : settings.rugCheck.minTotalLpProviders}
+                          onChange={(e) => updateSetting('rugCheck', 'minTotalLpProviders', parseInt(e.target.value) || 0)}
                         />
                       </div>
                       
@@ -851,8 +866,8 @@ export function ConfigModal({ isOpen, onClose }: ConfigModalProps): React.ReactE
                         <Input 
                           id="minTotalMarketLiquidity" 
                           type="number" 
-                          value={settings.rugCheck.minTotalMarketLiquidity}
-                          onChange={(e) => updateSetting('rugCheck', 'minTotalMarketLiquidity', parseInt(e.target.value))}
+                          value={isNaN(settings.rugCheck.minTotalMarketLiquidity) ? 0 : settings.rugCheck.minTotalMarketLiquidity}
+                          onChange={(e) => updateSetting('rugCheck', 'minTotalMarketLiquidity', parseInt(e.target.value) || 0)}
                         />
                       </div>
                       
@@ -861,8 +876,8 @@ export function ConfigModal({ isOpen, onClose }: ConfigModalProps): React.ReactE
                         <Input 
                           id="maxTotalMarketLiquidity" 
                           type="number" 
-                          value={settings.rugCheck.maxTotalMarketLiquidity}
-                          onChange={(e) => updateSetting('rugCheck', 'maxTotalMarketLiquidity', parseInt(e.target.value))}
+                          value={isNaN(settings.rugCheck.maxTotalMarketLiquidity) ? 0 : settings.rugCheck.maxTotalMarketLiquidity}
+                          onChange={(e) => updateSetting('rugCheck', 'maxTotalMarketLiquidity', parseInt(e.target.value) || 0)}
                         />
                       </div>
                       
@@ -882,8 +897,8 @@ export function ConfigModal({ isOpen, onClose }: ConfigModalProps): React.ReactE
                           id="maxPriceToken" 
                           type="number" 
                           step="0.0001"
-                          value={settings.rugCheck.maxPriceToken}
-                          onChange={(e) => updateSetting('rugCheck', 'maxPriceToken', parseFloat(e.target.value))}
+                          value={isNaN(settings.rugCheck.maxPriceToken) ? 0 : settings.rugCheck.maxPriceToken}
+                          onChange={(e) => updateSetting('rugCheck', 'maxPriceToken', parseFloat(e.target.value) || 0)}
                         />
                       </div>
                     </div>
