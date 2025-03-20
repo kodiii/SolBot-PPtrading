@@ -1,6 +1,6 @@
 {
   "appearance": {
-    "theme": "bluish-purple-cricket",
+    "theme": "system",
     "colorMode": "system"
   },
   "paperTrading": {
@@ -17,7 +17,7 @@
     "fallbackToSingleSource": true
   },
   "swap": {
-    "amount": 500000000,
+    "amount": 1000000000,
     "slippageBps": 200,
     "maxOpenPositions": 5
   },
