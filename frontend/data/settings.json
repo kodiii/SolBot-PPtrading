@@ -1,10 +1,10 @@
 {
   "appearance": {
-    "theme": "system",
+    "theme": "bluish-purple-cricket",
     "colorMode": "system"
   },
   "paperTrading": {
-    "initialBalance": 5,
+    "initialBalance": 10,
     "dashboardRefresh": 2000,
     "recentTradesLimit": 12,
     "verboseLogging": false
@@ -22,8 +22,8 @@
     "maxOpenPositions": 5
   },
   "strategies": {
-    "liquidityDropEnabled": true,
-    "threshold": 15
+    "liquidityDropEnabled": false,
+    "threshold": 20
   },
   "rugCheck": {
     "verboseLog": false,
@@ -33,7 +33,7 @@
     "allowFreezeAuthority": false,
     "allowRugged": false,
     "allowMutable": false,
-    "blockReturningTokenNames": true,
+    "blockReturningTokenNames": false,
     "blockReturningTokenCreators": false,
     "blockSymbols": [
       "XXX"
@@ -48,21 +48,25 @@
       "AGENT"
     ],
     "allowInsiderTopholders": true,
-    "maxAllowedPctTopholders": 35,
-    "maxAllowedPctAllTopholders": 35,
+    "maxAllowedPctTopholders": 90,
+    "maxAllowedPctAllTopholders": 90,
     "excludeLpFromTopholders": true,
     "minTotalMarkets": 0,
     "minTotalLpProviders": 0,
-    "minTotalMarketLiquidity": 40000,
-    "maxTotalMarketLiquidity": 1000000,
-    "maxMarketcap": 100000000,
-    "maxPriceToken": 0.001,
+    "minTotalMarketLiquidity": 5000,
+    "maxTotalMarketLiquidity": 10000000,
+    "maxMarketcap": 1000000000,
+    "maxPriceToken": 1,
     "ignorePumpFun": false,
     "maxScore": 30000,
     "legacyNotAllowed": [
       "Freeze Authority still enabled",
       "Single holder ownership",
-      "Copycat token"
+      "Copycat token",
+      "High holder concentration",
+      "Large Amount of LP Unlocked",
+      "Low Liquidity",
+      "Low amount of LP Providers"
     ]
   }
 }

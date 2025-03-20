@@ -23,7 +23,7 @@ export default function ThemeProvider({ children, ...props }: ThemeProviderProps
       
       // Remove all theme classes
       document.documentElement.classList.remove(
-        'cyberpunk',
+        'global',
         'bluish-purple-cricket',
         'exquisite-turquoise-giraffe'
       )

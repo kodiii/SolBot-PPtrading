@@ -4,29 +4,11 @@
  * for trading, security checks, and simulation features.
  */
 
-// Provider configuration types
-export interface ProviderConfig {
-  enabled: boolean;
-  priority: number;
-  timeout: number;
-  retry: {
-    max_attempts: number;
-    initial_delay: number;
-    max_delay: number;
-  };
-}
-
-export interface ProvidersConfig {
-  dexscreener: ProviderConfig;
-  birdeye?: ProviderConfig;
-  solanatracker?: ProviderConfig;
-  bitquery?: ProviderConfig;
-}
-
 export const config = {
   // Liquidity pool configuration for Raydium DEX
   liquidity_pool: {
     radiyum_program_id: "675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8", // Raydium DEX program ID
+    pump_fun_program_id: "pAMMBay6oceH9fJKBRHGP5D4bD4sWpmSwMn52FMfXEA", // PumpFun DEX program ID
     wsol_pc_mint: "So11111111111111111111111111111111111111112", // Wrapped SOL token mint address
   },
 
@@ -43,7 +25,7 @@ export const config = {
   // Paper trading simulation settings
   paper_trading: {
     verbose_log: false, // Enable/disable detailed logging of DexScreener API responses
-    initial_balance: 5, // Starting balance in SOL for paper trading
+    initial_balance: 10, // Starting balance in SOL for paper trading
     dashboard_refresh: 2000, // Faster refresh rate for more responsive UI
     recent_trades_limit: 12, // Number of recent trades to display in dashboard
     price_check: {

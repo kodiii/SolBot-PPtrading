@@ -4,6 +4,7 @@ import '@/styles/Exquisite_Turquoise_Giraffe.css'
 import { Inter } from 'next/font/google'
 import { ThemeProvider } from '@/components/theme'
 import { ErrorBoundary } from '@/components/layout'
+import { SettingsProvider } from '@/contexts/settings'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -22,9 +23,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }):
           defaultTheme="system"
           enableSystem
         >
-          <ErrorBoundary>
-            {children}
-          </ErrorBoundary>
+          <SettingsProvider>
+            <ErrorBoundary>
+              {children}
+            </ErrorBoundary>
+          </SettingsProvider>
         </ThemeProvider>
       </body>
     </html>
