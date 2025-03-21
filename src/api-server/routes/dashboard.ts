@@ -460,6 +460,38 @@ export function setupDashboardRoutes(app: Express): void {
   */
 
   // Get stats only
+  // Get candle data for a specific token
+  app.get('/api/dashboard/candles', async (req, res) => {
+    try {
+      const { tokenMint } = req.query
+
+      if (!tokenMint || typeof tokenMint !== 'string') {
+        return res.status(400).json({ error: 'Token mint is required' })
+      }
+
+      // Get candle data from the database
+      // For now, return mock data - this should be replaced with actual data fetching
+      const mockData = Array.from({ length: 24 }, (_, i) => {
+        const basePrice = 1.0
+        const time = new Date()
+        time.setHours(time.getHours() - i)
+        
+        return {
+          time: time.toISOString(),
+          open: basePrice * (1 + Math.random() * 0.1),
+          high: basePrice * (1 + Math.random() * 0.2),
+          low: basePrice * (1 - Math.random() * 0.1),
+          close: basePrice * (1 + Math.random() * 0.15)
+        }
+      }).reverse()
+
+      res.json(mockData)
+    } catch (error) {
+      console.error('Error fetching candle data:', error)
+      res.status(500).json({ error: 'Internal server error' })
+    }
+  });
+
   app.get('/api/dashboard/stats', async (req, res, next) => {
     try {
       const stats = await fetchTradingStats();

@@ -90,7 +90,7 @@ export function PositionsTable({ positions, isLoading, onClosePosition }: Positi
             )
           })}
         </tbody>
-      </table>
+        </table>
     </div>
   )
 }

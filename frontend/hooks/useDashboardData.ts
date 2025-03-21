@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from 'react';
-import { DashboardData, ApiError } from '@/lib/types';
+import { DashboardData, ApiError, Position } from '@/lib/types';
 import { API_ENDPOINTS } from '@/lib/api-config';
 import { useSettings } from '@/contexts/settings';
 
@@ -264,5 +264,67 @@ export function useStats() {
     isRefreshing,
     error,
     refresh,
+  };
+}
+
+interface CandleData {
+  time: string;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+}
+
+/**
+ * Hook for fetching candle data for all positions
+ */
+export function useCandleData(positions: Position[], interval: string = '5m') {
+  const [data, setData] = React.useState<Map<string, CandleData[]>>(new Map());
+  const [isLoading, setIsLoading] = React.useState<boolean>(true);
+  const [error, setError] = React.useState<string | undefined>(undefined);
+
+  const fetchAllCandles = React.useCallback(async () => {
+    if (!positions.length) return;
+
+    try {
+      setIsLoading(true);
+      setError(undefined);
+
+      const promises = positions.map(position => 
+        fetch(`${API_ENDPOINTS.candles}?tokenMint=${position.token_mint}&interval=${interval}`, {
+          headers: {
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0'
+          }
+        }).then(res => res.json())
+      );
+
+      const results = await Promise.all(promises);
+      
+      const newData = new Map();
+      positions.forEach((position, index) => {
+        newData.set(position.token_mint, results[index]);
+      });
+
+      setData(newData);
+    } catch (err) {
+      console.error('Error fetching candle data:', err);
+      setError(err instanceof Error ? err.message : 'Failed to fetch candle data');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [positions, interval]);
+
+  // Fetch data on mount and when positions or interval change
+  React.useEffect(() => {
+    fetchAllCandles();
+  }, [fetchAllCandles]);
+
+  return {
+    data,
+    isLoading,
+    error,
+    refresh: fetchAllCandles
   };
 }

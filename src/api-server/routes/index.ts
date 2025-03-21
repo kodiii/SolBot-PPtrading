@@ -3,6 +3,7 @@ import { ConnectionManager } from '../../papertrading/db/connection_manager';
 import { setupDashboardRoutes } from './dashboard';
 import { setupSettingsRoutes } from './settings';
 import { setupRestartRoutes } from './restart';
+import { setupCandlesRoutes } from './candles';
 
 export function setupRoutes(app: Express): void {
   // Health check endpoint
@@ -14,4 +15,5 @@ export function setupRoutes(app: Express): void {
   setupDashboardRoutes(app);
   setupSettingsRoutes(app);
   setupRestartRoutes(app);
+  setupCandlesRoutes(app);
 }

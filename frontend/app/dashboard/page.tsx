@@ -6,9 +6,7 @@ import { Button } from '@/components/ui/button'
 import { SkeletonCard } from '@/components/ui/skeleton'
 import { useDashboardData, usePositions } from '@/hooks/useDashboardData'
 import { formatDecimal, formatDateTime } from '@/lib/utils'
-import { PositionsTable } from '@/components/dashboard/PositionsTable'
-import { TradesTable } from '@/components/dashboard/TradesTable'
-import { TradingCharts } from '@/components/dashboard/TradingCharts'
+import { PositionsTable, TradesTable, TradingCharts, TokenCandleCharts } from '@/components/dashboard'
 import { ConfigModal } from '@/components/dashboard/ConfigModal'
 import { ModeToggle } from '@/components/theme/ModeToggle'
 import { ExportButton } from '@/components/dashboard/ExportButton'
@@ -147,6 +145,9 @@ export default function DashboardPage(): React.ReactElement {
           )}
         </CardContent>
       </Card>
+
+      {/* Token Candle Charts */}
+      <TokenCandleCharts positions={positions} isLoading={isLoading} />
 
       {/* Active Positions */}
       <Card>

@@ -23,7 +23,7 @@
   },
   "strategies": {
     "liquidityDropEnabled": false,
-    "threshold": 20
+    "threshold": 15
   },
   "rugCheck": {
     "verboseLog": false,
@@ -33,7 +33,7 @@
     "allowFreezeAuthority": false,
     "allowRugged": false,
     "allowMutable": false,
-    "blockReturningTokenNames": false,
+    "blockReturningTokenNames": true,
     "blockReturningTokenCreators": false,
     "blockSymbols": [
       "XXX"
@@ -63,10 +63,7 @@
       "Freeze Authority still enabled",
       "Single holder ownership",
       "Copycat token",
-      "High holder concentration",
-      "Large Amount of LP Unlocked",
-      "Low Liquidity",
-      "Low amount of LP Providers"
+      "High holder concentration"
     ]
   }
 }

@@ -13,6 +13,7 @@ export const API_ENDPOINTS = {
   trades: '/api/dashboard/trades',
   stats: '/api/dashboard/stats',
   settings: '/api/settings',
+  candles: '/api/dashboard/candles',
 } as const;
 
 // Backend API endpoints for server-side requests
@@ -23,4 +24,5 @@ export const BACKEND_API_ENDPOINTS = {
   trades: `${BACKEND_API_URL}/api/dashboard/trades`,
   stats: `${BACKEND_API_URL}/api/dashboard/stats`,
   settings: `${BACKEND_API_URL}/api/settings`,
+  candles: `${BACKEND_API_URL}/api/dashboard/candles`,
 } as const;
