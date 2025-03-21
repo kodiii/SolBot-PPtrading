@@ -185,18 +185,23 @@ function readLocalSettings(): ConfigSettings {
 // Helper function to write settings to the backend API
 async function writeSettingsToBackend(settings: ConfigSettings): Promise<boolean> {
   try {
+    console.log('Attempting to update backend settings at:', getBackendSettingsUrl());
+    
     const response = await fetch(getBackendSettingsUrl(), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(settings),
+      // Add a longer timeout for the request
+      signal: AbortSignal.timeout(10000), // 10 seconds timeout
     });
     
     if (!response.ok) {
       throw new Error(`Failed to update settings: ${response.status} ${response.statusText}`);
     }
     
+    console.log('Backend settings updated successfully');
     return true;
   } catch (error) {
     console.error('Error writing settings to backend:', error);
@@ -241,24 +246,45 @@ export async function POST(request: NextRequest): Promise<Response> {
       );
     }
     
+    // First, save to local file to ensure we have a copy
+    try {
+      // Ensure the data directory exists
+      const dataDir = path.join(process.cwd(), 'data');
+      if (!fs.existsSync(dataDir)) {
+        fs.mkdirSync(dataDir, { recursive: true });
+      }
+      
+      // Write settings to local file
+      fs.writeFileSync(SETTINGS_FILE, JSON.stringify(settings, null, 2));
+      console.log('Saved settings to local file');
+    } catch (error) {
+      console.error('Error saving settings to local file:', error);
+      // Continue to try backend update even if local save fails
+    }
+    
     // Write settings to backend API
     const success = await writeSettingsToBackend(settings);
     
     if (success) {
-      // Also save to local file as a fallback
+      // Try to restart the application to apply settings
       try {
-        // Ensure the data directory exists
-        const dataDir = path.join(process.cwd(), 'data');
-        if (!fs.existsSync(dataDir)) {
-          fs.mkdirSync(dataDir, { recursive: true });
-        }
+        console.log('Attempting to restart the application to apply settings');
+        const restartResponse = await fetch(`${getBackendSettingsUrl().split('/api/settings')[0]}/api/restart`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ reason: 'Settings updated' }),
+        });
         
-        // Write settings to local file
-        fs.writeFileSync(SETTINGS_FILE, JSON.stringify(settings, null, 2));
-        console.log('Saved settings to local file as fallback');
-      } catch (error) {
-        console.error('Error saving settings to local file:', error);
-        // Continue even if local save fails, as we've already saved to the backend
+        if (restartResponse.ok) {
+          console.log('Restart request sent successfully');
+        } else {
+          console.warn('Restart request failed, but settings were saved');
+        }
+      } catch (restartError) {
+        console.error('Error requesting restart:', restartError);
+        // Continue even if restart fails, as we've already saved the settings
       }
       
       return NextResponse.json({ 
@@ -267,10 +293,13 @@ export async function POST(request: NextRequest): Promise<Response> {
         requiresRestart: true
       });
     } else {
-      return NextResponse.json(
-        { error: 'Failed to save settings to backend' },
-        { status: 500 }
-      );
+      // If backend update fails, at least we saved to the local file
+      return NextResponse.json({ 
+        success: true, 
+        message: 'Settings saved to frontend only. Backend update failed. Changes may not be fully applied until the backend is updated.',
+        requiresRestart: true,
+        backendUpdateFailed: true
+      });
     }
   } catch (error) {
     console.error('Error in POST /api/settings:', error);

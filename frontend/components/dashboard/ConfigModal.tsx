@@ -1,341 +1,46 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useEffect } from 'react'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Switch } from '@/components/ui/switch'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { useConfigSettings } from '@/components/dashboard/config/hooks/useConfigSettings'
+import { PaperTradingTab } from '@/components/dashboard/config/tabs/PaperTradingTab'
+import { PriceValidationTab } from '@/components/dashboard/config/tabs/PriceValidationTab'
+import { SwapSettingsTab } from '@/components/dashboard/config/tabs/SwapSettingsTab'
+import { StrategiesTab } from '@/components/dashboard/config/tabs/StrategiesTab'
+import { RugCheckTab } from '@/components/dashboard/config/tabs/RugCheckTab'
+import { AppearanceTab } from '@/components/dashboard/config/tabs/AppearanceTab'
+import { SellSettingsTab } from '@/components/dashboard/config/tabs/SellSettingsTab'
+import { LiquidityPoolTab } from '@/components/dashboard/config/tabs/LiquidityPoolTab'
+import { TransactionTab } from '@/components/dashboard/config/tabs/TransactionTab'
 
 interface ConfigModalProps {
   isOpen: boolean
   onClose: () => void
 }
 
-// Default settings
-const defaultSettings: ConfigSettings = {
-  appearance: {
-    theme: "system",
-    colorMode: "system"
-  },
-  paperTrading: {
-    initialBalance: 5,
-    dashboardRefresh: 2000,
-    recentTradesLimit: 12,
-    verboseLogging: false
-  },
-  priceValidation: {
-    enabled: true,
-    windowSize: 12,
-    maxDeviation: 0.05,
-    minDataPoints: 6,
-    fallbackToSingleSource: true
-  },
-  swap: {
-    amount: 500000000,
-    slippageBps: 200,
-    maxOpenPositions: 3
-  },
-  strategies: {
-    liquidityDropEnabled: true,
-    threshold: 20
-  },
-  rugCheck: {
-    verboseLog: false,
-    simulationMode: true,
-    allowMintAuthority: false,
-    allowNotInitialized: false,
-    allowFreezeAuthority: false,
-    allowRugged: false,
-    allowMutable: true,
-    blockReturningTokenNames: false,
-    blockReturningTokenCreators: false,
-    blockSymbols: ["XXX"],
-    blockNames: ["XXX"],
-    onlyContainString: false,
-    containString: ["AI", "GPT", "AGENT"],
-    allowInsiderTopholders: true,
-    maxAllowedPctTopholders: 50,
-    maxAllowedPctAllTopholders: 50,
-    excludeLpFromTopholders: true,
-    minTotalMarkets: 0,
-    minTotalLpProviders: 0,
-    minTotalMarketLiquidity: 10000,
-    maxTotalMarketLiquidity: 100000,
-    maxMarketcap: 25000000,
-    maxPriceToken: 0.001,
-    ignorePumpFun: false,
-    maxScore: 30000,
-    legacyNotAllowed: [
-      "Freeze Authority still enabled",
-      "Single holder ownership",
-      "Copycat token"
-    ]
-  }
-};
-
-// Define the configuration settings interface
-interface ConfigSettings {
-  appearance: {
-    theme: string;
-    colorMode: string;
-  };
-  paperTrading: {
-    initialBalance: number;
-    dashboardRefresh: number;
-    recentTradesLimit: number;
-    verboseLogging: boolean;
-  };
-  priceValidation: {
-    enabled: boolean;
-    windowSize: number;
-    maxDeviation: number;
-    minDataPoints: number;
-    fallbackToSingleSource: boolean;
-  };
-  swap: {
-    amount: number;
-    slippageBps: number;
-    maxOpenPositions: number;
-  };
-  strategies: {
-    liquidityDropEnabled: boolean;
-    threshold: number;
-  };
-  rugCheck: {
-    verboseLog: boolean;
-    simulationMode: boolean;
-    allowMintAuthority: boolean;
-    allowNotInitialized: boolean;
-    allowFreezeAuthority: boolean;
-    allowRugged: boolean;
-    allowMutable: boolean;
-    blockReturningTokenNames: boolean;
-    blockReturningTokenCreators: boolean;
-    blockSymbols: string[];
-    blockNames: string[];
-    onlyContainString: boolean;
-    containString: string[];
-    allowInsiderTopholders: boolean;
-    maxAllowedPctTopholders: number;
-    maxAllowedPctAllTopholders: number;
-    excludeLpFromTopholders: boolean;
-    minTotalMarkets: number;
-    minTotalLpProviders: number;
-    minTotalMarketLiquidity: number;
-    maxTotalMarketLiquidity: number;
-    maxMarketcap: number;
-    maxPriceToken: number;
-    ignorePumpFun: boolean;
-    maxScore: number;
-    legacyNotAllowed: string[];
-  };
-}
-
 export function ConfigModal({ isOpen, onClose }: ConfigModalProps): React.ReactElement {
-  // State for settings
-  const [settings, setSettings] = useState<ConfigSettings>(defaultSettings);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [isSaving, setIsSaving] = useState(false);
-  const [saveError, setSaveError] = useState<string | null>(null);
+  const {
+    settings,
+    isLoading,
+    isSaving,
+    saveError,
+    hasChanges,
+    isResetting,
+    isRestarting,
+    restartError,
+    showRestartNotice,
+    restartMessage,
+    updateSetting,
+    saveChanges,
+    cancelChanges,
+    resetToDefault,
+    restartServer,
+    setShowRestartNotice,
+    setSaveError
+  } = useConfigSettings(isOpen, onClose);
   
-  // Fetch settings from API
-  useEffect(() => {
-    let mounted = true;
-    
-    const fetchSettings = async (): Promise<void> => {
-      if (!isOpen) return;
-      
-      setIsLoading(true);
-      setError(null);
-      
-      try {
-        const response = await fetch('/api/settings');
-        
-        if (!mounted) return;
-        
-        if (!response.ok) {
-          throw new Error(`Failed to fetch settings: ${response.status} ${response.statusText}`);
-        }
-        
-        const data = await response.json();
-        if (!mounted) return;
-        
-        setSettings(data);
-        setOriginalSettings(data);
-      } catch (err) {
-        console.error('Error fetching settings:', err);
-        if (!mounted) return;
-        
-        setError('Failed to load settings. Using default values.');
-        setSettings(defaultSettings);
-        setOriginalSettings(defaultSettings);
-      } finally {
-        if (mounted) {
-          setIsLoading(false);
-        }
-      }
-    };
-    
-    fetchSettings();
-    
-    return () => {
-      mounted = false;
-    };
-  }, [isOpen]); // Only depend on isOpen
-
-  // Create a copy of settings for tracking changes
-  const [originalSettings, setOriginalSettings] = useState<ConfigSettings>({...settings});
-  const [hasChanges, setHasChanges] = useState(false);
-  const [activeTab, setActiveTab] = useState('paperTrading');
-
-  // Check for changes when settings are updated
-  useEffect(() => {
-    const checkChanges = (): void => {
-      const settingsStr = JSON.stringify(settings);
-      const originalStr = JSON.stringify(originalSettings);
-      setHasChanges(settingsStr !== originalStr);
-    };
-    
-    checkChanges();
-  }, [settings, originalSettings]);
-
-  // Update a specific setting
-  const updateSetting = (
-    category: keyof ConfigSettings, 
-    key: string, 
-    value: string | number | boolean | string[]
-  ): void => {
-    // Ensure numeric values are valid numbers
-    if (typeof value === 'number' && isNaN(value)) {
-      value = 0; // Default to 0 for NaN values
-    }
-    
-    setSettings(prev => ({
-      ...prev,
-      [category]: {
-        ...prev[category],
-        [key]: value
-      }
-    }));
-  };
-
-  // State for restart notification
-  const [showRestartNotice, setShowRestartNotice] = useState(false);
-  const [restartMessage, setRestartMessage] = useState('');
-  const [isRestarting, setIsRestarting] = useState(false);
-  const [restartError, setRestartError] = useState<string | null>(null);
-
-  // Handle saving changes
-  const saveChanges = async (): Promise<void> => {
-    setIsSaving(true);
-    setSaveError(null);
-    
-    try {
-      // Create a sanitized copy of settings to ensure no NaN values
-      const sanitizedSettings = JSON.parse(JSON.stringify(settings, (_, value) => {
-        // Replace any NaN values with 0
-        if (typeof value === 'number' && isNaN(value)) {
-          return 0;
-        }
-        return value;
-      }));
-      
-      // Send sanitized settings to the API
-      const response = await fetch('/api/settings', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(sanitizedSettings),
-      });
-      
-      if (!response.ok) {
-        throw new Error(`Failed to save settings: ${response.status} ${response.statusText}`);
-      }
-      
-      // Get the response data
-      const data = await response.json();
-      console.log('Settings saved successfully:', data);
-      
-      // Update original settings to match current settings
-      setOriginalSettings({...sanitizedSettings});
-      setSettings({...sanitizedSettings});
-      setHasChanges(false);
-      
-      // Check if restart is required
-      if (data.requiresRestart) {
-        setRestartMessage(data.message || 'Please restart the bot for changes to take effect.');
-        setShowRestartNotice(true);
-      } else {
-        // Close the modal
-        onClose();
-      }
-    } catch (err) {
-      console.error('Error saving settings:', err);
-      setSaveError('Failed to save settings. Please try again.');
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  // Handle canceling changes
-  const cancelChanges = (): void => {
-    // Reset settings to original values
-    setSettings({...originalSettings});
-    onClose();
-  };
-
-  // Handle resetting to default values
-  const [isResetting, setIsResetting] = useState(false);
-  const resetToDefault = async (): Promise<void> => {
-    if (!confirm('Are you sure you want to reset all settings to default values? This cannot be undone.')) {
-      return;
-    }
-    
-    setIsResetting(true);
-    setSaveError(null);
-    
-    try {
-      // Call the reset API endpoint
-      const response = await fetch('/api/settings', {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-      
-      if (!response.ok) {
-        throw new Error(`Failed to reset settings: ${response.status} ${response.statusText}`);
-      }
-      
-      // Get the response data
-      const data = await response.json();
-      console.log('Settings reset successfully:', data);
-      
-      // Update settings with the reset values
-      if (data.settings) {
-        setSettings({...data.settings});
-        setOriginalSettings({...data.settings});
-        setHasChanges(false);
-      }
-      
-      // Show success message
-      alert('Settings have been reset to default values.');
-      
-      // Check if restart is required
-      if (data.requiresRestart) {
-        setRestartMessage(data.message || 'Please restart the bot for changes to take effect.');
-        setShowRestartNotice(true);
-      }
-    } catch (err) {
-      console.error('Error resetting settings:', err);
-      setSaveError('Failed to reset settings. Please try again.');
-    } finally {
-      setIsResetting(false);
-    }
-  };
+  const [activeTab, setActiveTab] = React.useState('paperTrading');
 
   // Handle ESC key press
   useEffect(() => {
@@ -354,7 +59,7 @@ export function ConfigModal({ isOpen, onClose }: ConfigModalProps): React.ReactE
   // Show loading state
   if (isLoading) {
     return (
-      <div className="fixed inset-0 z-[9999] flex items-center justify-center backdrop-blur-[40px] bg-black/70">
+      <div className="fixed inset-0 z-[9999] flex items-center justify-center backdrop-blur-[5px] bg-black/70">
         <div className="bg-card rounded-lg p-8 text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
           <p className="text-lg">Loading settings...</p>
@@ -366,7 +71,7 @@ export function ConfigModal({ isOpen, onClose }: ConfigModalProps): React.ReactE
   // Show error message if there was an error saving
   if (saveError) {
     return (
-      <div className="fixed inset-0 z-[9999] flex items-center justify-center backdrop-blur-[40px] bg-black/70">
+      <div className="fixed inset-0 z-[9999] flex items-center justify-center backdrop-blur-[5px] bg-black/70">
         <div className="bg-card rounded-lg p-8 text-center max-w-md">
           <div className="text-destructive text-5xl mb-4">⚠️</div>
           <h3 className="text-xl font-bold mb-2">Error Saving Settings</h3>
@@ -379,78 +84,10 @@ export function ConfigModal({ isOpen, onClose }: ConfigModalProps): React.ReactE
     );
   }
 
-  // Function to restart the server
-  const restartServer = async (): Promise<void> => {
-    setIsRestarting(true);
-    setRestartError(null);
-    
-    try {
-      // Call the frontend API endpoint which will proxy to the backend
-      // Use a timeout to handle the case where the server exits before responding
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000);
-      
-      try {
-        const response = await fetch('/api/restart', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          signal: controller.signal
-        });
-        
-        clearTimeout(timeoutId);
-        
-        if (!response.ok) {
-          throw new Error(`Failed to restart server: ${response.status} ${response.statusText}`);
-        }
-        
-        // Successfully sent the restart request
-        console.log('Restart request sent successfully');
-      } catch (error) {
-        // If the error is an AbortError or a network error, it might be because
-        // the server is already restarting, which is actually what we want
-        if (
-          error && 
-          typeof error === 'object' && 
-          (
-            ('name' in error && error.name === 'AbortError') || 
-            error instanceof TypeError
-          )
-        ) {
-          console.log('Server connection closed - this is expected during restart');
-          // Continue with the restart process
-        } else {
-          // For other errors, rethrow
-          throw error;
-        }
-      }
-      
-      // Server should be restarting now, show a message
-      setRestartMessage('Server restart initiated. Please wait a moment...');
-      
-      // Close the modal after a delay
-      setTimeout(() => {
-        setShowRestartNotice(false);
-        onClose();
-        // Reload the page after a delay to connect to the restarted server
-        setTimeout(() => {
-          window.location.reload();
-        }, 8000); // Increased delay to give server more time to restart
-      }, 2000);
-      
-    } catch (err) {
-      console.error('Error restarting server:', err);
-      setRestartError('Failed to restart server. Please try again or restart manually.');
-    } finally {
-      setIsRestarting(false);
-    }
-  };
-
   // Show restart notification if settings were saved but require restart
   if (showRestartNotice) {
     return (
-      <div className="fixed inset-0 z-[9999] flex items-center justify-center backdrop-blur-[40px] bg-black/70">
+      <div className="fixed inset-0 z-[9999] flex items-center justify-center backdrop-blur-[5px] bg-black/70">
         <div className="bg-card rounded-lg p-8 text-center max-w-md">
           <div className="text-amber-500 text-5xl mb-4">⚠️</div>
           <h3 className="text-xl font-bold mb-2">Restart Required</h3>
@@ -491,15 +128,15 @@ export function ConfigModal({ isOpen, onClose }: ConfigModalProps): React.ReactE
 
   return (
     <div 
-      className="fixed inset-0 z-[9999] flex items-center justify-center backdrop-blur-[40px] bg-black/70 transition-all duration-500"
+      className="fixed inset-0 z-[9999] flex items-center justify-center backdrop-blur-[5px] bg-black/70 transition-all duration-500"
       style={{ 
         position: 'fixed', 
         top: 0, 
         left: 0, 
         right: 0, 
         bottom: 0,
-        WebkitBackdropFilter: 'blur(40px)',
-        backdropFilter: 'blur(40px)',
+        WebkitBackdropFilter: 'blur(5px)',
+        backdropFilter: 'blur(5px)',
       }}
       onClick={(e) => {
         if (e.target === e.currentTarget) {
@@ -510,7 +147,7 @@ export function ConfigModal({ isOpen, onClose }: ConfigModalProps): React.ReactE
       
       {/* Modal */}
       <div 
-        className="relative bg-card rounded-lg shadow-xl w-[90%] max-w-4xl max-h-[90vh] overflow-hidden flex flex-col transition-all duration-300 ease-out will-change-[opacity,transform]"
+        className="relative bg-card rounded-lg shadow-xl w-[90%] max-w-5xl max-h-[90vh] overflow-hidden flex flex-col transition-all duration-300 ease-out will-change-[opacity,transform]"
         style={{ 
           position: 'relative', 
           zIndex: 10000,
@@ -547,6 +184,9 @@ export function ConfigModal({ isOpen, onClose }: ConfigModalProps): React.ReactE
         <div className="flex-1 overflow-y-auto p-6">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="inline-flex h-10 items-center justify-center rounded-md bg-muted/50 p-1">
+              <TabsTrigger value="transaction" className="inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
+                Transaction
+              </TabsTrigger>
               <TabsTrigger value="paperTrading" className="inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
                 Paper Trading
               </TabsTrigger>
@@ -554,7 +194,10 @@ export function ConfigModal({ isOpen, onClose }: ConfigModalProps): React.ReactE
                 Price Validation
               </TabsTrigger>
               <TabsTrigger value="swapSettings" className="inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
-                Swap Settings
+                Swap
+              </TabsTrigger>
+              <TabsTrigger value="sell" className="inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
+                Sell
               </TabsTrigger>
               <TabsTrigger value="strategies" className="inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
                 Strategies
@@ -565,624 +208,48 @@ export function ConfigModal({ isOpen, onClose }: ConfigModalProps): React.ReactE
               <TabsTrigger value="appearance" className="inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
                 Appearance
               </TabsTrigger>
+              <TabsTrigger value="liquidityPool" className="inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
+                Liquidity Pool
+              </TabsTrigger>
             </TabsList>
             
             {/* Paper Trading Settings */}
-            
             <TabsContent value="paperTrading" className="mt-6">
-              <div className="bg-card/50 rounded-lg p-6">
-                <div className="max-w-2xl mx-auto space-y-6">
-                  <h3 className="text-lg font-semibold border-b pb-2">General Settings</h3>
-                  <div className="space-y-3">
-                    <div className="grid gap-2">
-                      <Label htmlFor="initialBalance">Initial Balance (SOL)</Label>
-                      <Input 
-                        id="initialBalance" 
-                        type="number" 
-                        value={settings.paperTrading.initialBalance}
-                        onChange={(e) => updateSetting('paperTrading', 'initialBalance', parseFloat(e.target.value))}
-                      />
-                    </div>
-                    
-                    <div className="grid gap-2">
-                      <Label htmlFor="dashboardRefresh">Dashboard Refresh (ms)</Label>
-                      <Input 
-                        id="dashboardRefresh" 
-                        type="number" 
-                        value={settings.paperTrading.dashboardRefresh}
-                        onChange={(e) => updateSetting('paperTrading', 'dashboardRefresh', parseInt(e.target.value))}
-                      />
-                    </div>
-                    
-                    <div className="grid gap-2">
-                      <Label htmlFor="recentTradesLimit">Recent Trades Limit</Label>
-                      <Input 
-                        id="recentTradesLimit" 
-                        type="number" 
-                        value={settings.paperTrading.recentTradesLimit}
-                        onChange={(e) => updateSetting('paperTrading', 'recentTradesLimit', parseInt(e.target.value))}
-                      />
-                    </div>
-                    
-                    <div className="flex items-center justify-between">
-                      <Label htmlFor="verboseLogging">Verbose Logging</Label>
-                      <Switch 
-                        id="verboseLogging" 
-                        checked={settings.paperTrading.verboseLogging}
-                        onCheckedChange={(checked) => updateSetting('paperTrading', 'verboseLogging', checked)}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
+              <PaperTradingTab settings={settings} updateSetting={updateSetting} />
             </TabsContent>
             
             {/* Price Validation Settings */}
             <TabsContent value="priceValidation" className="mt-6">
-              <div className="bg-card/50 rounded-lg p-6">
-                <div className="max-w-2xl mx-auto space-y-6">
-                  <h3 className="text-lg font-semibold border-b pb-2">Validation Settings</h3>
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <Label htmlFor="priceValidationEnabled">Enabled</Label>
-                      <Switch 
-                        id="priceValidationEnabled" 
-                        checked={settings.priceValidation.enabled}
-                        onCheckedChange={(checked) => updateSetting('priceValidation', 'enabled', checked)}
-                      />
-                    </div>
-                    
-                    <div className="grid gap-2">
-                      <Label htmlFor="windowSize">Window Size</Label>
-                      <Input 
-                        id="windowSize" 
-                        type="number" 
-                        value={settings.priceValidation.windowSize}
-                        onChange={(e) => updateSetting('priceValidation', 'windowSize', parseInt(e.target.value))}
-                      />
-                    </div>
-                    
-                    <div className="grid gap-2">
-                      <Label htmlFor="maxDeviation">Max Deviation</Label>
-                      <Input 
-                        id="maxDeviation" 
-                        type="number" 
-                        step="0.01"
-                        value={settings.priceValidation.maxDeviation}
-                        onChange={(e) => updateSetting('priceValidation', 'maxDeviation', parseFloat(e.target.value))}
-                      />
-                    </div>
-                    
-                    <div className="grid gap-2">
-                      <Label htmlFor="minDataPoints">Min Data Points</Label>
-                      <Input 
-                        id="minDataPoints" 
-                        type="number" 
-                        value={isNaN(settings.priceValidation.minDataPoints) ? 0 : settings.priceValidation.minDataPoints}
-                        onChange={(e) => updateSetting('priceValidation', 'minDataPoints', parseInt(e.target.value) || 0)}
-                      />
-                    </div>
-                    
-                    <div className="flex items-center justify-between">
-                      <Label htmlFor="fallbackToSingleSource">Fallback to Single Source</Label>
-                      <Switch 
-                        id="fallbackToSingleSource" 
-                        checked={settings.priceValidation.fallbackToSingleSource}
-                        onCheckedChange={(checked) => updateSetting('priceValidation', 'fallbackToSingleSource', checked)}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
+              <PriceValidationTab settings={settings} updateSetting={updateSetting} />
             </TabsContent>
             
             {/* Swap Settings */}
             <TabsContent value="swapSettings" className="mt-6">
-              <div className="bg-card/50 rounded-lg p-6">
-                <div className="max-w-2xl mx-auto space-y-6">
-                  <h3 className="text-lg font-semibold border-b pb-2">Swap Configuration</h3>
-                  <div className="space-y-3">
-                    <div className="grid gap-2">
-                      <Label htmlFor="amount">Amount (lamports)</Label>
-                      <Input 
-                        id="amount" 
-                        type="number" 
-                        value={settings.swap.amount}
-                        onChange={(e) => updateSetting('swap', 'amount', parseInt(e.target.value))}
-                      />
-                    </div>
-                    
-                    <div className="grid gap-2">
-                      <Label htmlFor="slippageBps">Slippage (basis points)</Label>
-                      <Input 
-                        id="slippageBps" 
-                        type="number" 
-                        value={settings.swap.slippageBps}
-                        onChange={(e) => updateSetting('swap', 'slippageBps', parseInt(e.target.value))}
-                      />
-                    </div>
-                    
-                    <div className="grid gap-2">
-                      <Label htmlFor="maxOpenPositions">Max Open Positions</Label>
-                      <Input 
-                        id="maxOpenPositions" 
-                        type="number" 
-                        value={isNaN(settings.swap.maxOpenPositions) ? 0 : settings.swap.maxOpenPositions}
-                        onChange={(e) => updateSetting('swap', 'maxOpenPositions', parseInt(e.target.value) || 0)}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
+              <SwapSettingsTab settings={settings} updateSetting={updateSetting} />
             </TabsContent>
             
             {/* Strategies Settings */}
             <TabsContent value="strategies" className="mt-6">
-              <div className="bg-card/50 rounded-lg p-6">
-                <div className="max-w-2xl mx-auto space-y-6">
-                  <h3 className="text-lg font-semibold border-b pb-2">Liquidity Drop Strategy</h3>
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <Label htmlFor="liquidityDropEnabled">Enabled</Label>
-                      <Switch 
-                        id="liquidityDropEnabled" 
-                        checked={settings.strategies.liquidityDropEnabled}
-                        onCheckedChange={(checked) => updateSetting('strategies', 'liquidityDropEnabled', checked)}
-                      />
-                    </div>
-                    
-                    <div className="grid gap-2">
-                      <Label htmlFor="threshold">Threshold (%)</Label>
-                      <Input 
-                        id="threshold" 
-                        type="number" 
-                        value={settings.strategies.threshold}
-                        onChange={(e) => updateSetting('strategies', 'threshold', parseInt(e.target.value))}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
+              <StrategiesTab settings={settings} updateSetting={updateSetting} />
             </TabsContent>
             
             {/* Appearance Settings */}
             <TabsContent value="appearance" className="mt-6">
-              <div className="bg-card/50 rounded-lg p-6">
-                <div className="max-w-2xl mx-auto space-y-6">
-                  <h3 className="text-lg font-semibold border-b pb-2">Theme Settings</h3>
-                  <div className="space-y-3">
-                    <div className="grid gap-2">
-                      <Label htmlFor="theme">Theme</Label>
-                      <select
-                        id="theme"
-                        value={settings.appearance.theme}
-                        onChange={(e) => updateSetting('appearance', 'theme', e.target.value)}
-                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 ring-offset-background"
-                      >
-                        <option value="system">System</option>
-                        <option value="bluish-purple-cricket">Bluish Purple</option>
-                        <option value="exquisite-turquoise-giraffe">Turquoise</option>
-                      </select>
-                    </div>
-                  </div>
-                </div>
-              </div>
+              <AppearanceTab settings={settings} updateSetting={updateSetting} />
+            </TabsContent>
+            <TabsContent value="sell" className="mt-4">
+              <SellSettingsTab settings={settings} updateSetting={updateSetting} />
+            </TabsContent>
+            <TabsContent value="liquidityPool" className="mt-4">
+              <LiquidityPoolTab settings={settings} updateSetting={updateSetting} />
+            </TabsContent>
+            <TabsContent value="transaction" className="mt-4">
+              <TransactionTab settings={settings} updateSetting={updateSetting} />
             </TabsContent>
             
             {/* Rug Check Settings */}
             <TabsContent value="rugCheck" className="mt-6">
-              <div className="bg-card/50 rounded-lg p-6">
-                <div className="max-w-2xl mx-auto space-y-6">
-                  {/* General Settings */}
-                  <div>
-                    <h3 className="text-lg font-semibold border-b pb-2">General Settings</h3>
-                    <div className="space-y-3 mt-3">
-                      <div className="flex items-center justify-between">
-                        <Label htmlFor="verboseLog">Verbose Logging</Label>
-                        <Switch 
-                          id="verboseLog" 
-                          checked={settings.rugCheck.verboseLog}
-                          onCheckedChange={(checked) => updateSetting('rugCheck', 'verboseLog', checked)}
-                        />
-                      </div>
-                      
-                      <div className="flex items-center justify-between">
-                        <Label htmlFor="simulationMode">Simulation Mode</Label>
-                        <Switch 
-                          id="simulationMode" 
-                          checked={settings.rugCheck.simulationMode}
-                          onCheckedChange={(checked) => updateSetting('rugCheck', 'simulationMode', checked)}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {/* Security Checks */}
-                  <div>
-                    <h3 className="text-lg font-semibold border-b pb-2">Security Checks</h3>
-                    <div className="space-y-3 mt-3">
-                      <div className="flex items-center justify-between">
-                        <Label htmlFor="allowMintAuthority">Allow Mint Authority</Label>
-                        <Switch 
-                          id="allowMintAuthority" 
-                          checked={settings.rugCheck.allowMintAuthority}
-                          onCheckedChange={(checked) => updateSetting('rugCheck', 'allowMintAuthority', checked)}
-                        />
-                      </div>
-                      
-                      <div className="flex items-center justify-between">
-                        <Label htmlFor="allowNotInitialized">Allow Not Initialized</Label>
-                        <Switch 
-                          id="allowNotInitialized" 
-                          checked={settings.rugCheck.allowNotInitialized}
-                          onCheckedChange={(checked) => updateSetting('rugCheck', 'allowNotInitialized', checked)}
-                        />
-                      </div>
-                      
-                      <div className="flex items-center justify-between">
-                        <Label htmlFor="allowFreezeAuthority">Allow Freeze Authority</Label>
-                        <Switch 
-                          id="allowFreezeAuthority" 
-                          checked={settings.rugCheck.allowFreezeAuthority}
-                          onCheckedChange={(checked) => updateSetting('rugCheck', 'allowFreezeAuthority', checked)}
-                        />
-                      </div>
-                      
-                      <div className="flex items-center justify-between">
-                        <Label htmlFor="allowRugged">Allow Rugged Tokens</Label>
-                        <Switch 
-                          id="allowRugged" 
-                          checked={settings.rugCheck.allowRugged}
-                          onCheckedChange={(checked) => updateSetting('rugCheck', 'allowRugged', checked)}
-                        />
-                      </div>
-                      
-                      <div className="flex items-center justify-between">
-                        <Label htmlFor="allowMutable">Allow Mutable Metadata</Label>
-                        <Switch 
-                          id="allowMutable" 
-                          checked={settings.rugCheck.allowMutable}
-                          onCheckedChange={(checked) => updateSetting('rugCheck', 'allowMutable', checked)}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {/* Token Filtering */}
-                  <div>
-                    <h3 className="text-lg font-semibold border-b pb-2">Token Filtering</h3>
-                    <div className="space-y-3 mt-3">
-                      <div className="flex items-center justify-between">
-                        <Label htmlFor="blockReturningTokenNames">Block Returning Token Names</Label>
-                        <Switch 
-                          id="blockReturningTokenNames" 
-                          checked={settings.rugCheck.blockReturningTokenNames}
-                          onCheckedChange={(checked) => updateSetting('rugCheck', 'blockReturningTokenNames', checked)}
-                        />
-                      </div>
-                      
-                      <div className="flex items-center justify-between">
-                        <Label htmlFor="blockReturningTokenCreators">Block Returning Token Creators</Label>
-                        <Switch 
-                          id="blockReturningTokenCreators" 
-                          checked={settings.rugCheck.blockReturningTokenCreators}
-                          onCheckedChange={(checked) => updateSetting('rugCheck', 'blockReturningTokenCreators', checked)}
-                        />
-                      </div>
-                      
-                      <div className="grid gap-2">
-                        <Label htmlFor="blockSymbols">Blocked Symbols (comma-separated)</Label>
-                        <Input 
-                          id="blockSymbols" 
-                          value={settings.rugCheck.blockSymbols.join(', ')}
-                          onChange={(e) => updateSetting('rugCheck', 'blockSymbols', e.target.value.split(',').map(s => s.trim()))}
-                        />
-                      </div>
-                      
-                      <div className="grid gap-2">
-                        <Label htmlFor="blockNames">Blocked Names (comma-separated)</Label>
-                        <Input 
-                          id="blockNames" 
-                          value={settings.rugCheck.blockNames.join(', ')}
-                          onChange={(e) => updateSetting('rugCheck', 'blockNames', e.target.value.split(',').map(s => s.trim()))}
-                        />
-                      </div>
-                      
-                      <div className="flex items-center justify-between">
-                        <Label htmlFor="onlyContainString">Only Contain String</Label>
-                        <Switch 
-                          id="onlyContainString" 
-                          checked={settings.rugCheck.onlyContainString}
-                          onCheckedChange={(checked) => updateSetting('rugCheck', 'onlyContainString', checked)}
-                        />
-                      </div>
-                      
-                      <div className="grid gap-2">
-                        <Label htmlFor="containString">Required Strings (comma-separated)</Label>
-                        <Input 
-                          id="containString" 
-                          value={settings.rugCheck.containString.join(', ')}
-                          onChange={(e) => updateSetting('rugCheck', 'containString', e.target.value.split(',').map(s => s.trim()))}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {/* Holder Distribution */}
-                  <div>
-                    <h3 className="text-lg font-semibold border-b pb-2">Holder Distribution</h3>
-                    <div className="space-y-3 mt-3">
-                      <div className="flex items-center justify-between">
-                        <Label htmlFor="allowInsiderTopholders">Allow Insider Top Holders</Label>
-                        <Switch 
-                          id="allowInsiderTopholders" 
-                          checked={settings.rugCheck.allowInsiderTopholders}
-                          onCheckedChange={(checked) => updateSetting('rugCheck', 'allowInsiderTopholders', checked)}
-                        />
-                      </div>
-                      
-                      <div className="grid gap-2">
-                        <Label htmlFor="maxAllowedPctTopholders">Max % for Single Top Holder</Label>
-                        <Input 
-                          id="maxAllowedPctTopholders" 
-                          type="number" 
-                          value={isNaN(settings.rugCheck.maxAllowedPctTopholders) ? 0 : settings.rugCheck.maxAllowedPctTopholders}
-                          onChange={(e) => updateSetting('rugCheck', 'maxAllowedPctTopholders', parseInt(e.target.value) || 0)}
-                        />
-                      </div>
-                      
-                      <div className="grid gap-2">
-                        <Label htmlFor="maxAllowedPctAllTopholders">Max % for All Top Holders</Label>
-                        <Input 
-                          id="maxAllowedPctAllTopholders" 
-                          type="number" 
-                          value={isNaN(settings.rugCheck.maxAllowedPctAllTopholders) ? 0 : settings.rugCheck.maxAllowedPctAllTopholders}
-                          onChange={(e) => updateSetting('rugCheck', 'maxAllowedPctAllTopholders', parseInt(e.target.value) || 0)}
-                        />
-                      </div>
-                      
-                      <div className="flex items-center justify-between">
-                        <Label htmlFor="excludeLpFromTopholders">Exclude LP from Top Holders</Label>
-                        <Switch 
-                          id="excludeLpFromTopholders" 
-                          checked={settings.rugCheck.excludeLpFromTopholders}
-                          onCheckedChange={(checked) => updateSetting('rugCheck', 'excludeLpFromTopholders', checked)}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {/* Market Validation */}
-                  <div>
-                    <h3 className="text-lg font-semibold border-b pb-2">Market Validation</h3>
-                    <div className="space-y-3 mt-3">
-                      <div className="grid gap-2">
-                        <Label htmlFor="minTotalMarkets">Min Total Markets</Label>
-                        <Input 
-                          id="minTotalMarkets" 
-                          type="number" 
-                          value={settings.rugCheck.minTotalMarkets}
-                          onChange={(e) => updateSetting('rugCheck', 'minTotalMarkets', parseInt(e.target.value))}
-                        />
-                      </div>
-                      
-                      <div className="grid gap-2">
-                        <Label htmlFor="minTotalLpProviders">Min LP Providers</Label>
-                        <Input 
-                          id="minTotalLpProviders" 
-                          type="number" 
-                          value={isNaN(settings.rugCheck.minTotalLpProviders) ? 0 : settings.rugCheck.minTotalLpProviders}
-                          onChange={(e) => updateSetting('rugCheck', 'minTotalLpProviders', parseInt(e.target.value) || 0)}
-                        />
-                      </div>
-                      
-                      <div className="grid gap-2">
-                        <Label htmlFor="minTotalMarketLiquidity">Min Market Liquidity</Label>
-                        <Input 
-                          id="minTotalMarketLiquidity" 
-                          type="number" 
-                          value={isNaN(settings.rugCheck.minTotalMarketLiquidity) ? 0 : settings.rugCheck.minTotalMarketLiquidity}
-                          onChange={(e) => updateSetting('rugCheck', 'minTotalMarketLiquidity', parseInt(e.target.value) || 0)}
-                        />
-                      </div>
-                      
-                      <div className="grid gap-2">
-                        <Label htmlFor="maxTotalMarketLiquidity">Max Market Liquidity</Label>
-                        <Input 
-                          id="maxTotalMarketLiquidity" 
-                          type="number" 
-                          value={isNaN(settings.rugCheck.maxTotalMarketLiquidity) ? 0 : settings.rugCheck.maxTotalMarketLiquidity}
-                          onChange={(e) => updateSetting('rugCheck', 'maxTotalMarketLiquidity', parseInt(e.target.value) || 0)}
-                        />
-                      </div>
-                      
-                      <div className="grid gap-2">
-                        <Label htmlFor="maxMarketcap">Max Market Cap ($)</Label>
-                        <Input 
-                          id="maxMarketcap" 
-                          type="number" 
-                          value={settings.rugCheck.maxMarketcap}
-                          onChange={(e) => updateSetting('rugCheck', 'maxMarketcap', parseInt(e.target.value))}
-                        />
-                      </div>
-                      
-                      <div className="grid gap-2">
-                        <Label htmlFor="maxPriceToken">Max Token Price ($)</Label>
-                        <Input 
-                          id="maxPriceToken" 
-                          type="number" 
-                          step="0.0001"
-                          value={isNaN(settings.rugCheck.maxPriceToken) ? 0 : settings.rugCheck.maxPriceToken}
-                          onChange={(e) => updateSetting('rugCheck', 'maxPriceToken', parseFloat(e.target.value) || 0)}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {/* Miscellaneous */}
-                  <div>
-                    <h3 className="text-lg font-semibold border-b pb-2">Miscellaneous</h3>
-                    <div className="space-y-3 mt-3">
-                      <div className="flex items-center justify-between">
-                        <Label htmlFor="ignorePumpFun">Ignore Pump.fun Tokens</Label>
-                        <Switch 
-                          id="ignorePumpFun" 
-                          checked={settings.rugCheck.ignorePumpFun}
-                          onCheckedChange={(checked) => updateSetting('rugCheck', 'ignorePumpFun', checked)}
-                        />
-                      </div>
-                      
-                      <div className="grid gap-2">
-                        <Label htmlFor="maxScore">Max Risk Score (0 to disable)</Label>
-                        <Input 
-                          id="maxScore" 
-                          type="number" 
-                          value={settings.rugCheck.maxScore}
-                          onChange={(e) => updateSetting('rugCheck', 'maxScore', parseInt(e.target.value))}
-                        />
-                      </div>
-                      
-                      <div className="space-y-3">
-                        <Label className="text-base">Legacy Risk Checks</Label>
-                        <div className="grid gap-2 pl-2">
-                          <div className="flex items-center justify-between">
-                            <Label htmlFor="freezeAuthority" className="text-sm">Freeze Authority still enabled</Label>
-                            <Switch 
-                              id="freezeAuthority" 
-                              checked={settings.rugCheck.legacyNotAllowed.includes("Freeze Authority still enabled")}
-                              onCheckedChange={(checked) => {
-                                const newLegacyChecks = [...settings.rugCheck.legacyNotAllowed];
-                                const checkValue = "Freeze Authority still enabled";
-                                if (checked && !newLegacyChecks.includes(checkValue)) {
-                                  newLegacyChecks.push(checkValue);
-                                } else if (!checked) {
-                                  const index = newLegacyChecks.indexOf(checkValue);
-                                  if (index !== -1) newLegacyChecks.splice(index, 1);
-                                }
-                                updateSetting('rugCheck', 'legacyNotAllowed', newLegacyChecks);
-                              }}
-                            />
-                          </div>
-                          
-                          <div className="flex items-center justify-between">
-                            <Label htmlFor="singleHolder" className="text-sm">Single holder ownership</Label>
-                            <Switch 
-                              id="singleHolder" 
-                              checked={settings.rugCheck.legacyNotAllowed.includes("Single holder ownership")}
-                              onCheckedChange={(checked) => {
-                                const newLegacyChecks = [...settings.rugCheck.legacyNotAllowed];
-                                const checkValue = "Single holder ownership";
-                                if (checked && !newLegacyChecks.includes(checkValue)) {
-                                  newLegacyChecks.push(checkValue);
-                                } else if (!checked) {
-                                  const index = newLegacyChecks.indexOf(checkValue);
-                                  if (index !== -1) newLegacyChecks.splice(index, 1);
-                                }
-                                updateSetting('rugCheck', 'legacyNotAllowed', newLegacyChecks);
-                              }}
-                            />
-                          </div>
-                          
-                          <div className="flex items-center justify-between">
-                            <Label htmlFor="copycatToken" className="text-sm">Copycat token</Label>
-                            <Switch 
-                              id="copycatToken" 
-                              checked={settings.rugCheck.legacyNotAllowed.includes("Copycat token")}
-                              onCheckedChange={(checked) => {
-                                const newLegacyChecks = [...settings.rugCheck.legacyNotAllowed];
-                                const checkValue = "Copycat token";
-                                if (checked && !newLegacyChecks.includes(checkValue)) {
-                                  newLegacyChecks.push(checkValue);
-                                } else if (!checked) {
-                                  const index = newLegacyChecks.indexOf(checkValue);
-                                  if (index !== -1) newLegacyChecks.splice(index, 1);
-                                }
-                                updateSetting('rugCheck', 'legacyNotAllowed', newLegacyChecks);
-                              }}
-                            />
-                          </div>
-                          
-                          <div className="flex items-center justify-between">
-                            <Label htmlFor="highHolderConcentration" className="text-sm">High holder concentration</Label>
-                            <Switch 
-                              id="highHolderConcentration" 
-                              checked={settings.rugCheck.legacyNotAllowed.includes("High holder concentration")}
-                              onCheckedChange={(checked) => {
-                                const newLegacyChecks = [...settings.rugCheck.legacyNotAllowed];
-                                const checkValue = "High holder concentration";
-                                if (checked && !newLegacyChecks.includes(checkValue)) {
-                                  newLegacyChecks.push(checkValue);
-                                } else if (!checked) {
-                                  const index = newLegacyChecks.indexOf(checkValue);
-                                  if (index !== -1) newLegacyChecks.splice(index, 1);
-                                }
-                                updateSetting('rugCheck', 'legacyNotAllowed', newLegacyChecks);
-                              }}
-                            />
-                          </div>
-                          
-                          <div className="flex items-center justify-between">
-                            <Label htmlFor="largeLpUnlocked" className="text-sm">Large Amount of LP Unlocked</Label>
-                            <Switch 
-                              id="largeLpUnlocked" 
-                              checked={settings.rugCheck.legacyNotAllowed.includes("Large Amount of LP Unlocked")}
-                              onCheckedChange={(checked) => {
-                                const newLegacyChecks = [...settings.rugCheck.legacyNotAllowed];
-                                const checkValue = "Large Amount of LP Unlocked";
-                                if (checked && !newLegacyChecks.includes(checkValue)) {
-                                  newLegacyChecks.push(checkValue);
-                                } else if (!checked) {
-                                  const index = newLegacyChecks.indexOf(checkValue);
-                                  if (index !== -1) newLegacyChecks.splice(index, 1);
-                                }
-                                updateSetting('rugCheck', 'legacyNotAllowed', newLegacyChecks);
-                              }}
-                            />
-                          </div>
-                          
-                          <div className="flex items-center justify-between">
-                            <Label htmlFor="lowLiquidity" className="text-sm">Low Liquidity</Label>
-                            <Switch 
-                              id="lowLiquidity" 
-                              checked={settings.rugCheck.legacyNotAllowed.includes("Low Liquidity")}
-                              onCheckedChange={(checked) => {
-                                const newLegacyChecks = [...settings.rugCheck.legacyNotAllowed];
-                                const checkValue = "Low Liquidity";
-                                if (checked && !newLegacyChecks.includes(checkValue)) {
-                                  newLegacyChecks.push(checkValue);
-                                } else if (!checked) {
-                                  const index = newLegacyChecks.indexOf(checkValue);
-                                  if (index !== -1) newLegacyChecks.splice(index, 1);
-                                }
-                                updateSetting('rugCheck', 'legacyNotAllowed', newLegacyChecks);
-                              }}
-                            />
-                          </div>
-                          
-                          <div className="flex items-center justify-between">
-                            <Label htmlFor="lowLpProviders" className="text-sm">Low amount of LP Providers</Label>
-                            <Switch 
-                              id="lowLpProviders" 
-                              checked={settings.rugCheck.legacyNotAllowed.includes("Low amount of LP Providers")}
-                              onCheckedChange={(checked) => {
-                                const newLegacyChecks = [...settings.rugCheck.legacyNotAllowed];
-                                const checkValue = "Low amount of LP Providers";
-                                if (checked && !newLegacyChecks.includes(checkValue)) {
-                                  newLegacyChecks.push(checkValue);
-                                } else if (!checked) {
-                                  const index = newLegacyChecks.indexOf(checkValue);
-                                  if (index !== -1) newLegacyChecks.splice(index, 1);
-                                }
-                                updateSetting('rugCheck', 'legacyNotAllowed', newLegacyChecks);
-                              }}
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
+              <RugCheckTab settings={settings} updateSetting={updateSetting} />
             </TabsContent>
           </Tabs>
         </div>
@@ -1204,23 +271,26 @@ export function ConfigModal({ isOpen, onClose }: ConfigModalProps): React.ReactE
                 </>
               ) : 'Reset to Default'}
             </Button>
-            
-            {error && (
-              <div className="ml-4 text-sm text-destructive">
-                {error}
-              </div>
-            )}
           </div>
           
           {/* Right side */}
-          <div className="flex space-x-2">
-            <Button variant="outline" onClick={cancelChanges}>
+          <div className="flex items-center space-x-2">
+            {hasChanges && (
+              <span className="text-xs text-amber-500 mr-2">Unsaved changes</span>
+            )}
+            
+            <Button 
+              variant="outline" 
+              onClick={cancelChanges}
+              disabled={isSaving || !hasChanges}
+            >
               Cancel
             </Button>
+            
             <Button 
-              onClick={saveChanges} 
-              disabled={!hasChanges || isSaving}
-              className={(!hasChanges || isSaving) ? 'opacity-50 cursor-not-allowed' : ''}
+              onClick={saveChanges}
+              disabled={isSaving || !hasChanges}
+              className={isSaving ? 'opacity-50 cursor-not-allowed' : ''}
             >
               {isSaving ? (
                 <>
@@ -1233,5 +303,5 @@ export function ConfigModal({ isOpen, onClose }: ConfigModalProps): React.ReactE
         </div>
       </div>
     </div>
-  )
+  );
 }

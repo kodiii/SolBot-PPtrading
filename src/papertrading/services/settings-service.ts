@@ -1,5 +1,4 @@
 import { ConnectionManager } from '../db/connection_manager';
-import { Database } from 'sqlite';
 import path from 'path';
 
 // Define the settings database path
@@ -18,6 +17,13 @@ export interface AppSettings {
     dashboardRefresh: number;
     recentTradesLimit: number;
     verboseLogging: boolean;
+    priceCheck: {
+      maxRetries: number;
+      initialDelay: number;
+      maxDelay: number;
+    };
+    realDataUpdate: number;
+    useNewProviders: boolean;
   };
   priceValidation: {
     enabled: boolean;
@@ -30,8 +36,30 @@ export interface AppSettings {
     amount: number;
     slippageBps: number;
     maxOpenPositions: number;
+    verboseLog: boolean;
+    prioFeeMaxLamports: number;
+    prioLevel: string;
+    dbNameTrackerHoldings: string;
+    tokenNotTradable400ErrorRetries: number;
+    tokenNotTradable400ErrorDelay: number;
+  };
+  sell: {
+    /**
+     * Source for price data:
+     * - 'dex': Use decentralized exchange pricing
+     * - 'jup': Use Jupiter aggregator pricing
+     */
+    priceSource: 'dex' | 'jup';
+    prioFeeMaxLamports: number;
+    prioLevel: string;
+    slippageBps: number;
+    autoSell: boolean;
+    stopLossPercent: number;
+    takeProfitPercent: number;
+    trackPublicWallet: string;
   };
   strategies: {
+    debug: boolean;
     liquidityDropEnabled: boolean;
     threshold: number;
   };
@@ -63,6 +91,19 @@ export interface AppSettings {
     maxScore: number;
     legacyNotAllowed: string[];
   };
+  liquidityPool: {
+    radiyumProgramId: string;
+    pumpFunProgramId: string;
+    wsolPcMint: string;
+  };
+  tx: {
+    fetchTxMaxRetries: number;
+    fetchTxInitialDelay: number;
+    swapTxInitialDelay: number;
+    getTimeout: number;
+    concurrentTransactions: number;
+    retryDelay: number;
+  };
 }
 
 /**
@@ -74,10 +115,17 @@ export const defaultSettings: AppSettings = {
     colorMode: "system"
   },
   paperTrading: {
-    initialBalance: 5,
+    initialBalance: 10,
     dashboardRefresh: 2000,
     recentTradesLimit: 12,
-    verboseLogging: false
+    verboseLogging: false,
+    priceCheck: {
+      maxRetries: 15,
+      initialDelay: 3000,
+      maxDelay: 5000
+    },
+    realDataUpdate: 5000,
+    useNewProviders: false
   },
   priceValidation: {
     enabled: true,
@@ -87,13 +135,30 @@ export const defaultSettings: AppSettings = {
     fallbackToSingleSource: true
   },
   swap: {
-    amount: 500000000,
+    amount: 1000000000,
     slippageBps: 200,
-    maxOpenPositions: 5
+    maxOpenPositions: 5,
+    verboseLog: false,
+    prioFeeMaxLamports: 10000000,
+    prioLevel: "medium",
+    dbNameTrackerHoldings: "src/tracker/holdings.db",
+    tokenNotTradable400ErrorRetries: 5,
+    tokenNotTradable400ErrorDelay: 2000
+  },
+  sell: {
+    priceSource: "dex",
+    prioFeeMaxLamports: 10000000,
+    prioLevel: "medium",
+    slippageBps: 200,
+    autoSell: true,
+    stopLossPercent: 25,
+    takeProfitPercent: 30,
+    trackPublicWallet: ""
   },
   strategies: {
+    debug: false,
     liquidityDropEnabled: false,
-    threshold: 20
+    threshold: 15
   },
   rugCheck: {
     verboseLog: false,
@@ -103,7 +168,7 @@ export const defaultSettings: AppSettings = {
     allowFreezeAuthority: false,
     allowRugged: false,
     allowMutable: false,
-    blockReturningTokenNames: false,
+    blockReturningTokenNames: true,
     blockReturningTokenCreators: false,
     blockSymbols: ["XXX"],
     blockNames: ["XXX"],
@@ -125,11 +190,21 @@ export const defaultSettings: AppSettings = {
       "Freeze Authority still enabled",
       "Single holder ownership",
       "Copycat token",
-      "High holder concentration",
-      "Large Amount of LP Unlocked",
-      "Low Liquidity",
-      "Low amount of LP Providers",
+      "High holder concentration"
     ]
+  },
+  liquidityPool: {
+    radiyumProgramId: "675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8",
+    pumpFunProgramId: "pAMMBay6oceH9fJKBRHGP5D4bD4sWpmSwMn52FMfXEA",
+    wsolPcMint: "So11111111111111111111111111111111111111112"
+  },
+  tx: {
+    fetchTxMaxRetries: 5,
+    fetchTxInitialDelay: 1000,
+    swapTxInitialDelay: 500,
+    getTimeout: 10000,
+    concurrentTransactions: 1,
+    retryDelay: 500
   }
 };
 
@@ -348,6 +423,31 @@ export class SettingsService {
       return value;
     }));
 
+    console.log('Saving settings to database and files...');
+
+    // First, update the JSON files to ensure they're always updated
+    try {
+      const fs = require('fs');
+      const path = require('path');
+      
+      // Update the main settings file
+      const mainSettingsPath = path.resolve(__dirname, '../../../data/settings.json');
+      fs.writeFileSync(mainSettingsPath, JSON.stringify(sanitizedSettings, null, 2));
+      console.log('Main settings file updated successfully:', mainSettingsPath);
+      
+      // Update the frontend settings file
+      const frontendSettingsPath = path.resolve(__dirname, '../../../frontend/data/settings.json');
+      fs.writeFileSync(frontendSettingsPath, JSON.stringify(sanitizedSettings, null, 2));
+      console.log('Frontend settings file updated successfully:', frontendSettingsPath);
+      
+      // Update the default settings in the TypeScript files
+      this.updateDefaultSettingsInSourceFiles(sanitizedSettings);
+    } catch (fileError) {
+      console.error('Error updating settings files:', fileError);
+      // Continue to try database update even if file update fails
+    }
+    
+    // Then, update the database
     try {
       const db = await this.connectionManager.getConnection();
       try {
@@ -369,9 +469,11 @@ export class SettingsService {
 
           // Commit transaction
           await db.exec('COMMIT');
+          console.log('Settings saved to database successfully');
         } catch (error) {
           // Rollback transaction on error
           await db.exec('ROLLBACK');
+          console.error('Database transaction failed, rolled back:', error);
           throw error;
         }
       } finally {
@@ -379,25 +481,7 @@ export class SettingsService {
       }
     } catch (dbError) {
       console.error('Error saving settings to database:', dbError);
-    }
-    
-    // Always update the JSON files, even if database save fails
-    try {
-      const fs = require('fs');
-      const path = require('path');
-      
-      // Update the main settings file
-      const mainSettingsPath = path.resolve(__dirname, '../../../data/settings.json');
-      fs.writeFileSync(mainSettingsPath, JSON.stringify(sanitizedSettings, null, 2));
-      
-      // Update the frontend settings file
-      const frontendSettingsPath = path.resolve(__dirname, '../../../frontend/data/settings.json');
-      fs.writeFileSync(frontendSettingsPath, JSON.stringify(sanitizedSettings, null, 2));
-      
-      console.log('Settings files updated successfully');
-    } catch (fileError) {
-      console.error('Error updating settings files:', fileError);
-      throw fileError; // Re-throw if we can't even save to files
+      // We don't throw here since we've already updated the files
     }
   }
 
@@ -477,5 +561,89 @@ export class SettingsService {
     }
 
     return result;
+  }
+
+  /**
+   * Update the default settings in the TypeScript source files
+   * @param settings The new settings to use as defaults
+   */
+  private updateDefaultSettingsInSourceFiles(settings: AppSettings): void {
+    try {
+      const fs = require('fs');
+      const path = require('path');
+
+      // Update the settings service file (this file)
+      const settingsServicePath = path.resolve(__dirname, 'settings-service.ts');
+      this.updateDefaultSettingsInFile(
+        settingsServicePath,
+        settings,
+        'export const defaultSettings: AppSettings = ',
+        ';'
+      );
+
+      // Update the frontend context file
+      const frontendContextPath = path.resolve(__dirname, '../../../frontend/contexts/settings.tsx');
+      this.updateDefaultSettingsInFile(
+        frontendContextPath,
+        settings,
+        'const defaultSettings: AppSettings = ',
+        ';'
+      );
+
+      console.log('Default settings in TypeScript files updated successfully');
+    } catch (error) {
+      console.error('Error updating default settings in TypeScript files:', error);
+    }
+  }
+
+  /**
+   * Update the default settings in a specific file
+   * @param filePath The path to the file
+   * @param settings The new settings to use as defaults
+   * @param startMarker The marker that indicates the start of the default settings
+   * @param endMarker The marker that indicates the end of the default settings
+   */
+  private updateDefaultSettingsInFile(
+    filePath: string,
+    settings: AppSettings,
+    startMarker: string,
+    endMarker: string
+  ): void {
+    try {
+      const fs = require('fs');
+      
+      // Read the file content
+      const fileContent = fs.readFileSync(filePath, 'utf8');
+      
+      // Find the start and end positions of the default settings
+      const startPos = fileContent.indexOf(startMarker);
+      if (startPos === -1) {
+        console.error(`Start marker "${startMarker}" not found in ${filePath}`);
+        return;
+      }
+      
+      const contentStartPos = startPos + startMarker.length;
+      let contentEndPos = fileContent.indexOf(endMarker, contentStartPos);
+      if (contentEndPos === -1) {
+        console.error(`End marker "${endMarker}" not found after start marker in ${filePath}`);
+        return;
+      }
+      
+      // Format the new default settings
+      const formattedSettings = JSON.stringify(settings, null, 2);
+      
+      // Replace the default settings in the file
+      const newContent = 
+        fileContent.substring(0, contentStartPos) + 
+        formattedSettings + 
+        fileContent.substring(contentEndPos);
+      
+      // Write the updated content back to the file
+      fs.writeFileSync(filePath, newContent, 'utf8');
+      
+      console.log(`Default settings updated in ${filePath}`);
+    } catch (error) {
+      console.error(`Error updating default settings in ${filePath}:`, error);
+    }
   }
 }

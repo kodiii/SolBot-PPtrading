@@ -14,6 +14,13 @@ export interface AppSettings {
     dashboardRefresh: number;
     recentTradesLimit: number;
     verboseLogging: boolean;
+    priceCheck: {
+      maxRetries: number;
+      initialDelay: number;
+      maxDelay: number;
+    };
+    realDataUpdate: number;
+    useNewProviders: boolean;
   };
   priceValidation: {
     enabled: boolean;
@@ -26,8 +33,30 @@ export interface AppSettings {
     amount: number;
     slippageBps: number;
     maxOpenPositions: number;
+    verboseLog: boolean;
+    prioFeeMaxLamports: number;
+    prioLevel: string;
+    dbNameTrackerHoldings: string;
+    tokenNotTradable400ErrorRetries: number;
+    tokenNotTradable400ErrorDelay: number;
+  };
+  sell: {
+    /**
+     * Source for price data:
+     * - 'dex': Use decentralized exchange pricing
+     * - 'jup': Use Jupiter aggregator pricing
+     */
+    priceSource: 'dex' | 'jup';
+    prioFeeMaxLamports: number;
+    prioLevel: string;
+    slippageBps: number;
+    autoSell: boolean;
+    stopLossPercent: number;
+    takeProfitPercent: number;
+    trackPublicWallet: string;
   };
   strategies: {
+    debug: boolean;
     liquidityDropEnabled: boolean;
     threshold: number;
   };
@@ -59,6 +88,19 @@ export interface AppSettings {
     maxScore: number;
     legacyNotAllowed: string[];
   };
+  liquidityPool: {
+    radiyumProgramId: string;
+    pumpFunProgramId: string;
+    wsolPcMint: string;
+  };
+  tx: {
+    fetchTxMaxRetries: number;
+    fetchTxInitialDelay: number;
+    swapTxInitialDelay: number;
+    getTimeout: number;
+    concurrentTransactions: number;
+    retryDelay: number;
+  };
 }
 
 // Default settings to use while loading
@@ -71,7 +113,14 @@ const defaultSettings: AppSettings = {
     initialBalance: 10,
     dashboardRefresh: 2000,
     recentTradesLimit: 12,
-    verboseLogging: false
+    verboseLogging: false,
+    priceCheck: {
+      maxRetries: 15,
+      initialDelay: 3000,
+      maxDelay: 5000
+    },
+    realDataUpdate: 5000,
+    useNewProviders: false
   },
   priceValidation: {
     enabled: true,
@@ -81,13 +130,30 @@ const defaultSettings: AppSettings = {
     fallbackToSingleSource: true
   },
   swap: {
-    amount: 500000000,
+    amount: 1000000000,
     slippageBps: 200,
-    maxOpenPositions: 3
+    maxOpenPositions: 5,
+    verboseLog: false,
+    prioFeeMaxLamports: 10000000,
+    prioLevel: "medium",
+    dbNameTrackerHoldings: "src/tracker/holdings.db",
+    tokenNotTradable400ErrorRetries: 5,
+    tokenNotTradable400ErrorDelay: 2000
+  },
+  sell: {
+    priceSource: "dex",
+    prioFeeMaxLamports: 10000000,
+    prioLevel: "medium",
+    slippageBps: 200,
+    autoSell: true,
+    stopLossPercent: 25,
+    takeProfitPercent: 30,
+    trackPublicWallet: ""
   },
   strategies: {
-    liquidityDropEnabled: true,
-    threshold: 20
+    debug: false,
+    liquidityDropEnabled: false,
+    threshold: 15
   },
   rugCheck: {
     verboseLog: false,
@@ -96,34 +162,44 @@ const defaultSettings: AppSettings = {
     allowNotInitialized: false,
     allowFreezeAuthority: false,
     allowRugged: false,
-    allowMutable: true,
-    blockReturningTokenNames: false,
+    allowMutable: false,
+    blockReturningTokenNames: true,
     blockReturningTokenCreators: false,
     blockSymbols: ["XXX"],
     blockNames: ["XXX"],
     onlyContainString: false,
     containString: ["AI", "GPT", "AGENT"],
     allowInsiderTopholders: true,
-    maxAllowedPctTopholders: 50,
-    maxAllowedPctAllTopholders: 50,
+    maxAllowedPctTopholders: 90,
+    maxAllowedPctAllTopholders: 90,
     excludeLpFromTopholders: true,
     minTotalMarkets: 0,
     minTotalLpProviders: 0,
-    minTotalMarketLiquidity: 10000,
-    maxTotalMarketLiquidity: 100000,
-    maxMarketcap: 25000000,
-    maxPriceToken: 0.001,
+    minTotalMarketLiquidity: 5000,
+    maxTotalMarketLiquidity: 10000000,
+    maxMarketcap: 1000000000,
+    maxPriceToken: 1,
     ignorePumpFun: false,
     maxScore: 30000,
     legacyNotAllowed: [
       "Freeze Authority still enabled",
       "Single holder ownership",
       "Copycat token",
-      "High holder concentration",
-      "Large Amount of LP Unlocked",
-      "Low Liquidity",
-      "Low amount of LP Providers",
+      "High holder concentration"
     ]
+  },
+  liquidityPool: {
+    radiyumProgramId: "675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8",
+    pumpFunProgramId: "pAMMBay6oceH9fJKBRHGP5D4bD4sWpmSwMn52FMfXEA",
+    wsolPcMint: "So11111111111111111111111111111111111111112"
+  },
+  tx: {
+    fetchTxMaxRetries: 5,
+    fetchTxInitialDelay: 1000,
+    swapTxInitialDelay: 500,
+    getTimeout: 10000,
+    concurrentTransactions: 1,
+    retryDelay: 500
   }
 };
 

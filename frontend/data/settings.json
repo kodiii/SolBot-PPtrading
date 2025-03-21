@@ -7,7 +7,14 @@
     "initialBalance": 10,
     "dashboardRefresh": 2000,
     "recentTradesLimit": 12,
-    "verboseLogging": false
+    "verboseLogging": false,
+    "priceCheck": {
+      "maxRetries": 15,
+      "initialDelay": 3000,
+      "maxDelay": 5000
+    },
+    "realDataUpdate": 5000,
+    "useNewProviders": false
   },
   "priceValidation": {
     "enabled": true,
@@ -19,9 +26,26 @@
   "swap": {
     "amount": 1000000000,
     "slippageBps": 200,
-    "maxOpenPositions": 5
+    "maxOpenPositions": 5,
+    "verboseLog": false,
+    "prioFeeMaxLamports": 10000000,
+    "prioLevel": "medium",
+    "dbNameTrackerHoldings": "src/tracker/holdings.db",
+    "tokenNotTradable400ErrorRetries": 5,
+    "tokenNotTradable400ErrorDelay": 2000
+  },
+  "sell": {
+    "priceSource": "dex",
+    "prioFeeMaxLamports": 10000000,
+    "prioLevel": "medium",
+    "slippageBps": 200,
+    "autoSell": true,
+    "stopLossPercent": 25,
+    "takeProfitPercent": 30,
+    "trackPublicWallet": ""
   },
   "strategies": {
+    "debug": false,
     "liquidityDropEnabled": false,
     "threshold": 15
   },
@@ -65,5 +89,18 @@
       "Copycat token",
       "High holder concentration"
     ]
+  },
+  "liquidityPool": {
+    "radiyumProgramId": "675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8",
+    "pumpFunProgramId": "pAMMBay6oceH9fJKBRHGP5D4bD4sWpmSwMn52FMfXEA",
+    "wsolPcMint": "So11111111111111111111111111111111111111112"
+  },
+  "tx": {
+    "fetchTxMaxRetries": 5,
+    "fetchTxInitialDelay": 1000,
+    "swapTxInitialDelay": 500,
+    "getTimeout": 10000,
+    "concurrentTransactions": 1,
+    "retryDelay": 500
   }
 }
