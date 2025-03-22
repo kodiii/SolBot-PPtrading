@@ -146,8 +146,8 @@ const defaultSettings: AppSettings = {
     "prioLevel": "medium",
     "slippageBps": 200,
     "autoSell": true,
-    "stopLossPercent": 25,
-    "takeProfitPercent": 30,
+    "stopLossPercent": 15,
+    "takeProfitPercent": 24,
     "trackPublicWallet": ""
   },
   "strategies": {
@@ -178,22 +178,21 @@ const defaultSettings: AppSettings = {
       "AGENT"
     ],
     "allowInsiderTopholders": true,
-    "maxAllowedPctTopholders": 90,
-    "maxAllowedPctAllTopholders": 90,
+    "maxAllowedPctTopholders": 10,
+    "maxAllowedPctAllTopholders": 30,
     "excludeLpFromTopholders": true,
     "minTotalMarkets": 0,
     "minTotalLpProviders": 0,
-    "minTotalMarketLiquidity": 5000,
-    "maxTotalMarketLiquidity": 10000000,
-    "maxMarketcap": 1000000000,
-    "maxPriceToken": 1,
+    "minTotalMarketLiquidity": 25000,
+    "maxTotalMarketLiquidity": 1000000,
+    "maxMarketcap": 100000000,
+    "maxPriceToken": 0.001,
     "ignorePumpFun": false,
-    "maxScore": 30000,
+    "maxScore": 12000,
     "legacyNotAllowed": [
       "Freeze Authority still enabled",
       "Single holder ownership",
-      "Copycat token",
-      "High holder concentration"
+      "Copycat token"
     ]
   },
   "liquidityPool": {
