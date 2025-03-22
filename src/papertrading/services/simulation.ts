@@ -338,20 +338,25 @@ export class SimulationService {
       }
 
       if (response.data && response.data.length > 0) {
-        // Find Raydium pair
-        const raydiumPair = response.data.find(pair => pair.dexId === 'raydium');
-        if (raydiumPair?.priceNative) {
+        // Find SOL pair from either Raydium or PumpFun
+        const tokenPair = response.data.find(pair => 
+          (pair.dexId === 'raydium' || pair.pairAddress === "pAMMBay6oceH9fJKBRHGP5D4bD4sWpmSwMn52FMfXEA") &&
+          (pair.quoteToken.symbol === 'SOL' || pair.quoteToken.symbol === 'WSOL')
+        );
+        
+        if (tokenPair?.priceNative) {
+          console.log(`📊 [${this.serviceId}] Using ${tokenPair.dexId} pair for token ${tokenMint}`);
           return {
-            price: new Decimal(raydiumPair.priceNative),
-            symbol: raydiumPair.baseToken.symbol,
+            price: new Decimal(tokenPair.priceNative),
+            symbol: tokenPair.baseToken.symbol,
             dexData: {
-              volume_m5: raydiumPair.volume?.m5 || 0,
-              marketCap: raydiumPair.marketCap || 0,
-              liquidity_usd: raydiumPair.liquidity?.usd || 0
+              volume_m5: tokenPair.volume?.m5 || 0,
+              marketCap: tokenPair.marketCap || 0,
+              liquidity_usd: tokenPair.liquidity?.usd || 0
             }
           };
         }
-        console.log(`⚠️ [${this.serviceId}] No Raydium pair found`);
+        console.log(`⚠️ [${this.serviceId}] No compatible DEX pair found`);
       }
 
       // If we haven't exceeded max retries

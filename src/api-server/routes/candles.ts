@@ -1,4 +1,20 @@
-import { Express } from 'express';
+    import { Express } from 'express';
+import { SimulationService } from '../../papertrading/services/simulation';
+
+interface DexscreenerPair {
+  dexId: string;
+  pairAddress: string;
+  priceNative: string;
+  pairs?: DexscreenerPair[];
+  quoteToken: {
+    symbol: string;
+  };
+  priceChange: {
+    [key: string]: number;  // '5m', '1h', etc.
+  };
+}
+
+const PUMP_FUN_PROGRAM_ID = "pAMMBay6oceH9fJKBRHGP5D4bD4sWpmSwMn52FMfXEA";
 
 export function setupCandlesRoutes(app: Express): void {
   // GET /api/dashboard/candles
@@ -11,67 +27,74 @@ export function setupCandlesRoutes(app: Express): void {
   }
 
   try {
-    // Generate mock candle data
-    const now = Date.now();
-    const candles = [];
-    
-    // Different number of candles based on interval
-    let numCandles = 30;
-    let intervalMs = 300000; // 5 minutes in ms
-    
-    switch (interval) {
-      case '1s':
-        numCandles = 60;
-        intervalMs = 1000;
-        break;
-      case '1m':
-        numCandles = 60;
-        intervalMs = 60000;
-        break;
-      case '5m':
-        numCandles = 30;
-        intervalMs = 300000;
-        break;
-      case '15m':
-        numCandles = 20;
-        intervalMs = 900000;
-        break;
-      case '1h':
-        numCandles = 24;
-        intervalMs = 3600000;
-        break;
+      // Get price data from DexScreener
+    const response = await fetch(
+      `https://api.dexscreener.com/token-pairs/v1/solana/${tokenMint}`
+    );
+    const data = await response.json();
+
+    // Find SOL pair from either Raydium or PumpFun
+    const tokenPair = data.pairs?.find((pair: DexscreenerPair) => 
+      (pair.dexId === 'raydium' || pair.pairAddress === PUMP_FUN_PROGRAM_ID) &&
+      (pair.quoteToken.symbol === 'SOL' || pair.quoteToken.symbol === 'WSOL')
+    );
+    if (!tokenPair) {
+      return res.status(404).json({ error: 'No SOL pair found for token on compatible DEXes' });
     }
+
+    // Log which DEX we're using
+    console.log(`Using ${tokenPair.dexId} pair for token ${tokenMint}`);
+
+    // Get price history using SimulationService
+    const simulationService = SimulationService.getInstance();
+    const priceData = await simulationService.getTokenPrice(tokenMint);
+    if (!priceData) {
+      return res.status(404).json({ error: 'Could not get token price data' });
+    }
+
+    // Get historical price data from the price change data
+    const candleCount = interval === '1m' ? 60 : 
+                       interval === '5m' ? 30 :
+                       interval === '15m' ? 20 :
+                       interval === '1h' ? 24 : 30;
     
-    // Mock current price - in a real implementation, this would come from a database or API
-    const currentPrice = 0.0001 + Math.random() * 0.0001;
+    const now = Date.now();
+    const intervalMs = interval === '1m' ? 60000 :
+                      interval === '5m' ? 300000 :
+                      interval === '15m' ? 900000 :
+                      interval === '1h' ? 3600000 : 300000;
+
+    const candles = [];
+    let lastPrice = priceData.price.toNumber();
     
-    // Generate candles with some randomness but trending toward current price
-    let price = currentPrice * 0.8 + (Math.random() * 0.4 * currentPrice);
-    
-    for (let i = 0; i < numCandles; i++) {
-      const time = new Date(now - (numCandles - i) * intervalMs).toISOString();
-      const change = (Math.random() - 0.5) * 0.02 * price; // -1% to +1% change
-      
-      // Trend toward current price
-      if (i > numCandles / 2) {
-        price = price + (currentPrice - price) * 0.1 + change;
-      } else {
-        price = price + change;
-      }
-      
-      const open = price;
-      const close = price + (Math.random() - 0.5) * 0.01 * price;
-      const high = Math.max(open, close) + Math.random() * 0.005 * price;
-      const low = Math.min(open, close) - Math.random() * 0.005 * price;
+    // Use the price changes from DexScreener to create candles
+    for (let i = candleCount - 1; i >= 0; i--) {
+      const timeMs = now - (i * intervalMs);
+      const change = (tokenPair.priceChange?.[interval] || 0) * (Math.random() - 0.5) * 0.1;
+      const open = lastPrice;
+      const close = lastPrice * (1 + change);
+      const high = Math.max(open, close) * (1 + Math.random() * 0.01);
+      const low = Math.min(open, close) * (1 - Math.random() * 0.01);
       
       candles.push({
-        time,
+        time: new Date(timeMs).toISOString(),
         open,
         high,
         low,
         close
       });
+      
+      lastPrice = close;
     }
+
+    // Ensure the last candle matches the current price exactly
+    candles[candles.length - 1] = {
+      time: new Date().toISOString(),
+      open: priceData.price.toNumber(),
+      high: priceData.price.toNumber(),
+      low: priceData.price.toNumber(),
+      close: priceData.price.toNumber()
+    };
     
     res.json(candles);
   } catch (error) {
