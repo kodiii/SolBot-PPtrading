@@ -1,10 +1,7 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
 import { Card } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-
-type TimeInterval = '1s' | '1m' | '5m' | '15m' | '1h'
 
 interface TokenCandleChartProps {
   tokenName: string
@@ -16,18 +13,14 @@ interface TokenCandleChartProps {
     close: number
   }[]
   isLoading?: boolean
-  onIntervalChange?: (interval: TimeInterval) => void
 }
 
 export function TokenCandleChart({ 
   tokenName, 
   data, 
-  isLoading,
-  onIntervalChange 
+  isLoading
 }: TokenCandleChartProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const [interval, setInterval] = useState<TimeInterval>('5m')
-
   // Function to draw the chart
   const drawChart = () => {
     if (!canvasRef.current || !data.length) return
@@ -238,61 +231,9 @@ export function TokenCandleChart({
     )
   }
 
-  // Handle interval change
-  const handleIntervalChange = (newInterval: TimeInterval) => {
-    setInterval(newInterval)
-    if (onIntervalChange) {
-      onIntervalChange(newInterval)
-    }
-  }
-
   return (
     <Card className="p-4">
-      <div className="flex justify-between items-center mb-4">
-        <div className="font-semibold">{tokenName}</div>
-        <div className="flex space-x-1">
-          <Button 
-            size="sm" 
-            variant={interval === '1s' ? 'default' : 'outline'} 
-            onClick={() => handleIntervalChange('1s')}
-            className="px-2 py-1 h-7 text-xs"
-          >
-            1s
-          </Button>
-          <Button 
-            size="sm" 
-            variant={interval === '1m' ? 'default' : 'outline'} 
-            onClick={() => handleIntervalChange('1m')}
-            className="px-2 py-1 h-7 text-xs"
-          >
-            1m
-          </Button>
-          <Button 
-            size="sm" 
-            variant={interval === '5m' ? 'default' : 'outline'} 
-            onClick={() => handleIntervalChange('5m')}
-            className="px-2 py-1 h-7 text-xs"
-          >
-            5m
-          </Button>
-          <Button 
-            size="sm" 
-            variant={interval === '15m' ? 'default' : 'outline'} 
-            onClick={() => handleIntervalChange('15m')}
-            className="px-2 py-1 h-7 text-xs"
-          >
-            15m
-          </Button>
-          <Button 
-            size="sm" 
-            variant={interval === '1h' ? 'default' : 'outline'} 
-            onClick={() => handleIntervalChange('1h')}
-            className="px-2 py-1 h-7 text-xs"
-          >
-            1h
-          </Button>
-        </div>
-      </div>
+      <div className="font-semibold mb-4">{tokenName}</div>
       <canvas ref={canvasRef} className="w-full h-[400px]" />
     </Card>
   )
