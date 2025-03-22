@@ -115,7 +115,7 @@ export function TradingCharts({ trades }: TradingChartsProps): React.ReactElemen
     aspectRatio: 1, // Fixed aspect ratio for all charts
     plugins: {
       legend: {
-        display: false,
+        display: true,
       },
       title: {
         display: true,

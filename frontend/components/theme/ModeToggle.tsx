@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Sun, Moon } from 'lucide-react'
 
 export function ModeToggle(): React.ReactElement {
-  const { theme, resolvedTheme, setTheme } = useTheme()
+  const { resolvedTheme, setTheme } = useTheme()
   const [mounted, setMounted] = React.useState(false)
 
   React.useEffect(() => {
@@ -17,28 +17,15 @@ export function ModeToggle(): React.ReactElement {
     return <div className="w-9 h-9" /> // Prevents layout shift
   }
 
-  // Toggle between light and dark mode while preserving the current theme family
+  // Toggle between light and dark mode
   const toggleColorMode = (): void => {
-    // Get the current theme
-    const currentTheme = theme || 'system'
-    
-    // Determine if we're in dark mode
     const isDark = resolvedTheme === 'dark'
+    const newTheme = isDark ? 'light' : 'dark'
+    setTheme(newTheme)
     
-    // If we're using a special theme (not just 'light' or 'dark')
-    if (currentTheme !== 'light' && currentTheme !== 'dark' && currentTheme !== 'system') {
-      // Toggle between light and dark mode in settings
-      const newColorMode = isDark ? 'light' : 'dark'
-      
-      // Update the color mode in localStorage
-      localStorage.setItem('theme-mode', newColorMode)
-      
-      // Trigger a storage event for the theme provider to pick up
-      window.dispatchEvent(new Event('storage'))
-    } else {
-      // For standard themes, just toggle between light and dark
-      setTheme(isDark ? 'light' : 'dark')
-    }
+    // Also update in localStorage for our theme provider
+    localStorage.setItem('theme-mode', newTheme)
+    window.dispatchEvent(new Event('storage'))
   }
 
   return (

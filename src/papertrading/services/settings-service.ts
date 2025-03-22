@@ -110,101 +110,109 @@ export interface AppSettings {
  * Default settings to use when initializing the database
  */
 export const defaultSettings: AppSettings = {
-  appearance: {
-    theme: "system",
-    colorMode: "system"
+  "appearance": {
+    "theme": "system",
+    "colorMode": "system"
   },
-  paperTrading: {
-    initialBalance: 10,
-    dashboardRefresh: 2000,
-    recentTradesLimit: 12,
-    verboseLogging: false,
-    priceCheck: {
-      maxRetries: 15,
-      initialDelay: 3000,
-      maxDelay: 5000
+  "paperTrading": {
+    "initialBalance": 10,
+    "dashboardRefresh": 2000,
+    "recentTradesLimit": 12,
+    "verboseLogging": false,
+    "priceCheck": {
+      "maxRetries": 15,
+      "initialDelay": 3000,
+      "maxDelay": 5000
     },
-    realDataUpdate: 5000,
-    useNewProviders: false
+    "realDataUpdate": 5000,
+    "useNewProviders": false
   },
-  priceValidation: {
-    enabled: true,
-    windowSize: 12,
-    maxDeviation: 0.05,
-    minDataPoints: 6,
-    fallbackToSingleSource: true
+  "priceValidation": {
+    "enabled": true,
+    "windowSize": 12,
+    "maxDeviation": 0.05,
+    "minDataPoints": 6,
+    "fallbackToSingleSource": true
   },
-  swap: {
-    amount: 1000000000,
-    slippageBps: 200,
-    maxOpenPositions: 5,
-    verboseLog: false,
-    prioFeeMaxLamports: 10000000,
-    prioLevel: "medium",
-    dbNameTrackerHoldings: "src/tracker/holdings.db",
-    tokenNotTradable400ErrorRetries: 5,
-    tokenNotTradable400ErrorDelay: 2000
+  "swap": {
+    "amount": 1000000000,
+    "slippageBps": 200,
+    "maxOpenPositions": 5,
+    "verboseLog": false,
+    "prioFeeMaxLamports": 10000000,
+    "prioLevel": "medium",
+    "dbNameTrackerHoldings": "src/tracker/holdings.db",
+    "tokenNotTradable400ErrorRetries": 5,
+    "tokenNotTradable400ErrorDelay": 2000
   },
-  sell: {
-    priceSource: "dex",
-    prioFeeMaxLamports: 10000000,
-    prioLevel: "medium",
-    slippageBps: 200,
-    autoSell: true,
-    stopLossPercent: 25,
-    takeProfitPercent: 30,
-    trackPublicWallet: ""
+  "sell": {
+    "priceSource": "dex",
+    "prioFeeMaxLamports": 10000000,
+    "prioLevel": "medium",
+    "slippageBps": 200,
+    "autoSell": true,
+    "stopLossPercent": 25,
+    "takeProfitPercent": 30,
+    "trackPublicWallet": ""
   },
-  strategies: {
-    debug: false,
-    liquidityDropEnabled: false,
-    threshold: 15
+  "strategies": {
+    "debug": false,
+    "liquidityDropEnabled": false,
+    "threshold": 15
   },
-  rugCheck: {
-    verboseLog: false,
-    simulationMode: true,
-    allowMintAuthority: false,
-    allowNotInitialized: false,
-    allowFreezeAuthority: false,
-    allowRugged: false,
-    allowMutable: false,
-    blockReturningTokenNames: true,
-    blockReturningTokenCreators: false,
-    blockSymbols: ["XXX"],
-    blockNames: ["XXX"],
-    onlyContainString: false,
-    containString: ["AI", "GPT", "AGENT"],
-    allowInsiderTopholders: true,
-    maxAllowedPctTopholders: 90,
-    maxAllowedPctAllTopholders: 90,
-    excludeLpFromTopholders: true,
-    minTotalMarkets: 0,
-    minTotalLpProviders: 0,
-    minTotalMarketLiquidity: 5000,
-    maxTotalMarketLiquidity: 10000000,
-    maxMarketcap: 1000000000,
-    maxPriceToken: 1,
-    ignorePumpFun: false,
-    maxScore: 30000,
-    legacyNotAllowed: [
+  "rugCheck": {
+    "verboseLog": false,
+    "simulationMode": true,
+    "allowMintAuthority": false,
+    "allowNotInitialized": false,
+    "allowFreezeAuthority": false,
+    "allowRugged": false,
+    "allowMutable": false,
+    "blockReturningTokenNames": true,
+    "blockReturningTokenCreators": false,
+    "blockSymbols": [
+      "XXX"
+    ],
+    "blockNames": [
+      "XXX"
+    ],
+    "onlyContainString": false,
+    "containString": [
+      "AI",
+      "GPT",
+      "AGENT"
+    ],
+    "allowInsiderTopholders": true,
+    "maxAllowedPctTopholders": 90,
+    "maxAllowedPctAllTopholders": 90,
+    "excludeLpFromTopholders": true,
+    "minTotalMarkets": 0,
+    "minTotalLpProviders": 0,
+    "minTotalMarketLiquidity": 5000,
+    "maxTotalMarketLiquidity": 10000000,
+    "maxMarketcap": 1000000000,
+    "maxPriceToken": 1,
+    "ignorePumpFun": false,
+    "maxScore": 30000,
+    "legacyNotAllowed": [
       "Freeze Authority still enabled",
       "Single holder ownership",
       "Copycat token",
       "High holder concentration"
     ]
   },
-  liquidityPool: {
-    radiyumProgramId: "675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8",
-    pumpFunProgramId: "pAMMBay6oceH9fJKBRHGP5D4bD4sWpmSwMn52FMfXEA",
-    wsolPcMint: "So11111111111111111111111111111111111111112"
+  "liquidityPool": {
+    "radiyumProgramId": "675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8",
+    "pumpFunProgramId": "pAMMBay6oceH9fJKBRHGP5D4bD4sWpmSwMn52FMfXEA",
+    "wsolPcMint": "So11111111111111111111111111111111111111112"
   },
-  tx: {
-    fetchTxMaxRetries: 5,
-    fetchTxInitialDelay: 1000,
-    swapTxInitialDelay: 500,
-    getTimeout: 10000,
-    concurrentTransactions: 1,
-    retryDelay: 500
+  "tx": {
+    "fetchTxMaxRetries": 5,
+    "fetchTxInitialDelay": 1000,
+    "swapTxInitialDelay": 500,
+    "getTimeout": 10000,
+    "concurrentTransactions": 1,
+    "retryDelay": 500
   }
 };
 

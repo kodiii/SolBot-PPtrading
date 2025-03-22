@@ -14,71 +14,32 @@ export const themeOptions = [
 ]
 
 export default function ThemeProvider({ children, ...props }: ThemeProviderProps): React.JSX.Element {
-  // Apply theme-specific class to root element
   React.useEffect(() => {
-    const handleThemeChange = (): void => {
-      // Get theme and color mode from localStorage
-      const theme = localStorage.getItem('theme') || 'system'
-      const colorMode = localStorage.getItem('theme-mode') || 'system'
-      
-      // Remove all theme classes
-      document.documentElement.classList.remove(
-        'global',
-        'bluish-purple-cricket',
-        'exquisite-turquoise-giraffe'
-      )
-      
-      // Add the appropriate theme class
-      if (theme === 'bluish-purple-cricket') {
-        document.documentElement.classList.add('bluish-purple-cricket')
-      } else if (theme === 'exquisite-turquoise-giraffe') {
-        document.documentElement.classList.add('exquisite-turquoise-giraffe')
-      }
-      
-      // Apply color mode if it's explicitly set
-      if (colorMode !== 'system') {
-        // Remove existing color mode classes
-        document.documentElement.classList.remove('light', 'dark')
-        
-        // Add the selected color mode
-        document.documentElement.classList.add(colorMode)
+    // Get saved theme from localStorage
+    const savedTheme = localStorage.getItem('theme-mode') || 'system'
+    const root = document.documentElement
+    
+    // Apply the theme
+    if (savedTheme === 'dark') {
+      root.classList.add('dark')
+    } else if (savedTheme === 'light') {
+      root.classList.add('light')
+    }
+    
+    // Listen for theme changes from ModeToggle
+    const handleStorage = (): void => {
+      const newTheme = localStorage.getItem('theme-mode')
+      if (newTheme === 'dark') {
+        root.classList.remove('light')
+        root.classList.add('dark')
+      } else if (newTheme === 'light') {
+        root.classList.remove('dark')
+        root.classList.add('light')
       }
     }
     
-    // Initial setup
-    handleThemeChange()
-    
-    // Listen for theme changes
-    window.addEventListener('storage', handleThemeChange)
-    
-    // Check for settings changes every second
-    const intervalId = setInterval(() => {
-      // Fetch settings from API
-      fetch('/api/settings')
-        .then(response => response.json())
-        .then(data => {
-          if (data.appearance) {
-            const { theme, colorMode } = data.appearance
-            
-            // Update localStorage if different
-            if (theme && localStorage.getItem('theme') !== theme) {
-              localStorage.setItem('theme', theme)
-              handleThemeChange()
-            }
-            
-            if (colorMode && localStorage.getItem('theme-mode') !== colorMode) {
-              localStorage.setItem('theme-mode', colorMode)
-              handleThemeChange()
-            }
-          }
-        })
-        .catch(err => console.error('Error fetching settings:', err))
-    }, 5000) // Check every 5 seconds
-    
-    return () => {
-      window.removeEventListener('storage', handleThemeChange)
-      clearInterval(intervalId)
-    }
+    window.addEventListener('storage', handleStorage)
+    return () => window.removeEventListener('storage', handleStorage)
   }, [])
   
   return (
@@ -87,7 +48,7 @@ export default function ThemeProvider({ children, ...props }: ThemeProviderProps
       defaultTheme="system"
       enableSystem={true}
       forcedTheme={undefined}
-      storageKey="theme"
+      storageKey="theme-mode"
       {...props}
     >
       {children}
