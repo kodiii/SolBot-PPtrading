@@ -106,7 +106,7 @@ export interface AppSettings {
 // Default settings to use while loading
 const defaultSettings: AppSettings = {
   "appearance": {
-    "theme": "system",
+    "theme": "bluish-purple-cricket",
     "colorMode": "system"
   },
   "paperTrading": {

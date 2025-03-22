@@ -282,11 +282,26 @@ export function useCandleData(positions: Position[], interval: string = '5m') {
   const [data, setData] = React.useState<Map<string, CandleData[]>>(new Map());
   const [isLoading, setIsLoading] = React.useState<boolean>(true);
   const [error, setError] = React.useState<string | undefined>(undefined);
+  
+  // Create a ref to track if the component is mounted
+  const isMountedRef = React.useRef<boolean>(true);
+  
+  // Create a ref to store the AbortController
+  const abortControllerRef = React.useRef<AbortController | null>(null);
 
   const fetchAllCandles = React.useCallback(async () => {
-    if (!positions.length) return;
+    if (!positions.length || !isMountedRef.current) return;
 
     try {
+      // Abort any previous requests
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+
+      // Create a new AbortController for this fetch operation
+      abortControllerRef.current = new AbortController();
+      const signal = abortControllerRef.current.signal;
+
       setIsLoading(true);
       setError(undefined);
 
@@ -296,29 +311,53 @@ export function useCandleData(positions: Position[], interval: string = '5m') {
             'Cache-Control': 'no-cache, no-store, must-revalidate',
             'Pragma': 'no-cache',
             'Expires': '0'
+          },
+          signal // Pass the abort signal to each fetch request
+        }).then(async res => {
+          if (!res.ok) {
+            throw new Error(`HTTP error! status: ${res.status}`);
           }
-        }).then(res => res.json())
+          return res.json();
+        })
       );
 
       const results = await Promise.all(promises);
       
-      const newData = new Map();
-      positions.forEach((position, index) => {
-        newData.set(position.token_mint, results[index]);
-      });
-
-      setData(newData);
+      // Only update state if component is still mounted
+      if (isMountedRef.current) {
+        const newData = new Map();
+        positions.forEach((position, index) => {
+          newData.set(position.token_mint, results[index]);
+        });
+        setData(newData);
+      }
     } catch (err) {
-      console.error('Error fetching candle data:', err);
-      setError(err instanceof Error ? err.message : 'Failed to fetch candle data');
+      // Only update error state if it's not an abort error and component is mounted
+      if (err instanceof Error && err.name !== 'AbortError' && isMountedRef.current) {
+        console.error('Error fetching candle data:', err);
+        setError(err.message);
+      }
     } finally {
-      setIsLoading(false);
+      // Only update loading state if component is mounted
+      if (isMountedRef.current) {
+        setIsLoading(false);
+      }
     }
   }, [positions, interval]);
 
   // Fetch data on mount and when positions or interval change
   React.useEffect(() => {
+    isMountedRef.current = true;
     fetchAllCandles();
+
+    // Cleanup function
+    return () => {
+      isMountedRef.current = false;
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+        abortControllerRef.current = null;
+      }
+    };
   }, [fetchAllCandles]);
 
   return {
