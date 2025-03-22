@@ -106,7 +106,7 @@ export interface AppSettings {
 // Default settings to use while loading
 const defaultSettings: AppSettings = {
   "appearance": {
-    "theme": "bluish-purple-cricket",
+    "theme": "exquisite-turquoise-giraffe",
     "colorMode": "system"
   },
   "paperTrading": {
@@ -220,7 +220,7 @@ interface SettingsContextType {
   refreshSettings: () => Promise<void>;
 }
 
-const SettingsContext = React.createContext<SettingsContextType | undefined>(
+export const SettingsContext = React.createContext<SettingsContextType | undefined>(
   undefined
 )
 

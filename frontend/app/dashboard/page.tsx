@@ -147,7 +147,7 @@ export default function DashboardPage(): React.ReactElement {
       </Card>
 
       {/* Token Candle Charts */}
-      <TokenCandleCharts positions={positions} isLoading={isLoading} />
+      {/* <TokenCandleCharts positions={positions} isLoading={isLoading} />*/}
 
       {/* Active Positions */}
       <Card>

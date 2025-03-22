@@ -111,7 +111,7 @@ export interface AppSettings {
  */
 export const defaultSettings: AppSettings = {
   "appearance": {
-    "theme": "bluish-purple-cricket",
+    "theme": "exquisite-turquoise-giraffe",
     "colorMode": "system"
   },
   "paperTrading": {

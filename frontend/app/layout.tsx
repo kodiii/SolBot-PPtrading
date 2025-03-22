@@ -18,17 +18,17 @@ export default function RootLayout({ children }: { children: React.ReactNode }):
     <html lang="en" suppressHydrationWarning>
       <head />
       <body className={`${inter.className} antialiased`} suppressHydrationWarning>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-        >
-          <SettingsProvider>
+        <SettingsProvider>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+          >
             <ErrorBoundary>
               {children}
             </ErrorBoundary>
-          </SettingsProvider>
-        </ThemeProvider>
+          </ThemeProvider>
+        </SettingsProvider>
       </body>
     </html>
   )

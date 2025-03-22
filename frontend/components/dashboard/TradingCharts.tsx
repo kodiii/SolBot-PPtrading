@@ -1,6 +1,7 @@
 'use client'
 
 import React from 'react'
+import { useChartTheme } from '@/hooks/useChartTheme'
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -16,18 +17,21 @@ import {
 import { Line, Bar, Pie } from 'react-chartjs-2'
 import type { Trade } from '@/lib/types'
 
-// Register ChartJS components
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  BarElement,
-  ArcElement,
-  Title,
-  Tooltip,
-  Legend
-)
+  // Configure chart defaults
+  ChartJS.defaults.font.family = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+  
+  // Register ChartJS components
+  ChartJS.register(
+    CategoryScale,
+    LinearScale,
+    PointElement,
+    LineElement,
+    BarElement,
+    ArcElement,
+    Title,
+    Tooltip,
+    Legend
+  )
 
 interface TradingChartsProps {
   trades: Trade[]
@@ -42,41 +46,45 @@ export function TradingCharts({ trades }: TradingChartsProps): React.ReactElemen
   // Sort trades by time_buy for chronological display
   const sortedTrades = [...completedTrades].sort((a, b) => a.time_buy - b.time_buy)
   
+  // Use theme hook for chart colors
+  const { getThemeColor, getThemeColorWithOpacity } = useChartTheme()
+
   // Prepare data for P/L over time chart
-  const pnlChartData = {
+  // Memoize chart data to prevent unnecessary updates
+  const pnlChartData = React.useMemo(() => ({
     labels: sortedTrades.map(trade => new Date(trade.time_buy).toLocaleDateString()),
     datasets: [
       {
         label: 'Profit/Loss (SOL)',
         data: sortedTrades.map(trade => parseFloat(trade.pnl || '0')),
-        borderColor: 'rgb(75, 192, 192)',
-        backgroundColor: 'rgba(75, 192, 192, 0.5)',
+        borderColor: getThemeColor(0),
+        backgroundColor: getThemeColorWithOpacity(0, 0.5),
         tension: 0.3,
       },
     ],
-  }
+  }), [sortedTrades, getThemeColor, getThemeColorWithOpacity])
   
   // Prepare data for win/loss ratio pie chart
   const winningTrades = completedTrades.filter(trade => parseFloat(trade.pnl || '0') > 0).length
   const losingTrades = completedTrades.length - winningTrades
   
-  const winLossChartData = {
+  const winLossChartData = React.useMemo(() => ({
     labels: ['Winning Trades', 'Losing Trades'],
     datasets: [
       {
         data: [winningTrades, losingTrades],
         backgroundColor: [
-          'rgba(75, 192, 192, 0.6)',
-          'rgba(255, 99, 132, 0.6)',
+          getThemeColorWithOpacity(0, 0.6),
+          getThemeColorWithOpacity(1, 0.6),
         ],
         borderColor: [
-          'rgba(75, 192, 192, 1)',
-          'rgba(255, 99, 132, 1)',
+          getThemeColor(0),
+          getThemeColor(1),
         ],
         borderWidth: 1,
       },
     ],
-  }
+  }), [winningTrades, losingTrades, getThemeColor, getThemeColorWithOpacity])
   
   // Prepare data for top tokens by P/L
   const tokenPnlMap = new Map<string, number>()
@@ -91,43 +99,87 @@ export function TradingCharts({ trades }: TradingChartsProps): React.ReactElemen
     .sort((a, b) => Math.abs(b[1]) - Math.abs(a[1]))
     .slice(0, 8)
   
-  const topTokensChartData = {
+  const topTokensChartData = React.useMemo(() => ({
     labels: topTokens.map(([token]) => token),
     datasets: [
       {
         label: 'P/L by Token (SOL)',
         data: topTokens.map(([, pnl]) => pnl),
         backgroundColor: topTokens.map(([, pnl]) => 
-          pnl >= 0 ? 'rgba(75, 192, 192, 0.6)' : 'rgba(255, 99, 132, 0.6)'
+          getThemeColorWithOpacity(pnl >= 0 ? 0 : 1, 0.6)
         ),
         borderColor: topTokens.map(([, pnl]) => 
-          pnl >= 0 ? 'rgba(75, 192, 192, 1)' : 'rgba(255, 99, 132, 1)'
+          getThemeColor(pnl >= 0 ? 0 : 1)
         ),
         borderWidth: 1,
       },
     ],
-  }
+  }), [topTokens, getThemeColor, getThemeColorWithOpacity])
   
-  // Common chart options
-  const commonOptions = {
+    // Common chart options with theme colors - including text and grid colors
+  const commonOptions = React.useMemo(() => ({
     responsive: true,
     maintainAspectRatio: false,
-    aspectRatio: 1, // Fixed aspect ratio for all charts
+    aspectRatio: 1,
+    interaction: {
+      mode: 'index' as const,
+      intersect: false,
+    },
     plugins: {
-      legend: {
-        display: true,
-      },
       title: {
         display: true,
+        color: 'hsl(var(--foreground))',
         font: {
-          size: 14,
+          size: 13,
+          weight: 'bold' as const
         },
         padding: {
-          bottom: 10,
+          top: 0,
+          bottom: 12,
         },
       },
+      legend: {
+        display: true,
+        position: 'top' as const,
+        align: 'center' as const,
+        labels: {
+          color: 'hsl(var(--muted-foreground))',
+          boxWidth: 8,
+          padding: 10,
+          font: {
+            size: 12,
+            weight: 'normal' as const
+          }
+        }
+      },
     },
-  }
+    scales: {
+      x: {
+        grid: {
+          color: 'hsl(var(--muted-foreground) / 0.2)',
+        },
+        ticks: {
+          color: 'hsl(var(--muted-foreground))',
+          font: {
+            size: 12,
+            weight: 'normal' as const
+          }
+        }
+      },
+      y: {
+        grid: {
+          color: 'hsl(var(--muted-foreground) / 0.2)',
+        },
+        ticks: {
+          color: 'hsl(var(--muted-foreground))',
+          font: {
+            size: 12,
+            weight: 'normal' as const
+          }
+        }
+      }
+    }
+  }), [])
 
   // Specific chart options
   const lineOptions = {
@@ -173,7 +225,8 @@ export function TradingCharts({ trades }: TradingChartsProps): React.ReactElemen
       x: {
         ticks: {
           font: {
-            size: 9
+            size: 9,
+            weight: 'normal' as const
           }
         }
       }
@@ -182,27 +235,39 @@ export function TradingCharts({ trades }: TradingChartsProps): React.ReactElemen
     maxBarThickness: 15
   }
   
-  const pieOptions = {
-    ...commonOptions,
+  const pieOptions = React.useMemo(() => ({
+    responsive: true,
+    maintainAspectRatio: false,
+    aspectRatio: 1,
     plugins: {
-      ...commonOptions.plugins,
+      title: {
+        display: true,
+        color: 'hsl(var(--foreground))',
+        text: 'Win/Loss Ratio',
+        font: {
+          size: 13,
+          weight: 'bold' as const
+        },
+        padding: {
+          top: 0,
+          bottom: 12,
+        },
+      },
       legend: {
         display: true,
         position: 'bottom' as const,
         labels: {
-          boxWidth: 10,
-          padding: 5,
+          color: 'hsl(var(--muted-foreground))',
+          boxWidth: 8,
+          padding: 6,
           font: {
-            size: 10
+            size: 11,
+            weight: 'normal' as const
           }
         }
       },
-      title: {
-        ...commonOptions.plugins.title,
-        text: 'Win/Loss Ratio',
-      },
-    },
-  }
+    }
+  }), [])
   
   if (completedTrades.length === 0) {
     return (
@@ -213,7 +278,7 @@ export function TradingCharts({ trades }: TradingChartsProps): React.ReactElemen
   }
   
   return (
-    <div className="flex flex-row justify-between items-stretch w-full h-80 px-4">
+    <div className="flex flex-row justify-between items-stretch w-full h-[26rem] px-4">
       <div className="w-[35%]">
         <Line options={lineOptions} data={pnlChartData} />
       </div>
