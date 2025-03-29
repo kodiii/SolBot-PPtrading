@@ -3,10 +3,12 @@
  * This file contains all the settings and parameters that control the bot's behavior
  * for trading, security checks, and simulation features.
  */
+
 export const config = {
   // Liquidity pool configuration for Raydium DEX
   liquidity_pool: {
     radiyum_program_id: "675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8", // Raydium DEX program ID
+    pump_fun_program_id: "pAMMBay6oceH9fJKBRHGP5D4bD4sWpmSwMn52FMfXEA", // PumpFun DEX program ID
     wsol_pc_mint: "So11111111111111111111111111111111111111112", // Wrapped SOL token mint address
   },
 
@@ -17,13 +19,13 @@ export const config = {
     swap_tx_initial_delay: 500, // Initial delay (ms) before executing first buy
     get_timeout: 10000, // API request timeout (ms)
     concurrent_transactions: 1, // Maximum number of simultaneous transactions
-    retry_delay: 500, // Delay between retry attempts (ms)
+    retry_delay: 500, // Delay between retry attempts (ms),
   },
 
   // Paper trading simulation settings
   paper_trading: {
     verbose_log: false, // Enable/disable detailed logging of DexScreener API responses
-    initial_balance: 5, // Starting balance in SOL for paper trading
+    initial_balance: 10, // Starting balance in SOL for paper trading
     dashboard_refresh: 2000, // Faster refresh rate for more responsive UI
     recent_trades_limit: 12, // Number of recent trades to display in dashboard
     price_check: {
@@ -32,6 +34,7 @@ export const config = {
       max_delay: 5000, // Maximum delay between Dex price retries (ms) from dex
     },
     real_data_update: 5000, // Market data & strategy update interval (ms)
+    use_new_providers: false, // Feature flag for new market data provider system
   },
 
   // Price validation settings for paper trading
@@ -82,7 +85,6 @@ export const config = {
     track_public_wallet: "", // Public wallet tracking address (optional)
   },
 
-  // Rug pull protection and token validation settings
   // Trading strategies configuration
   strategies: {
     // Global debug setting for all strategies
@@ -96,6 +98,7 @@ export const config = {
     }
   },
 
+  // Rug pull protection and token validation settings
   rug_check: {
     verbose_log: false, // Enable/disable detailed rug check logging
     simulation_mode: true, // Controls paper trading (true) vs real trading (false) mode
@@ -122,17 +125,17 @@ export const config = {
     
     // Holder distribution checks
     allow_insider_topholders: true, // Allow insider accounts in top holders
-    max_alowed_pct_topholders: 50, // Maximum percentage for single top holder
-    max_alowed_pct_all_topholders: 50, // Maximum total percentage for all top holders
+    max_alowed_pct_topholders: 100, // Maximum percentage for single top holder
+    max_alowed_pct_all_topholders: 100, // Maximum total percentage for all top holders
     exclude_lp_from_topholders: true, // Exclude LP accounts from holder calculations
     
     // Market validation thresholds
     min_total_markets: 0, // Minimum required trading markets
     min_total_lp_providers: 0, // Minimum required liquidity providers
-    min_total_market_Liquidity: 30000, // Minimum required market liquidity
-    max_total_market_Liquidity: 100000, // Maximum required market liquidity
-    max_marketcap: 25000000, // Maximum allowed market cap in $
-    max_price_token: 0.0001, // Maximum allowed token price in $
+    min_total_market_Liquidity: 1000, // Minimum required market liquidity
+    max_total_market_Liquidity: 1000000, // Maximum required market liquidity
+    max_marketcap: 250000000, // Maximum allowed market cap in $
+    max_price_token: 0.9, // Maximum allowed token price in $
     
     // Miscellaneous settings
     ignore_pump_fun: false, // Ignore Pump.fun tokens
@@ -143,11 +146,11 @@ export const config = {
       "Freeze Authority still enabled", // Block tokens with active freeze authority
       "Single holder ownership", // Block tokens with concentrated ownership
       "Copycat token", // Block copycat token names
-      // Commented out checks (can be enabled if needed)
-      //"High holder concentration",
-      //"Large Amount of LP Unlocked",
-      //"Low Liquidity",
-      //"Low amount of LP Providers",
+      //Commented out checks (can be enabled if needed)
+      "High holder concentration",
+      "Large Amount of LP Unlocked",
+      "Low Liquidity",
+      "Low amount of LP Providers",
     ],
   },
-}
+};

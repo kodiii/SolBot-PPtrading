@@ -1,46 +1,46 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+# Backups and temporary files
+*.backup
+src/config.ts.backup
 
-# dependencies
-/node_modules
-/.pnp
-.pnp.js
-.yarn/install-state.gz
+# Node modules
+node_modules/
 
-# production
-/build
-/dist
+# Build output
+dist/
+build/
 
-# misc
-.DS_Store
-*.pem
+# Environment variables
+.env
+.env.*
 
-# debug
+# IDE files
+.vscode/
+.idea/
+
+# Logs
+*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# local env files
-.env*.local
-.env
-.todo
+# Operating System
+.DS_Store
+Thumbs.db
 
-# vercel
-.vercel
+# Keep all documentation and cline_docs tracked
+!cline_docs/
+!cline_docs/*
 
-# typescript
-*.tsbuildinfo
-next-env.d.ts
+# Next.js
+frontend/.next/
 
-# Project Personal Files
-holdings.db
-myConfig.ts
-paper_trading.db
-config.ts
+# VSCode
+frontend/.vscode/
 
-# Documentation and Development Notes
-/coverage/
-*.md
-!README.md
-!Instructions.md
-!cline_docs/*.md
-!Strategies_Docs/**/*.md
+frontend/src/papertrading/db/paper_trading.db
+src/tracker/holdings.db
+src/papertrading/db/paper_trading.db
+
+# Ignore cline rules files
+.clinerules-*
+.roomodes

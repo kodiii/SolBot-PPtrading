@@ -1,0 +1,108 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 233 18% 25%;
+    --foreground: 173 30% 93%;
+    --muted: 233 12% 23%;
+    --muted-foreground: 233 12% 73%;
+    --popover: 233 18% 20%;
+    --popover-foreground: 0 0% 100%;
+    --card: 233 18% 23%;
+    --card-foreground: 173 24% 98%;
+    --border: 233 8% 24%;
+    --input: 233 8% 27%;
+    --primary: 44 100% 71%;
+    --primary-foreground: 44 100% 11%;
+    --secondary: 220 30% 25%;
+    --secondary-foreground: 220 30% 85%;
+    --accent: 120 60% 50%;
+    --accent-foreground: 120 60% 90%;
+    --destructive: 10 90% 57%;
+    --destructive-foreground: 0 0% 100%;
+    --ring: 44 100% 71%;
+    --chart-1: 44 100% 71%;
+    --chart-2: 220 30% 25%;
+    --chart-3: 120 60% 50%;
+    --chart-4: 220 30% 28%;
+    --chart-5: 44 103% 71%;
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 240 23.58% 24.12%;
+    --foreground: 185.66 24% 93%;
+    --muted: 233 10.2% 52.88%;
+    --muted-foreground: 233 12% 73%;
+    --popover: 242.73 25% 17.25%;
+    --popover-foreground: 0 0% 100%;
+    --card: 242.73 25% 20%;
+    --card-foreground: 173 24% 98%;
+    --border: 233 9.88% 23.8%;
+    --input: 240 27.02% 33.31%;
+    --primary: 29.43 100% 38.08%;
+    --primary-foreground: 180 22.22% 92.94%;
+    --secondary: 262.64 67.65% 47.26%;
+    --secondary-foreground: 180 22.22% 92.94%;
+    --accent: 120 60% 50%;
+    --accent-foreground: 120 60% 90%;
+    --destructive: 11.32 78.77% 52.89%;
+    --destructive-foreground: 0 0% 100%;
+    --ring: 31.7 91.3% 63.92%;
+    --chart-1: 29.43 100% 38.08%;
+    --chart-2: 262.64 67.65% 47.26%;
+    --chart-3: 120 60% 50%;
+    --chart-4: 262.64 67.65% 50.26%;
+    --chart-5: 29.43 103% 38.08%;
+  }
+}
+
+@layer base {
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+.positive {
+  color: #10b981; /* Green color for positive values */
+}
+
+.negative {
+  color: #ef4444; /* Red color for negative values */
+}
+
+/* Table Styles */
+.table-container {
+  @apply overflow-x-auto;
+}
+
+table {
+  @apply w-full border-collapse text-sm;
+}
+
+thead tr {
+  @apply bg-muted border-b border-border;
+}
+
+th {
+  @apply px-4 py-3 text-left font-medium text-muted-foreground;
+}
+
+td {
+  @apply px-4 py-2.5 border-b border-border;
+}
+
+tr:hover {
+  @apply bg-muted;
+}
+
+.token-cell {
+  @apply font-medium;
+}
+
+.address-cell {
+  @apply text-muted-foreground text-xs font-mono max-w-[200px] overflow-hidden text-ellipsis whitespace-nowrap;
+}

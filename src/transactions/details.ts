@@ -58,12 +58,18 @@ export async function fetchTransactionDetails(signature: string): Promise<MintsD
         throw new Error("No instructions found in transaction");
       }
 
-      const instruction = instructions.find((ix) => ix.programId === config.liquidity_pool.radiyum_program_id);
+      const instruction = instructions.find((ix) => 
+        ix.programId === config.liquidity_pool.radiyum_program_id ||
+        ix.programId === config.liquidity_pool.pump_fun_program_id
+      );
       if (!instruction?.accounts || instruction.accounts.length < 10) {
         throw new Error("Invalid market maker instruction");
       }
 
-      const [accountOne, accountTwo] = [instruction.accounts[8], instruction.accounts[9]];
+      // PumpFun uses different account indices compared to Raydium
+      const [accountOne, accountTwo] = instruction.programId === config.liquidity_pool.pump_fun_program_id
+        ? [instruction.accounts[7], instruction.accounts[8]]
+        : [instruction.accounts[8], instruction.accounts[9]];
       if (!accountOne || !accountTwo) {
         throw new Error("Required accounts not found");
       }

@@ -1,8 +1,10 @@
 import { ConnectionManager } from "../../db/connection_manager";
 import { TokenPosition, SimulatedTrade, TradingStats } from "../types.js";
 import { Decimal } from "../../../utils/decimal";
+import path from 'path';
 
-const DB_PATH = "src/papertrading/db/paper_trading.db";
+// Use path.resolve to ensure consistent database path across the application
+const DB_PATH = path.resolve(__dirname, "../../db/paper_trading.db");
 
 export async function fetchActivePositions(): Promise<TokenPosition[]> {
     const connectionManager = ConnectionManager.getInstance(DB_PATH);

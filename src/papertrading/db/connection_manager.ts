@@ -187,10 +187,23 @@ export class ConnectionManager {
    * @throws Error if connection creation fails
    */
   private async createConnection(): Promise<Database> {
-    return open({
-      filename: this.dbPath,
-      driver: sqlite3.Database
-    });
+    try {
+      // Ensure the database directory exists
+      const fs = require('fs');
+      const path = require('path');
+      const dir = path.dirname(this.dbPath);
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+      }
+      
+      return open({
+        filename: this.dbPath,
+        driver: sqlite3.Database
+      });
+    } catch (error) {
+      console.error('Error creating connection:', error);
+      throw error;
+    }
   }
 
   /**

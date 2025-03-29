@@ -8,7 +8,8 @@ import { dashboardStyle, sectionConfigs } from './config/dashboard_style';
 import { displayVirtualBalance, displayActivePositions, displayRecentTrades, displayTradingStats } from './displays';
 import { resetPaperTrading, fetchDashboardData, validateConnection } from './dashboard-operations';
 
-const DB_PATH = "src/papertrading/db/paper_trading.db";
+import path from 'path';
+const DB_PATH = path.resolve(__dirname, "../db/paper_trading.db");
 const STYLE = dashboardStyle;
 
 /**

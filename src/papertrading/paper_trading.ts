@@ -16,7 +16,10 @@ import { ConnectionManager } from "./db/connection_manager";
 import { config } from "../config";
 import { Decimal } from "../utils/decimal";
 
-const DB_PATH = "src/papertrading/db/paper_trading.db";
+import path from 'path';
+
+// Use path relative to the current file's directory to ensure consistent database location
+const DB_PATH = path.resolve(__dirname, "db/paper_trading.db");
 
 /**
  * Represents the virtual balance in the paper trading system

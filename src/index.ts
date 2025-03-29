@@ -147,7 +147,9 @@ async function websocketHandler(): Promise<void> {
   const env = validateEnv();
 
   // Initialize paper trading database
-  const connectionManager = ConnectionManager.getInstance("src/papertrading/db/paper_trading.db");
+  const path = require('path');
+  const DB_PATH = path.resolve(__dirname, "papertrading/db/paper_trading.db");
+  const connectionManager = ConnectionManager.getInstance(DB_PATH);
   await connectionManager.initialize();
   
   const dbSuccess = await initializePaperTradingDB();
